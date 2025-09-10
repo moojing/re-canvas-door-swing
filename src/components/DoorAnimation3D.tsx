@@ -59,7 +59,7 @@ const Door = ({ doorAngle }: DoorProps) => {
         </mesh>
         
         {/* 門正面紋理覆蓋層 - 覆蓋整個門面 */}
-        <mesh ref={doorPlaneRef} position={[1.5, 0, 0.155]}>
+        <mesh ref={doorPlaneRef} position={[1.5, 0, 0.16]}>
           <planeGeometry args={[3, 6]} />
           <meshLambertMaterial 
             map={doorTexture}
