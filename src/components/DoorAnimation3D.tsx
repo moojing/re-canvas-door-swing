@@ -14,7 +14,7 @@ const Door = ({ doorAngle }: DoorProps) => {
   const doorPlaneRef = useRef<THREE.Mesh>(null);
   
   // 加載紋理圖片
-  const doorTexture = useLoader(THREE.TextureLoader, '/textures/door-2.png');
+  const doorTexture = useLoader(THREE.TextureLoader, '/textures/door-1.png');
   
   // 設置紋理不重複，拉伸填滿整個面
   useEffect(() => {
@@ -60,7 +60,7 @@ const Door = ({ doorAngle }: DoorProps) => {
         
         {/* 門正面紋理覆蓋層 - 覆蓋整個門面 */}
         <mesh ref={doorPlaneRef} position={[1.5, 0, 0.155]}>
-          <planeGeometry args={[2.9, 5.9]} />
+          <planeGeometry args={[3, 6]} />
           <meshLambertMaterial 
             map={doorTexture}
             transparent={false}
