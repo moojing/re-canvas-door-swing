@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls, Text } from "@react-three/drei";
 import { Button } from "@/components/ui/button";
 import * as THREE from "three";
@@ -11,6 +11,22 @@ interface DoorProps {
 
 const Door = ({ doorAngle }: DoorProps) => {
   const doorGroupRef = useRef<THREE.Group>(null);
+  
+  // 加載紋理圖片 - 使用你上傳的door-1圖片
+  const doorTexture = useLoader(THREE.TextureLoader, '/textures/door-1.png');
+  const panelTexture = useLoader(THREE.TextureLoader, '/textures/door-1.png');
+  
+  // 設置紋理重複和包裝方式
+  useEffect(() => {
+    if (doorTexture) {
+      doorTexture.wrapS = doorTexture.wrapT = THREE.RepeatWrapping;
+      doorTexture.repeat.set(1, 2); // 水平1次，垂直2次重複
+    }
+    if (panelTexture) {
+      panelTexture.wrapS = panelTexture.wrapT = THREE.RepeatWrapping;
+      panelTexture.repeat.set(2, 1); // 水平2次，垂直1次重複
+    }
+  }, [doorTexture, panelTexture]);
 
   useFrame(() => {
     if (doorGroupRef.current) {
@@ -38,19 +54,28 @@ const Door = ({ doorAngle }: DoorProps) => {
         {/* 門主體 */}
         <mesh position={[1.5, 0, 0.08]}>
           <boxGeometry args={[3, 6, 0.15]} />
-          <meshLambertMaterial color="#503020" />
+          <meshLambertMaterial 
+            map={doorTexture} 
+            color="#803020" 
+          />
         </mesh>
         
         {/* 門上面板 */}
         <mesh position={[1.5, 1.5, 0.16]}>
           <boxGeometry args={[2.4, 1.8, 0.05]} />
-          <meshLambertMaterial color="#3c2314" />
+          <meshLambertMaterial 
+            map={panelTexture} 
+            color="#5c3414" 
+          />
         </mesh>
         
         {/* 門下面板 */}
         <mesh position={[1.5, -1.5, 0.16]}>
           <boxGeometry args={[2.4, 1.8, 0.05]} />
-          <meshLambertMaterial color="#3c2314" />
+          <meshLambertMaterial 
+            map={panelTexture} 
+            color="#5c3414" 
+          />
         </mesh>
         
         {/* 門玻璃窗 */}
@@ -184,7 +209,7 @@ const DoorAnimation3D = ({ onComplete }: DoorAnimation3DProps) => {
       const easedProgress = easeInOutCubic(progress);
       
       // 插值計算
-      let newDoorAngle, newCameraDistance, newFadeOut = 0;
+      let newDoorAngle: number, newCameraDistance: number, newFadeOut = 0;
       
       if (easedProgress <= 0.6) {
         // 開門階段 (0-60%)
