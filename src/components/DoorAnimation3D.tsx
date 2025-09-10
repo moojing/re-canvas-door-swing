@@ -11,22 +11,21 @@ interface DoorProps {
 
 const Door = ({ doorAngle }: DoorProps) => {
   const doorGroupRef = useRef<THREE.Group>(null);
+  const doorPlaneRef = useRef<THREE.Mesh>(null);
   
-  // 加載紋理圖片 - 使用你上傳的door-1圖片
-  const doorTexture = useLoader(THREE.TextureLoader, '/textures/door-1.png');
-  const panelTexture = useLoader(THREE.TextureLoader, '/textures/door-1.png');
+  // 加載紋理圖片
+  const doorTexture = useLoader(THREE.TextureLoader, '/textures/door-2.png');
   
-  // 設置紋理重複和包裝方式
+  // 設置紋理不重複，拉伸填滿整個面
   useEffect(() => {
     if (doorTexture) {
-      doorTexture.wrapS = doorTexture.wrapT = THREE.RepeatWrapping;
-      doorTexture.repeat.set(1, 2); // 水平1次，垂直2次重複
+      doorTexture.wrapS = doorTexture.wrapT = THREE.ClampToEdgeWrapping;
+      doorTexture.repeat.set(1, 1);
+      doorTexture.offset.set(0, 0);
+      doorTexture.flipY = false;
+      doorTexture.needsUpdate = true;
     }
-    if (panelTexture) {
-      panelTexture.wrapS = panelTexture.wrapT = THREE.RepeatWrapping;
-      panelTexture.repeat.set(2, 1); // 水平2次，垂直1次重複
-    }
-  }, [doorTexture, panelTexture]);
+  }, [doorTexture]);
 
   useFrame(() => {
     if (doorGroupRef.current) {
@@ -55,34 +54,19 @@ const Door = ({ doorAngle }: DoorProps) => {
         <mesh position={[1.5, 0, 0.08]}>
           <boxGeometry args={[3, 6, 0.15]} />
           <meshLambertMaterial 
-            map={doorTexture} 
-            color="#803020" 
+            color="#8B4513"
           />
         </mesh>
         
-        {/* 門上面板 */}
-        <mesh position={[1.5, 1.5, 0.16]}>
-          <boxGeometry args={[2.4, 1.8, 0.05]} />
+        {/* 門正面紋理覆蓋層 - 覆蓋整個門面 */}
+        <mesh ref={doorPlaneRef} position={[1.5, 0, 0.155]}>
+          <planeGeometry args={[2.9, 5.9]} />
           <meshLambertMaterial 
-            map={panelTexture} 
-            color="#5c3414" 
+            map={doorTexture}
+            transparent={false}
           />
         </mesh>
         
-        {/* 門下面板 */}
-        <mesh position={[1.5, -1.5, 0.16]}>
-          <boxGeometry args={[2.4, 1.8, 0.05]} />
-          <meshLambertMaterial 
-            map={panelTexture} 
-            color="#5c3414" 
-          />
-        </mesh>
-        
-        {/* 門玻璃窗 */}
-        <mesh position={[1.5, 0.3, 0.18]}>
-          <boxGeometry args={[1.8, 1.2, 0.02]} />
-          <meshLambertMaterial color="#0a0f14" transparent opacity={0.7} />
-        </mesh>
         
         {/* 門把手 */}
         <mesh position={[2.4, 0, 0.2]}>
