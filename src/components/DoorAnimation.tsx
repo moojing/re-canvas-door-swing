@@ -143,24 +143,42 @@ const DoorAnimation = () => {
     setIsAnimating(true);
     setCurrentFrame(0);
     
-    let frameIndex = 0;
-    const frameDuration = 800; // ms per frame
+    const animationDuration = 3000; // 3 seconds total
+    const startTime = performance.now();
     
-    const animate = () => {
+    const animate = (currentTime: number) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      if (frameIndex < frames.length) {
-        drawDoor(ctx, frames[frameIndex], canvas.width, canvas.height);
-        setCurrentFrame(frameIndex);
-        frameIndex++;
-        
-        setTimeout(() => {
-          animationRef.current = requestAnimationFrame(animate);
-        }, frameDuration);
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / animationDuration, 1);
+      
+      // Smooth easing function
+      const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+      const easedProgress = easeInOutCubic(progress);
+      
+      // Interpolate between frames
+      const doorAngle = easedProgress;
+      const cameraDistance = 1 + (easedProgress * 0.3);
+      const brightness = 0.3 + (easedProgress * 0.6);
+      
+      const interpolatedFrame: DoorFrame = {
+        doorAngle,
+        cameraDistance,
+        brightness
+      };
+      
+      drawDoor(ctx, interpolatedFrame, canvas.width, canvas.height);
+      
+      // Update progress indicator
+      const frameIndex = Math.floor(easedProgress * (frames.length - 1));
+      setCurrentFrame(frameIndex);
+      
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
       } else {
         setIsAnimating(false);
       }
