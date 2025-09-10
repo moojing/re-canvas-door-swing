@@ -5,9 +5,14 @@ interface DoorFrame {
   doorAngle: number;
   cameraDistance: number;
   brightness: number;
+  fadeOut?: number;
 }
 
-const DoorAnimation = () => {
+interface DoorAnimationProps {
+  onComplete?: () => void;
+}
+
+const DoorAnimation = ({ onComplete }: DoorAnimationProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const [isAnimating, setIsAnimating] = useState(false);
@@ -19,6 +24,8 @@ const DoorAnimation = () => {
     { doorAngle: 0.3, cameraDistance: 1.1, brightness: 0.5 }, // Door slightly open
     { doorAngle: 0.7, cameraDistance: 1.2, brightness: 0.7 }, // Door more open
     { doorAngle: 1, cameraDistance: 1.3, brightness: 0.9 }, // Door fully open
+    { doorAngle: 1, cameraDistance: 1.8, brightness: 1.0 }, // Continue forward
+    { doorAngle: 1, cameraDistance: 2.5, brightness: 1.0, fadeOut: 1 }, // Fade out
   ];
 
   const drawDoor = (
@@ -134,6 +141,12 @@ const DoorAnimation = () => {
     ctx.fillRect(0, 0, canvasWidth, canvasHeight * 0.1);
     ctx.fillRect(0, canvasHeight * 0.9, canvasWidth, canvasHeight * 0.1);
 
+    // Fade out effect
+    if (frame.fadeOut && frame.fadeOut > 0) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${frame.fadeOut})`;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
+
     ctx.restore();
   };
 
@@ -143,7 +156,7 @@ const DoorAnimation = () => {
     setIsAnimating(true);
     setCurrentFrame(0);
     
-    const animationDuration = 3000; // 3 seconds total
+    const animationDuration = 5000; // 5 seconds total
     const startTime = performance.now();
     
     const animate = (currentTime: number) => {
@@ -160,15 +173,35 @@ const DoorAnimation = () => {
       const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
       const easedProgress = easeInOutCubic(progress);
       
-      // Interpolate between frames
-      const doorAngle = easedProgress;
-      const cameraDistance = 1 + (easedProgress * 0.3);
-      const brightness = 0.3 + (easedProgress * 0.6);
+      // Interpolate between frames with extended animation
+      let doorAngle, cameraDistance, brightness, fadeOut = 0;
+      
+      if (easedProgress <= 0.6) {
+        // Door opening phase (0-60%)
+        const doorProgress = easedProgress / 0.6;
+        doorAngle = doorProgress;
+        cameraDistance = 1 + (doorProgress * 0.3);
+        brightness = 0.3 + (doorProgress * 0.6);
+      } else if (easedProgress <= 0.9) {
+        // Continue forward phase (60-90%)
+        const forwardProgress = (easedProgress - 0.6) / 0.3;
+        doorAngle = 1;
+        cameraDistance = 1.3 + (forwardProgress * 1.2);
+        brightness = 0.9 + (forwardProgress * 0.1);
+      } else {
+        // Fade out phase (90-100%)
+        const fadeProgress = (easedProgress - 0.9) / 0.1;
+        doorAngle = 1;
+        cameraDistance = 2.5;
+        brightness = 1.0;
+        fadeOut = fadeProgress;
+      }
       
       const interpolatedFrame: DoorFrame = {
         doorAngle,
         cameraDistance,
-        brightness
+        brightness,
+        fadeOut
       };
       
       drawDoor(ctx, interpolatedFrame, canvas.width, canvas.height);
@@ -181,6 +214,10 @@ const DoorAnimation = () => {
         animationRef.current = requestAnimationFrame(animate);
       } else {
         setIsAnimating(false);
+        // Trigger completion callback after a short delay
+        setTimeout(() => {
+          onComplete?.();
+        }, 500);
       }
     };
     
