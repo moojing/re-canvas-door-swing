@@ -14,8 +14,8 @@ const Door = ({ doorAngle }: DoorProps) => {
 
   useFrame(() => {
     if (doorGroupRef.current) {
-      // 單門向右開啟
-      doorGroupRef.current.rotation.y = doorAngle * Math.PI / 2;
+      // 單門向外開啟（走進去的視角）
+      doorGroupRef.current.rotation.y = -doorAngle * Math.PI / 2;
     }
   });
 
