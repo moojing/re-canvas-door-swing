@@ -10,15 +10,12 @@ interface DoorProps {
 }
 
 const Door = ({ doorAngle }: DoorProps) => {
-  const leftDoorGroupRef = useRef<THREE.Group>(null);
-  const rightDoorGroupRef = useRef<THREE.Group>(null);
+  const doorGroupRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
-    if (leftDoorGroupRef.current && rightDoorGroupRef.current) {
-      // 左門向左開啟
-      leftDoorGroupRef.current.rotation.y = -doorAngle * Math.PI / 2;
-      // 右門向右開啟
-      rightDoorGroupRef.current.rotation.y = doorAngle * Math.PI / 2;
+    if (doorGroupRef.current) {
+      // 單門向右開啟
+      doorGroupRef.current.rotation.y = doorAngle * Math.PI / 2;
     }
   });
 
@@ -26,77 +23,44 @@ const Door = ({ doorAngle }: DoorProps) => {
     <group position={[0, 0, 0]}>
       {/* 門框 */}
       <mesh position={[0, 0, -0.1]}>
-        <boxGeometry args={[4.2, 6.2, 0.2]} />
+        <boxGeometry args={[3.2, 6.2, 0.2]} />
         <meshLambertMaterial color="#2d2520" />
       </mesh>
       
       {/* 門框內側 */}
       <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[4, 6, 0.1]} />
+        <boxGeometry args={[3, 6, 0.1]} />
         <meshLambertMaterial color="#1a1510" />
       </mesh>
 
-      {/* 左門組 */}
-      <group ref={leftDoorGroupRef} position={[-1, 0, 0]}>
-        {/* 左門主體 */}
-        <mesh position={[0, 0, 0.08]}>
-          <boxGeometry args={[2, 6, 0.15]} />
+      {/* 單門組 - 以左側為軸心旋轉 */}
+      <group ref={doorGroupRef} position={[-1.5, 0, 0]}>
+        {/* 門主體 */}
+        <mesh position={[1.5, 0, 0.08]}>
+          <boxGeometry args={[3, 6, 0.15]} />
           <meshLambertMaterial color="#503020" />
         </mesh>
         
-        {/* 左門上面板 */}
-        <mesh position={[0, 1, 0.16]}>
-          <boxGeometry args={[1.6, 1.2, 0.05]} />
+        {/* 門上面板 */}
+        <mesh position={[1.5, 1.5, 0.16]}>
+          <boxGeometry args={[2.4, 1.8, 0.05]} />
           <meshLambertMaterial color="#3c2314" />
         </mesh>
         
-        {/* 左門下面板 */}
-        <mesh position={[0, -1, 0.16]}>
-          <boxGeometry args={[1.6, 1.2, 0.05]} />
+        {/* 門下面板 */}
+        <mesh position={[1.5, -1.5, 0.16]}>
+          <boxGeometry args={[2.4, 1.8, 0.05]} />
           <meshLambertMaterial color="#3c2314" />
         </mesh>
         
-        {/* 左門玻璃窗 */}
-        <mesh position={[0, 0.5, 0.18]}>
-          <boxGeometry args={[1.2, 0.8, 0.02]} />
+        {/* 門玻璃窗 */}
+        <mesh position={[1.5, 0.3, 0.18]}>
+          <boxGeometry args={[1.8, 1.2, 0.02]} />
           <meshLambertMaterial color="#0a0f14" transparent opacity={0.7} />
         </mesh>
         
-        {/* 左門把手 */}
-        <mesh position={[0.8, 0, 0.2]}>
-          <sphereGeometry args={[0.08]} />
-          <meshLambertMaterial color="#78643c" />
-        </mesh>
-      </group>
-
-      {/* 右門組 */}
-      <group ref={rightDoorGroupRef} position={[1, 0, 0]}>
-        {/* 右門主體 */}
-        <mesh position={[0, 0, 0.08]}>
-          <boxGeometry args={[2, 6, 0.15]} />
-          <meshLambertMaterial color="#503020" />
-        </mesh>
-        
-        {/* 右門上面板 */}
-        <mesh position={[0, 1, 0.16]}>
-          <boxGeometry args={[1.6, 1.2, 0.05]} />
-          <meshLambertMaterial color="#3c2314" />
-        </mesh>
-        
-        {/* 右門下面板 */}
-        <mesh position={[0, -1, 0.16]}>
-          <boxGeometry args={[1.6, 1.2, 0.05]} />
-          <meshLambertMaterial color="#3c2314" />
-        </mesh>
-        
-        {/* 右門玻璃窗 */}
-        <mesh position={[0, 0.5, 0.18]}>
-          <boxGeometry args={[1.2, 0.8, 0.02]} />
-          <meshLambertMaterial color="#0a0f14" transparent opacity={0.7} />
-        </mesh>
-        
-        {/* 右門把手 */}
-        <mesh position={[-0.8, 0, 0.2]}>
+        {/* 門把手 */}
+        <mesh position={[2.4, 0, 0.2]}>
           <sphereGeometry args={[0.08]} />
           <meshLambertMaterial color="#78643c" />
         </mesh>
