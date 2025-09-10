@@ -59,61 +59,159 @@ const DoorAnimation = ({ onComplete }: DoorAnimationProps) => {
     ctx.fillStyle = `rgba(20, 15, 10, ${frame.brightness * 0.9})`;
     ctx.fillRect(doorFrameX - 10, doorFrameY + 10, doorFrameWidth + 20, doorFrameHeight - 20);
 
-    // Door panels (wood texture simulation)
+    // Door panels (wood texture simulation with 3D depth)
     if (frame.doorAngle < 1) {
       ctx.save();
       
       // Set up door transformation
       const doorCenterX = doorFrameX;
       const doorOpenness = frame.doorAngle;
+      const doorThickness = 12; // Door thickness
       
+      // Draw door side/edge (3D thickness effect)
+      if (doorOpenness > 0.1) {
+        // Door edge/side panel (darker wood for depth)
+        const edgeBrightness = frame.brightness * 0.3;
+        ctx.fillStyle = `rgba(40, 25, 15, ${edgeBrightness})`;
+        
+        // Calculate side panel perspective
+        const sideWidth = doorThickness * Math.sin(doorOpenness * Math.PI / 2);
+        const sideOffset = doorFrameWidth * Math.cos(doorOpenness * Math.PI / 2);
+        
+        // Draw trapezoidal side panel for 3D effect
+        ctx.beginPath();
+        ctx.moveTo(doorFrameX + sideOffset, doorFrameY + 10);
+        ctx.lineTo(doorFrameX + sideOffset + sideWidth, doorFrameY + 10);
+        ctx.lineTo(doorFrameX + sideOffset + sideWidth * 0.8, doorFrameY + doorFrameHeight - 10);
+        ctx.lineTo(doorFrameX + sideOffset, doorFrameY + doorFrameHeight - 10);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Add shadow on the side panel
+        ctx.fillStyle = `rgba(20, 10, 5, ${edgeBrightness * 1.2})`;
+        ctx.fillRect(
+          doorFrameX + sideOffset + sideWidth * 0.7,
+          doorFrameY + 10,
+          sideWidth * 0.3,
+          doorFrameHeight - 20
+        );
+      }
+      
+      // Main door transformation
       ctx.translate(doorCenterX, doorFrameY + doorFrameHeight / 2);
       ctx.scale(Math.cos(doorOpenness * Math.PI / 2), 1);
       ctx.translate(-doorCenterX, -(doorFrameY + doorFrameHeight / 2));
 
-      // Main door color (dark wood)
+      // Main door color (dark wood) with enhanced lighting
       const woodBrightness = frame.brightness * 0.6;
-      ctx.fillStyle = `rgba(80, 50, 30, ${woodBrightness})`;
+      const lightDirection = 1 - (doorOpenness * 0.3); // Light changes as door opens
+      ctx.fillStyle = `rgba(${Math.floor(80 * lightDirection)}, ${Math.floor(50 * lightDirection)}, ${Math.floor(30 * lightDirection)}, ${woodBrightness})`;
       ctx.fillRect(doorFrameX, doorFrameY + 10, doorFrameWidth, doorFrameHeight - 20);
 
-      // Door panels (upper and lower)
+      // Door frame border (inner edge highlight)
+      ctx.strokeStyle = `rgba(100, 70, 40, ${woodBrightness * 0.8})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(doorFrameX, doorFrameY + 10, doorFrameWidth, doorFrameHeight - 20);
+
+      // Door panels (upper and lower) with beveled effect
       ctx.fillStyle = `rgba(60, 35, 20, ${woodBrightness * 0.8})`;
       
-      // Upper panel
+      // Upper panel with bevel
+      const upperPanelHeight = (doorFrameHeight - 80) * 0.4;
       ctx.fillRect(
         doorFrameX + 20,
         doorFrameY + 30,
         doorFrameWidth - 40,
-        (doorFrameHeight - 80) * 0.4
+        upperPanelHeight
       );
       
-      // Lower panel
+      // Upper panel highlight
+      ctx.fillStyle = `rgba(90, 60, 35, ${woodBrightness * 0.6})`;
+      ctx.fillRect(
+        doorFrameX + 25,
+        doorFrameY + 35,
+        doorFrameWidth - 50,
+        5
+      );
+      
+      // Lower panel with bevel
+      const lowerPanelY = doorFrameY + 50 + upperPanelHeight;
+      ctx.fillStyle = `rgba(60, 35, 20, ${woodBrightness * 0.8})`;
       ctx.fillRect(
         doorFrameX + 20,
-        doorFrameY + 50 + (doorFrameHeight - 80) * 0.4,
+        lowerPanelY,
         doorFrameWidth - 40,
-        (doorFrameHeight - 80) * 0.4
+        upperPanelHeight
+      );
+      
+      // Lower panel highlight
+      ctx.fillStyle = `rgba(90, 60, 35, ${woodBrightness * 0.6})`;
+      ctx.fillRect(
+        doorFrameX + 25,
+        lowerPanelY + 5,
+        doorFrameWidth - 50,
+        5
       );
 
-      // Door glass/window (dark reflection)
+      // Door glass/window (dark reflection with depth)
+      const glassY = doorFrameY + 50;
+      const glassHeight = (doorFrameHeight - 100) * 0.3;
+      
+      // Glass shadow/depth
+      ctx.fillStyle = `rgba(5, 8, 12, ${woodBrightness * 1.1})`;
+      ctx.fillRect(
+        doorFrameX + 42,
+        glassY + 2,
+        doorFrameWidth - 84,
+        glassHeight
+      );
+      
+      // Glass surface
       ctx.fillStyle = `rgba(10, 15, 20, ${woodBrightness * 0.9})`;
       ctx.fillRect(
         doorFrameX + 40,
-        doorFrameY + 50,
+        glassY,
         doorFrameWidth - 80,
-        (doorFrameHeight - 100) * 0.3
+        glassHeight
+      );
+      
+      // Glass reflection
+      const glassGradient = ctx.createLinearGradient(
+        doorFrameX + 40,
+        glassY,
+        doorFrameX + 40,
+        glassY + glassHeight
+      );
+      glassGradient.addColorStop(0, `rgba(30, 40, 50, ${woodBrightness * 0.3})`);
+      glassGradient.addColorStop(1, `rgba(10, 15, 20, ${woodBrightness * 0.9})`);
+      ctx.fillStyle = glassGradient;
+      ctx.fillRect(
+        doorFrameX + 40,
+        glassY,
+        doorFrameWidth - 80,
+        glassHeight
       );
 
-      // Door handle
+      // Door handle with 3D effect
+      const handleX = doorFrameX + doorFrameWidth - 60;
+      const handleY = doorFrameY + doorFrameHeight * 0.55;
+      
+      // Handle shadow
+      ctx.fillStyle = `rgba(40, 30, 20, ${frame.brightness * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(handleX + 2, handleY + 2, 9, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Handle base
       ctx.fillStyle = `rgba(120, 100, 60, ${frame.brightness})`;
       ctx.beginPath();
-      ctx.arc(
-        doorFrameX + doorFrameWidth - 60,
-        doorFrameY + doorFrameHeight * 0.55,
-        8,
-        0,
-        Math.PI * 2
-      );
+      ctx.arc(handleX, handleY, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Handle highlight
+      ctx.fillStyle = `rgba(150, 130, 80, ${frame.brightness * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(handleX - 2, handleY - 2, 4, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
