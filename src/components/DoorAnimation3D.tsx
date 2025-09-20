@@ -1,12 +1,19 @@
-import { useRef, useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { OrbitControls, Text } from "@react-three/drei";
 import { Button } from "@/components/ui/button";
 import * as THREE from "three";
+import {
+  doorAnimationConfigs,
+  DoorAnimationConfig,
+  DoorAnimationState,
+  easeInOutCubic,
+} from "@/lib/doorAnimationConfigs";
+
+const DEFAULT_CONFIG = doorAnimationConfigs[0];
+const DEFAULT_STATE = DEFAULT_CONFIG.getState(0);
 
 interface DoorProps {
   doorAngle: number;
-  onAnimationComplete?: () => void;
 }
 
 const Door = ({ doorAngle }: DoorProps) => {
@@ -78,29 +85,54 @@ const Door = ({ doorAngle }: DoorProps) => {
   );
 };
 
-const CameraController = ({ 
-  cameraDistance, 
-  fadeOut, 
-  onAnimationComplete 
-}: { 
-  cameraDistance: number; 
+const CameraController = ({
+  cameraPosition,
+  cameraTarget,
+  fadeOut,
+  onAnimationComplete,
+}: {
+  cameraPosition: [number, number, number];
+  cameraTarget: [number, number, number];
   fadeOut: number;
   onAnimationComplete?: () => void;
 }) => {
   const { camera } = useThree();
   const fadeRef = useRef<THREE.Mesh>(null);
+  const positionRef = useRef(cameraPosition);
+  const targetRef = useRef(cameraTarget);
+  const fadeValueRef = useRef(fadeOut);
+  const hasCompletedRef = useRef(false);
+
+  useEffect(() => {
+    positionRef.current = cameraPosition;
+  }, [cameraPosition]);
+
+  useEffect(() => {
+    targetRef.current = cameraTarget;
+  }, [cameraTarget]);
+
+  useEffect(() => {
+    fadeValueRef.current = fadeOut;
+    if (fadeOut < 0.99) {
+      hasCompletedRef.current = false;
+    }
+  }, [fadeOut]);
 
   useFrame(() => {
-    // 控制攝像機向前移動
-    camera.position.z = 8 - (cameraDistance - 1) * 5;
+    const [x, y, z] = positionRef.current;
+    camera.position.set(x, y, z);
+
+    const [tx, ty, tz] = targetRef.current;
+    camera.lookAt(tx, ty, tz);
     
     // 控制淡出效果
     if (fadeRef.current) {
       const material = fadeRef.current.material as THREE.MeshBasicMaterial;
-      material.opacity = fadeOut;
+      material.opacity = fadeValueRef.current;
       
       // 當完全淡出時觸發動畫完成
-      if (fadeOut >= 0.99) {
+      if (fadeValueRef.current >= 0.99 && !hasCompletedRef.current) {
+        hasCompletedRef.current = true;
         setTimeout(() => {
           onAnimationComplete?.();
         }, 500);
@@ -121,12 +153,14 @@ const CameraController = ({
 
 const Scene = ({ 
   doorAngle, 
-  cameraDistance, 
+  cameraPosition,
+  cameraTarget,
   fadeOut, 
   onAnimationComplete 
 }: { 
   doorAngle: number; 
-  cameraDistance: number; 
+  cameraPosition: [number, number, number];
+  cameraTarget: [number, number, number];
   fadeOut: number;
   onAnimationComplete?: () => void;
 }) => {
@@ -146,7 +180,8 @@ const Scene = ({
       
       {/* 攝像機控制器 */}
       <CameraController 
-        cameraDistance={cameraDistance} 
+        cameraPosition={cameraPosition}
+        cameraTarget={cameraTarget}
         fadeOut={fadeOut}
         onAnimationComplete={onAnimationComplete}
       />
@@ -159,84 +194,95 @@ interface DoorAnimation3DProps {
 }
 
 const DoorAnimation3D = ({ onComplete }: DoorAnimation3DProps) => {
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const [doorAngle, setDoorAngle] = useState(0);
-  const [cameraDistance, setCameraDistance] = useState(1);
-  const [fadeOut, setFadeOut] = useState(0);
+  const [selectedConfigId, setSelectedConfigId] = useState(DEFAULT_CONFIG.id);
+  const selectedConfig =
+    doorAnimationConfigs.find((config) => config.id === selectedConfigId) ??
+    DEFAULT_CONFIG;
 
-  const frames = [
-    { doorAngle: 0, cameraDistance: 1, fadeOut: 0 }, // 門關閉
-    { doorAngle: 0.3, cameraDistance: 1.1, fadeOut: 0 }, // 門微開
-    { doorAngle: 0.7, cameraDistance: 1.2, fadeOut: 0 }, // 門更開
-    { doorAngle: 1, cameraDistance: 1.3, fadeOut: 0 }, // 門全開
-    { doorAngle: 1, cameraDistance: 1.8, fadeOut: 0 }, // 繼續前進
-    { doorAngle: 1, cameraDistance: 2.5, fadeOut: 1 }, // 淡出
-  ];
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [doorAngle, setDoorAngle] = useState(DEFAULT_STATE.doorAngle);
+  const [cameraPosition, setCameraPosition] = useState(
+    DEFAULT_STATE.cameraPosition
+  );
+  const [cameraTarget, setCameraTarget] = useState(DEFAULT_STATE.cameraTarget);
+  const [fadeOut, setFadeOut] = useState(DEFAULT_STATE.fadeOut);
+  const [currentMarker, setCurrentMarker] = useState(0);
+  const animationFrameRef = useRef<number | null>(null);
+
+  const applyState = useCallback((state: DoorAnimationState) => {
+    setDoorAngle(state.doorAngle);
+    setCameraPosition(state.cameraPosition);
+    setCameraTarget(state.cameraTarget);
+    setFadeOut(state.fadeOut);
+  }, []);
+
+  const cancelAnimationLoop = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
+
+  const resetToInitialState = useCallback((config: DoorAnimationConfig) => {
+    cancelAnimationLoop();
+    const initialState = config.getState(0);
+    applyState(initialState);
+    setCurrentMarker(0);
+    setIsAnimating(false);
+  }, [applyState, cancelAnimationLoop]);
+
+  useEffect(() => {
+    resetToInitialState(selectedConfig);
+  }, [selectedConfig, resetToInitialState]);
+
+  useEffect(() => () => cancelAnimationLoop(), [cancelAnimationLoop]);
 
   const startAnimation = () => {
     if (isAnimating) return;
-    
+
+    const config = selectedConfig;
+    const duration = config.duration;
+    const easing = config.easing ?? easeInOutCubic;
+    const markers = config.progressMarkers;
+    const configId = config.id;
+
     setIsAnimating(true);
-    setCurrentFrame(0);
-    
-    const animationDuration = 5000; // 5秒
+    setCurrentMarker(0);
+
     const startTime = performance.now();
-    
+
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / animationDuration, 1);
-      
-      // 緩動函數
-      const easeInOutCubic = (t: number) => 
-        t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-      const easedProgress = easeInOutCubic(progress);
-      
-      // 插值計算
-      let newDoorAngle: number, newCameraDistance: number, newFadeOut = 0;
-      
-      if (easedProgress <= 0.6) {
-        // 開門階段 (0-60%)
-        const doorProgress = easedProgress / 0.6;
-        newDoorAngle = doorProgress;
-        newCameraDistance = 1 + (doorProgress * 0.3);
-      } else if (easedProgress <= 0.9) {
-        // 前進階段 (60-90%)
-        const forwardProgress = (easedProgress - 0.6) / 0.3;
-        newDoorAngle = 1;
-        newCameraDistance = 1.3 + (forwardProgress * 1.2);
-      } else {
-        // 淡出階段 (90-100%)
-        const fadeProgress = (easedProgress - 0.9) / 0.1;
-        newDoorAngle = 1;
-        newCameraDistance = 2.5;
-        newFadeOut = fadeProgress;
+      const linearProgress = Math.min(elapsed / duration, 1);
+      const easedProgress = easing(linearProgress);
+
+      const state = config.getState(easedProgress);
+      applyState(state);
+
+      if (markers.length > 0) {
+        const activeMarker = markers.reduce((acc, marker, index) => {
+          return easedProgress + 1e-4 >= marker ? index : acc;
+        }, 0);
+        setCurrentMarker(activeMarker);
       }
-      
-      setDoorAngle(newDoorAngle);
-      setCameraDistance(newCameraDistance);
-      setFadeOut(newFadeOut);
-      
-      // 更新進度指示器
-      const frameIndex = Math.floor(easedProgress * (frames.length - 1));
-      setCurrentFrame(frameIndex);
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
+
+      if (linearProgress < 1 && selectedConfigId === configId) {
+        animationFrameRef.current = requestAnimationFrame(animate);
       } else {
         setIsAnimating(false);
+        if (markers.length > 0) {
+          setCurrentMarker(markers.length - 1);
+        }
+        animationFrameRef.current = null;
       }
     };
-    
-    requestAnimationFrame(animate);
+
+    cancelAnimationLoop();
+    animationFrameRef.current = requestAnimationFrame(animate);
   };
 
   const resetAnimation = () => {
-    setIsAnimating(false);
-    setCurrentFrame(0);
-    setDoorAngle(0);
-    setCameraDistance(1);
-    setFadeOut(0);
+    resetToInitialState(selectedConfig);
   };
 
   const handleAnimationComplete = () => {
@@ -254,11 +300,54 @@ const DoorAnimation3D = ({ onComplete }: DoorAnimation3DProps) => {
       >
         <Scene 
           doorAngle={doorAngle}
-          cameraDistance={cameraDistance}
+          cameraPosition={cameraPosition}
+          cameraTarget={cameraTarget}
           fadeOut={fadeOut}
           onAnimationComplete={handleAnimationComplete}
         />
       </Canvas>
+
+      {/* 動畫選擇 */}
+      <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 flex flex-col gap-2 items-center z-10">
+        <span className="text-sm text-muted-foreground tracking-wide">
+          選擇開門動畫
+        </span>
+        <div className="flex gap-3">
+          {doorAnimationConfigs.map((config) => {
+            const isSelected = config.id === selectedConfig.id;
+            return (
+              <Button
+                key={config.id}
+                onClick={() => {
+                  if (!isAnimating) {
+                    setSelectedConfigId(config.id);
+                  }
+                }}
+                disabled={isAnimating}
+                variant={isSelected ? "secondary" : "ghost"}
+                size="lg"
+                className={`backdrop-blur-sm transition-all ${
+                  isSelected
+                    ? "shadow-lg shadow-secondary/40"
+                    : "bg-background/60 hover:bg-background/80"
+                }`}
+                aria-pressed={isSelected}
+              >
+                <div className="flex flex-col text-left">
+                  <span className="text-base font-semibold">
+                    {config.label}
+                  </span>
+                  {config.description && (
+                    <span className="text-xs text-muted-foreground">
+                      {config.description}
+                    </span>
+                  )}
+                </div>
+              </Button>
+            );
+          })}
+        </div>
+      </div>
       
       {/* 控制按鈕 */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-10">
@@ -285,11 +374,11 @@ const DoorAnimation3D = ({ onComplete }: DoorAnimation3DProps) => {
       {/* 進度指示器 */}
       <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-10">
         <div className="flex gap-2">
-          {frames.map((_, index) => (
+          {selectedConfig.progressMarkers.map((_, index) => (
             <div
-              key={index}
+              key={`${selectedConfig.id}-${index}`}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index <= currentFrame
+                index <= currentMarker
                   ? "bg-secondary shadow-lg shadow-secondary/50"
                   : "bg-muted/50 border border-border"
               }`}
