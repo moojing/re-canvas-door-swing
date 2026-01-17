@@ -7,6 +7,7 @@ const variantSelect = document.getElementById(
   "door-variant"
 ) as HTMLSelectElement | null;
 const playButton = document.getElementById("door-play");
+const textureUrl = `${import.meta.env.BASE_URL}textures/door-1.png`;
 
 const setStatus = (text: string) => {
   if (statusEl) {
@@ -20,6 +21,7 @@ let app = mountDoorEntrance({
   autoPlay: false,
   className:
     "h-[420px] w-full rounded-xl border border-white/10 bg-black",
+  textureUrl,
   onComplete: () => setStatus("播放完成"),
 });
 
@@ -44,6 +46,7 @@ if (variantSelect) {
       autoPlay: false,
       className:
         "h-[420px] w-full rounded-xl border border-white/10 bg-black",
+      textureUrl,
       onComplete: () => setStatus("播放完成"),
     });
     setStatus("等待播放");

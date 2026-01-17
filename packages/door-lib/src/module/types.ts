@@ -4,11 +4,13 @@ import { Vector3Tuple } from "three";
 export type DoorAnimationVariant =
   | "direct-entry"
   | "top-down-entry"
-  | "double-swing";
+  | "double-swing"
+  | "single-handle-turn";
 
 export interface DoorAnimationState {
   doorAngle: number;
   rightDoorAngle?: number;
+  handleAngle?: number;
   cameraPosition: Vector3Tuple;
   cameraTarget: Vector3Tuple;
   fadeOut: number;

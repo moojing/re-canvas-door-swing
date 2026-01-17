@@ -6,12 +6,17 @@ import {
 import { directEntryConfig, DirectEntryRenderer } from "./direct-entry";
 import { topDownConfig, TopDownEntryRenderer } from "./top-down-entry";
 import { doubleSwingConfig, DoubleSwingRenderer } from "./double-swing";
+import {
+  singleHandleTurnConfig,
+  SingleHandleTurnRenderer,
+} from "./single-handle-turn";
 export * from "./shared";
 
 export const doorAnimationConfigs: DoorAnimationConfig[] = [
   directEntryConfig,
   topDownConfig,
   doubleSwingConfig,
+  singleHandleTurnConfig,
 ];
 
 export const doorAnimationRenderers: Record<
@@ -21,6 +26,7 @@ export const doorAnimationRenderers: Record<
   "direct-entry": DirectEntryRenderer,
   "top-down-entry": TopDownEntryRenderer,
   "double-swing": DoubleSwingRenderer,
+  "single-handle-turn": SingleHandleTurnRenderer,
 };
 
 export const doorAnimationMap: Record<DoorAnimationVariant, DoorAnimationConfig> =

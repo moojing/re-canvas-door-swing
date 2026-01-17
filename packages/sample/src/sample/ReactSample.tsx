@@ -26,6 +26,8 @@ const ReactSample = () => {
     ref.current?.play();
   };
 
+  const textureUrl = `${import.meta.env.BASE_URL}textures/door-1.png`;
+
   return (
     <Card className="border-white/10 bg-white/[0.03] shadow-lg shadow-black/30">
       <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -45,6 +47,7 @@ const ReactSample = () => {
           variant={variant}
           autoPlay={false}
           className="h-[420px] w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-black via-slate-900 to-zinc-900"
+          textureUrl={textureUrl}
           onComplete={() => setStatus("播放完成")}
         />
         <div className="flex flex-wrap items-center gap-3">
