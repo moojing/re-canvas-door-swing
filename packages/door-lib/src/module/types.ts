@@ -1,13 +1,23 @@
+import type { JSX } from "react";
 import { Vector3Tuple } from "three";
 
-export type DoorAnimationVariant = "direct-entry" | "top-down-entry";
+export type DoorAnimationVariant =
+  | "direct-entry"
+  | "top-down-entry"
+  | "double-swing";
 
 export interface DoorAnimationState {
   doorAngle: number;
+  rightDoorAngle?: number;
   cameraPosition: Vector3Tuple;
   cameraTarget: Vector3Tuple;
   fadeOut: number;
 }
+
+export type DoorAnimationRenderer = (props: {
+  state: DoorAnimationState;
+  textureUrl: string;
+}) => JSX.Element;
 
 export interface DoorAnimationConfig {
   id: DoorAnimationVariant;

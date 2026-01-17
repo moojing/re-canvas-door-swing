@@ -10,5 +10,6 @@ export {
   doorAnimationMap,
   getDoorAnimationConfig,
   easeInOutCubic,
-} from "./animations";
+  doorAnimationRenderers,
+} from "./animations/index";
 export { mountDoorEntrance } from "./vanilla";

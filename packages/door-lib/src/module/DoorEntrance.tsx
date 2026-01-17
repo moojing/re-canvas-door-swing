@@ -7,14 +7,16 @@ import {
   useRef,
   useState,
 } from "react";
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import {
   doorAnimationConfigs,
   getDoorAnimationConfig,
   easeInOutCubic,
-} from "./animations";
+  doorAnimationRenderers,
+} from "./animations/index";
 import {
+  DoorAnimationRenderer,
   DoorAnimationState,
   DoorAnimationVariant,
   DoorEntranceHandle,
@@ -27,61 +29,6 @@ interface DoorEntranceProps {
   onComplete?: () => void;
   textureUrl?: string;
 }
-
-const Door = ({ doorAngle, textureUrl }: { doorAngle: number; textureUrl: string }) => {
-  const doorGroupRef = useRef<any>(null);
-  const doorTexture = (useLoader as unknown as any)(
-    THREE.TextureLoader,
-    textureUrl
-  ) as any;
-
-  useEffect(() => {
-    if (doorTexture) {
-      doorTexture.wrapS = doorTexture.wrapT = THREE.ClampToEdgeWrapping;
-      doorTexture.repeat.set(1, 1);
-      doorTexture.offset.set(0, 0);
-      doorTexture.flipY = false;
-      doorTexture.needsUpdate = true;
-    }
-  }, [doorTexture]);
-
-  useFrame(() => {
-    if (doorGroupRef.current) {
-      doorGroupRef.current.rotation.y = -doorAngle * Math.PI * 0.5;
-    }
-  });
-
-  return (
-    <group position={[0, 0, 0]}>
-      <mesh position={[0, 0, -0.1]}>
-        <boxGeometry args={[3.2, 6.2, 0.2]} />
-        <meshLambertMaterial color="#2d2520" />
-      </mesh>
-
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[3, 6, 0.1]} />
-        <meshLambertMaterial color="#1a1510" />
-      </mesh>
-
-      <group ref={doorGroupRef} position={[-1.5, 0, 0]}>
-        <mesh position={[1.5, 0, 0.08]}>
-          <boxGeometry args={[3, 6, 0.15]} />
-          <meshLambertMaterial color="#8B4513" />
-        </mesh>
-
-        <mesh position={[1.5, 0, 0.16]}>
-          <planeGeometry args={[3, 6]} />
-          <meshLambertMaterial map={doorTexture} />
-        </mesh>
-
-        <mesh position={[2.4, 0, 0.2]}>
-          <sphereGeometry args={[0.08]} />
-          <meshLambertMaterial color="#78643c" />
-        </mesh>
-      </group>
-    </group>
-  );
-};
 
 const CameraController = ({
   cameraPosition,
@@ -116,21 +63,27 @@ const CameraController = ({
   );
 };
 
-const Scene = ({ state, textureUrl }: { state: DoorAnimationState; textureUrl: string }) => {
-  return (
-    <>
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[2, 5, 5]} intensity={0.8} />
-      <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
-      <Door doorAngle={state.doorAngle} textureUrl={textureUrl} />
-      <CameraController
-        cameraPosition={state.cameraPosition}
-        cameraTarget={state.cameraTarget}
-        fadeOut={state.fadeOut}
-      />
-    </>
-  );
-};
+const Scene = ({
+  state,
+  textureUrl,
+  Renderer,
+}: {
+  state: DoorAnimationState;
+  textureUrl: string;
+  Renderer: DoorAnimationRenderer;
+}) => (
+  <>
+    <ambientLight intensity={0.3} />
+    <directionalLight position={[2, 5, 5]} intensity={0.8} />
+    <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
+    <Renderer state={state} textureUrl={textureUrl} />
+    <CameraController
+      cameraPosition={state.cameraPosition}
+      cameraTarget={state.cameraTarget}
+      fadeOut={state.fadeOut}
+    />
+  </>
+);
 
 const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
   (
@@ -147,6 +100,19 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       () => getDoorAnimationConfig(variant),
       [variant]
     );
+    const Renderer =
+      doorAnimationRenderers[selectedConfig.id] ??
+      ((({
+        state: _state,
+      }: {
+        state: DoorAnimationState;
+        textureUrl: string;
+      }) => (
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[3, 6, 0.15]} />
+          <meshLambertMaterial color="#8B4513" />
+        </mesh>
+      )) as DoorAnimationRenderer);
     const [state, setState] = useState<DoorAnimationState>(
       selectedConfig.getState(0)
     );
@@ -224,7 +190,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
             gl.setClearColor("#000000");
           }}
         >
-          <Scene state={state} textureUrl={textureUrl} />
+          <Scene state={state} textureUrl={textureUrl} Renderer={Renderer} />
         </Canvas>
 
         <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.08em] text-white/70 backdrop-blur">
