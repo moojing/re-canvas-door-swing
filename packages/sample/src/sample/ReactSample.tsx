@@ -58,13 +58,15 @@ const ReactSample = () => {
           >
             重置
           </Button>
-          <div className="flex gap-2">
+        </div>
+        <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10 bg-white/5 p-2">
+          <div className="flex flex-col gap-2">
             {doorAnimationConfigs.map((config) => (
               <Button
                 key={config.id}
                 variant={config.id === variant ? "secondary" : "ghost"}
                 size="sm"
-                className="text-sm"
+                className="justify-start text-sm"
                 onClick={() => {
                   setVariant(config.id);
                   setStatus("等待播放");

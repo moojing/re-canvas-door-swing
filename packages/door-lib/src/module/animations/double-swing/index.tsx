@@ -89,42 +89,42 @@ const DoubleDoor = ({
   return (
     <group position={[0, 0, 0]}>
       <mesh position={[0, 0, -0.1]}>
-        <boxGeometry args={[3.2, 6.2, 0.2]} />
+        <boxGeometry args={[6.4, 6.2, 0.2]} />
         <meshLambertMaterial color="#2d2520" />
       </mesh>
 
       <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[3, 6, 0.1]} />
+        <boxGeometry args={[6, 6, 0.1]} />
         <meshLambertMaterial color="#1a1510" />
       </mesh>
 
       {/* 左扇 */}
-      <group ref={leftRef} position={[-1.5, 0, 0]}>
-        <mesh position={[0.75, 0, 0.08]}>
-          <boxGeometry args={[1.5, 6, 0.15]} />
+      <group ref={leftRef} position={[-3, 0, 0]}>
+        <mesh position={[1.5, 0, 0.08]}>
+          <boxGeometry args={[3, 6, 0.15]} />
           <meshLambertMaterial color="#8B4513" />
         </mesh>
-        <mesh position={[0.75, 0, 0.16]}>
-          <planeGeometry args={[1.5, 6]} />
+        <mesh position={[1.5, 0, 0.16]}>
+          <planeGeometry args={[3, 6]} />
           <meshLambertMaterial map={doorTexture} />
         </mesh>
-        <mesh position={[1.2, 0, 0.2]}>
+        <mesh position={[2.4, 0, 0.2]}>
           <sphereGeometry args={[0.08]} />
           <meshLambertMaterial color="#78643c" />
         </mesh>
       </group>
 
       {/* 右扇 */}
-      <group ref={rightRef} position={[1.5, 0, 0]}>
-        <mesh position={[-0.75, 0, 0.08]}>
-          <boxGeometry args={[1.5, 6, 0.15]} />
+      <group ref={rightRef} position={[3, 0, 0]}>
+        <mesh position={[-1.5, 0, 0.08]}>
+          <boxGeometry args={[3, 6, 0.15]} />
           <meshLambertMaterial color="#8B4513" />
         </mesh>
-        <mesh position={[-0.75, 0, 0.16]}>
-          <planeGeometry args={[1.5, 6]} />
+        <mesh position={[-1.5, 0, 0.16]}>
+          <planeGeometry args={[3, 6]} />
           <meshLambertMaterial map={doorTexture} />
         </mesh>
-        <mesh position={[-1.2, 0, 0.2]}>
+        <mesh position={[-2.4, 0, 0.2]}>
           <sphereGeometry args={[0.08]} />
           <meshLambertMaterial color="#78643c" />
         </mesh>
