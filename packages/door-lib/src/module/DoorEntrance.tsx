@@ -28,6 +28,7 @@ interface DoorEntranceProps {
   className?: string;
   onComplete?: () => void;
   textureUrl?: string;
+  onReady?: () => void;
 }
 
 const CameraController = ({
@@ -93,6 +94,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       className = "h-[460px] w-full rounded-xl border border-white/10 bg-black",
       onComplete,
       textureUrl = "/textures/door-1.png",
+      onReady,
     },
     ref
   ) => {
@@ -181,6 +183,10 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       }),
       [play, reset]
     );
+
+    useEffect(() => {
+      onReady?.();
+    }, [onReady]);
 
     return (
       <div className={`relative overflow-hidden ${className}`}>

@@ -10,6 +10,7 @@ const variantSelect = document.getElementById(
 const playButton = document.getElementById("door-play");
 const textureBase = import.meta.env.BASE_URL ?? "/";
 const textureUrl = getTextureUrl(pickTextureId(), textureBase);
+let ready = false;
 
 const setStatus = (text: string) => {
   if (statusEl) {
@@ -17,45 +18,66 @@ const setStatus = (text: string) => {
   }
 };
 
-let app = mountDoorEntrance({
-  target,
-  variant: "direct-entry",
-  autoPlay: false,
-  className:
-    "h-[420px] w-full rounded-xl border border-white/10 bg-black",
-  textureUrl,
-  onComplete: () => setStatus("播放完成"),
-});
+const boot = () => {
+  if (!target) return;
+  let app = mountDoorEntrance({
+    target,
+    variant: "direct-entry",
+    autoPlay: false,
+    className:
+      "h-[420px] w-full rounded-xl border border-white/10 bg-black",
+    textureUrl,
+    onComplete: () => setStatus("播放完成"),
+  });
 
-const play = () => {
-  setStatus("播放中...");
-  app.reset();
-  app.play();
+  const play = () => {
+    if (!ready) {
+      setStatus("貼圖載入中...");
+      return;
+    }
+    setStatus("播放中...");
+    app.reset();
+    requestAnimationFrame(() => app.play());
+  };
+
+  if (playButton) {
+    playButton.addEventListener("click", play);
+  }
+
+  if (variantSelect) {
+    variantSelect.addEventListener("change", (event) => {
+      const variant = (event.target as HTMLSelectElement).value as
+        | "direct-entry"
+        | "top-down-entry"
+        | "double-swing"
+        | "single-handle-turn";
+      app.unmount();
+      app = mountDoorEntrance({
+        target,
+        variant,
+        autoPlay: false,
+        className:
+          "h-[420px] w-full rounded-xl border border-white/10 bg-black",
+        textureUrl,
+        onComplete: () => setStatus("播放完成"),
+      });
+      setStatus("等待播放");
+    });
+  }
 };
 
-if (playButton) {
-  playButton.addEventListener("click", play);
-}
-
-if (variantSelect) {
-  variantSelect.addEventListener("change", (event) => {
-    const variant = (event.target as HTMLSelectElement).value as
-      | "direct-entry"
-      | "top-down-entry"
-      | "double-swing"
-      | "single-handle-turn";
-    app.unmount();
-    app = mountDoorEntrance({
-      target,
-      variant,
-      autoPlay: false,
-      className:
-        "h-[420px] w-full rounded-xl border border-white/10 bg-black",
-      textureUrl,
-      onComplete: () => setStatus("播放完成"),
-    });
+const preload = () => {
+  setStatus("貼圖載入中...");
+  const img = new Image();
+  img.onload = () => {
+    ready = true;
     setStatus("等待播放");
-  });
-}
+    boot();
+  };
+  img.onerror = () => {
+    setStatus("貼圖載入失敗");
+  };
+  img.src = textureUrl;
+};
 
-setStatus("等待播放");
+preload();

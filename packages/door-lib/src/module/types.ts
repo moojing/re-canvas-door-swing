@@ -35,3 +35,7 @@ export interface DoorEntranceHandle {
   play: () => void;
   reset: () => void;
 }
+
+export interface DoorEntranceReadyEvent {
+  ready: boolean;
+}

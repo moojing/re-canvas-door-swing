@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DoorEntrance,
   doorAnimationConfigs,
@@ -12,9 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ReactSample = () => {
-  const [variant, setVariant] =
-    useState<DoorAnimationVariant>("direct-entry");
-  const [status, setStatus] = useState("等待播放");
+  const [variant, setVariant] = useState<DoorAnimationVariant>("direct-entry");
+  const [status, setStatus] = useState("貼圖載入中...");
+  const [ready, setReady] = useState(false);
   const ref = useRef<DoorEntranceHandle>(null);
   const textureBase = import.meta.env.BASE_URL ?? "/";
   const textureId = useMemo(() => pickTextureId(), []);
@@ -28,10 +28,30 @@ const ReactSample = () => {
     [variant]
   );
 
+  useEffect(() => {
+    setReady(false);
+    setStatus("貼圖載入中...");
+    const img = new Image();
+    img.onload = () => {
+      setReady(true);
+      setStatus("等待播放");
+    };
+    img.onerror = () => {
+      setStatus("貼圖載入失敗");
+    };
+    img.src = textureUrl;
+  }, [textureUrl]);
+
   const handlePlay = () => {
+    if (!ready) {
+      setStatus("貼圖載入中...");
+      return;
+    }
     setStatus("播放中...");
-    ref.current?.reset();
-    ref.current?.play();
+    requestAnimationFrame(() => {
+      ref.current?.reset();
+      ref.current?.play();
+    });
   };
 
   return (
@@ -55,15 +75,17 @@ const ReactSample = () => {
           className="h-[420px] w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-black via-slate-900 to-zinc-900"
           textureUrl={textureUrl}
           onComplete={() => setStatus("播放完成")}
+          onReady={() => setReady(true)}
         />
         <div className="flex flex-wrap items-center gap-3">
-          <Button size="sm" onClick={handlePlay}>
+          <Button size="sm" onClick={handlePlay} disabled={!ready}>
             播放
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => ref.current?.reset()}
+            disabled={!ready}
           >
             重置
           </Button>
