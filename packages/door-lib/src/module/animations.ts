@@ -1,21 +1,4 @@
-import { Vector3Tuple } from "three";
-
-export interface DoorAnimationState {
-  doorAngle: number;
-  cameraPosition: Vector3Tuple;
-  cameraTarget: Vector3Tuple;
-  fadeOut: number;
-}
-
-export interface DoorAnimationConfig {
-  id: string;
-  label: string;
-  description?: string;
-  duration: number;
-  progressMarkers: number[];
-  easing?: (progress: number) => number;
-  getState: (progress: number) => DoorAnimationState;
-}
+import { DoorAnimationConfig, DoorAnimationVariant } from "./types";
 
 export const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
@@ -23,7 +6,11 @@ export const easeInOutCubic = (t: number) =>
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const lerp = (from: Vector3Tuple, to: Vector3Tuple, t: number): Vector3Tuple => [
+const lerp = (
+  from: [number, number, number],
+  to: [number, number, number],
+  t: number
+): [number, number, number] => [
   from[0] + (to[0] - from[0]) * t,
   from[1] + (to[1] - from[1]) * t,
   from[2] + (to[2] - from[2]) * t,
@@ -31,8 +18,8 @@ const lerp = (from: Vector3Tuple, to: Vector3Tuple, t: number): Vector3Tuple => 
 
 const directEntryConfig: DoorAnimationConfig = {
   id: "direct-entry",
-  label: "直接進入",
-  description: "維持現在的正面開門動畫",
+  label: "Direct Entry",
+  description: "正面開門並往前推進",
   duration: 5000,
   progressMarkers: [0, 0.2, 0.4, 0.6, 0.8, 1],
   easing: easeInOutCubic,
@@ -70,8 +57,8 @@ const directEntryConfig: DoorAnimationConfig = {
 
 const topDownConfig: DoorAnimationConfig = {
   id: "top-down-entry",
-  label: "上方視角進入",
-  description: "惡靈古堡風格：俯視下降後再開門",
+  label: "Overhead Entry",
+  description: "俯視下降後靠近門再淡出",
   duration: 6500,
   progressMarkers: [0, 0.2, 0.35, 0.6, 0.85, 1],
   easing: easeInOutCubic,
@@ -80,13 +67,13 @@ const topDownConfig: DoorAnimationConfig = {
     let doorAngle = 0;
     let fadeOut = 0;
 
-    const startPosition: Vector3Tuple = [-3.8, 6, 5.2];
-    const midHoverPosition: Vector3Tuple = [-2.6, 3.8, 5];
-    const frontPrepPosition: Vector3Tuple = [-1.2, 2, 4.6];
-    const closeApproachPosition: Vector3Tuple = [-0.4, 0.8, 3.4];
-    const finalFadePosition: Vector3Tuple = [0, 0, 0.8];
+    const startPosition: [number, number, number] = [-3.8, 6, 5.2];
+    const midHoverPosition: [number, number, number] = [-2.6, 3.8, 5];
+    const frontPrepPosition: [number, number, number] = [-1.2, 2, 4.6];
+    const closeApproachPosition: [number, number, number] = [-0.4, 0.8, 3.4];
+    const finalFadePosition: [number, number, number] = [0, 0, 0.8];
 
-    let cameraPosition: Vector3Tuple = [...startPosition] as Vector3Tuple;
+    let cameraPosition: [number, number, number] = [...startPosition];
 
     if (progress <= 0.35) {
       const t = progress / 0.35;
@@ -117,4 +104,17 @@ const topDownConfig: DoorAnimationConfig = {
   },
 };
 
-export const doorAnimationConfigs = [directEntryConfig, topDownConfig];
+export const doorAnimationConfigs: DoorAnimationConfig[] = [
+  directEntryConfig,
+  topDownConfig,
+];
+
+export const doorAnimationMap: Record<DoorAnimationVariant, DoorAnimationConfig> =
+  doorAnimationConfigs.reduce(
+    (acc, config) => ({ ...acc, [config.id]: config }),
+    {} as Record<DoorAnimationVariant, DoorAnimationConfig>
+  );
+
+export const getDoorAnimationConfig = (
+  variant: DoorAnimationVariant = "direct-entry"
+) => doorAnimationMap[variant] ?? doorAnimationConfigs[0];

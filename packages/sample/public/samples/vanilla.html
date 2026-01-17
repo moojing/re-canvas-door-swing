@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Door Animation Vanilla Sample</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+        background: radial-gradient(circle at 10% 10%, #202938, #0b0c10 50%);
+        color: #e8edf5;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .panel {
+        width: min(1080px, 100%);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .toolbar label {
+        font-size: 14px;
+        color: #cbd5e1;
+      }
+      select,
+      button {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      button {
+        cursor: pointer;
+        transition: transform 0.1s ease, background 0.2s ease;
+      }
+      button:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-1px);
+      }
+      #door-status {
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="toolbar">
+        <label for="door-variant">選擇動畫：</label>
+        <select id="door-variant">
+          <option value="direct-entry">direct-entry</option>
+          <option value="top-down-entry">top-down-entry</option>
+        </select>
+        <button id="door-play">播放</button>
+        <span id="door-status">準備中...</span>
+      </div>
+      <div id="door-root"></div>
+    </div>
+    <script type="module" src="/src/sample/vanillaEntry.ts"></script>
+  </body>
+</html>

@@ -7,7 +7,7 @@ import {
   DoorAnimationConfig,
   DoorAnimationState,
   easeInOutCubic,
-} from "@/lib/doorAnimationConfigs";
+} from "door-entrance";
 
 const DEFAULT_CONFIG = doorAnimationConfigs[0];
 const DEFAULT_STATE = DEFAULT_CONFIG.getState(0);

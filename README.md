@@ -1,73 +1,43 @@
-# Welcome to your Lovable project
+# Door Entrance Monorepo
 
-## Project info
+Two-package workspace:
 
-**URL**: https://lovable.dev/projects/84de2ac1-9588-4d10-8d71-60ee259f20ca
+- `packages/door-lib` (`door-entrance`): reusable React/R3F door entrance animations (`direct-entry`, `top-down-entry`) plus a vanilla mount helper.
+- `packages/sample` (`door-entrance-sample`): Vite app showcasing React integration and a plain HTML sample at `/samples/vanilla.html`.
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/84de2ac1-9588-4d10-8d71-60ee259f20ca) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Quick start
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run build:lib        # builds the library once (tsup)
+npm run dev              # runs the sample app (uses the built lib)
 ```
 
-**Edit a file directly in GitHub**
+Useful scripts:
+- `npm run dev:lib` (watch build for the library)
+- `npm run dev:sample` (Vite dev server for the sample app)
+- `npm run build` (build lib then sample)
+- `npm run lint` (sample app lint)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Using the library
 
-**Use GitHub Codespaces**
+```tsx
+import { DoorEntrance } from "door-entrance";
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+<DoorEntrance
+  variant="top-down-entry"    // or "direct-entry"
+  autoPlay
+  textureUrl="/textures/door-1.png"
+  onComplete={() => console.log("done")}
+/>;
+```
 
-## What technologies are used for this project?
+Plain HTML:
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/84de2ac1-9588-4d10-8d71-60ee259f20ca) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+```html
+<div id="door-root"></div>
+<script type="module">
+  import { mountDoorEntrance } from "door-entrance/vanilla";
+  mountDoorEntrance({ target: document.getElementById("door-root"), variant: "direct-entry" });
+</script>
+```
