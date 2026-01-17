@@ -4,6 +4,8 @@ import {
   doorAnimationConfigs,
   type DoorAnimationVariant,
   type DoorEntranceHandle,
+  getTextureUrl,
+  pickTextureId,
 } from "door-entrance";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +16,12 @@ const ReactSample = () => {
     useState<DoorAnimationVariant>("direct-entry");
   const [status, setStatus] = useState("等待播放");
   const ref = useRef<DoorEntranceHandle>(null);
+  const textureBase = import.meta.env.BASE_URL ?? "/";
+  const textureId = useMemo(() => pickTextureId(), []);
+  const textureUrl = useMemo(
+    () => getTextureUrl(textureId, textureBase),
+    [textureBase, textureId]
+  );
 
   const currentLabel = useMemo(
     () => doorAnimationConfigs.find((c) => c.id === variant)?.label ?? "Door",
@@ -25,8 +33,6 @@ const ReactSample = () => {
     ref.current?.reset();
     ref.current?.play();
   };
-
-  const textureUrl = `${import.meta.env.BASE_URL}textures/door-1.png`;
 
   return (
     <Card className="border-white/10 bg-white/[0.03] shadow-lg shadow-black/30">

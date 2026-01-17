@@ -12,4 +12,11 @@ export {
   easeInOutCubic,
   doorAnimationRenderers,
 } from "./animations/index";
+export {
+  textureManifest,
+  textureIds,
+  getTextureUrl,
+  pickTextureId,
+} from "./assets/textures";
+export type { TextureId, TextureMeta } from "./assets/textures";
 export { mountDoorEntrance } from "./vanilla";

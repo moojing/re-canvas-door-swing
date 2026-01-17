@@ -1,5 +1,6 @@
 import "../index.css";
 import { mountDoorEntrance } from "door-entrance/vanilla";
+import { getTextureUrl, pickTextureId } from "door-entrance";
 
 const target = document.getElementById("door-root");
 const statusEl = document.getElementById("door-status");
@@ -7,7 +8,8 @@ const variantSelect = document.getElementById(
   "door-variant"
 ) as HTMLSelectElement | null;
 const playButton = document.getElementById("door-play");
-const textureUrl = `${import.meta.env.BASE_URL}textures/door-1.png`;
+const textureBase = import.meta.env.BASE_URL ?? "/";
+const textureUrl = getTextureUrl(pickTextureId(), textureBase);
 
 const setStatus = (text: string) => {
   if (statusEl) {
@@ -37,8 +39,11 @@ if (playButton) {
 
 if (variantSelect) {
   variantSelect.addEventListener("change", (event) => {
-    const variant = (event.target as HTMLSelectElement)
-      .value as "direct-entry" | "top-down-entry";
+    const variant = (event.target as HTMLSelectElement).value as
+      | "direct-entry"
+      | "top-down-entry"
+      | "double-swing"
+      | "single-handle-turn";
     app.unmount();
     app = mountDoorEntrance({
       target,
