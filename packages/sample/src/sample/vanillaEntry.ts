@@ -49,8 +49,7 @@ const boot = () => {
       const variant = (event.target as HTMLSelectElement).value as
         | "direct-entry"
         | "top-down-entry"
-        | "double-swing"
-        | "single-handle-turn";
+        | "double-swing";
       app.unmount();
       app = mountDoorEntrance({
         target,

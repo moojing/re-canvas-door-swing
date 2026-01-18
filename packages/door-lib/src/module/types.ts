@@ -4,8 +4,7 @@ import { Vector3Tuple } from "three";
 export type DoorAnimationVariant =
   | "direct-entry"
   | "top-down-entry"
-  | "double-swing"
-  | "single-handle-turn";
+  | "double-swing";
 
 export interface DoorAnimationState {
   doorAngle: number;
