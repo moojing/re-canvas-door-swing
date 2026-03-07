@@ -15,41 +15,55 @@ import {
   easeInOutCubic,
   doorAnimationRenderers,
 } from "./animations/index";
+import { getDoorEntrancePreset } from "./presets";
 import {
   DoorAnimationRenderer,
   DoorAnimationState,
+  DoorEntrancePresetId,
   DoorAnimationVariant,
   DoorEntranceHandle,
 } from "./types";
 
 interface DoorEntranceProps {
+  preset?: DoorEntrancePresetId;
   variant?: DoorAnimationVariant;
   autoPlay?: boolean;
   className?: string;
   onComplete?: () => void;
+  onProgress?: (progress: number) => void;
   textureUrl?: string;
   handleModelUrl?: string;
+  cameraPanX?: number;
+  cameraPanY?: number;
   onReady?: () => void;
 }
+
+const DEFAULT_CLASS_NAME =
+  "h-[460px] w-full rounded-xl border border-white/10 bg-black";
+const DEFAULT_TEXTURE_URL = "/textures/door-1.png";
 
 const CameraController = ({
   cameraPosition,
   cameraTarget,
   fadeOut,
+  cameraPanX,
+  cameraPanY,
 }: {
   cameraPosition: [number, number, number];
   cameraTarget: [number, number, number];
   fadeOut: number;
+  cameraPanX: number;
+  cameraPanY: number;
 }) => {
   const { camera } = useThree();
   const fadeRef = useRef<any>(null);
 
   useFrame(() => {
     const [x, y, z] = cameraPosition;
-    camera.position.set(x, y, z);
+    camera.position.set(x + cameraPanX, y + cameraPanY, z);
 
     const [tx, ty, tz] = cameraTarget;
-    camera.lookAt(tx, ty, tz);
+    camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
 
     if (fadeRef.current) {
       const material = fadeRef.current.material as THREE.MeshBasicMaterial;
@@ -69,16 +83,21 @@ const Scene = ({
   state,
   textureUrl,
   handleModelUrl,
+  cameraPanX,
+  cameraPanY,
   Renderer,
 }: {
   state: DoorAnimationState;
   textureUrl: string;
   handleModelUrl?: string;
+  cameraPanX: number;
+  cameraPanY: number;
   Renderer: DoorAnimationRenderer;
 }) => (
   <>
-    <ambientLight intensity={0.3} />
-    <directionalLight position={[2, 5, 5]} intensity={0.8} />
+    <ambientLight intensity={0.2} />
+    <directionalLight position={[2, 5, 5]} intensity={0.65} />
+    <directionalLight position={[-3, 2, -4]} intensity={0.35} color="#8fa8c7" />
     <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
     <Renderer
       state={state}
@@ -89,6 +108,8 @@ const Scene = ({
       cameraPosition={state.cameraPosition}
       cameraTarget={state.cameraTarget}
       fadeOut={state.fadeOut}
+      cameraPanX={cameraPanX}
+      cameraPanY={cameraPanY}
     />
   </>
 );
@@ -96,19 +117,42 @@ const Scene = ({
 const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
   (
     {
-      variant = "direct-entry",
+      preset = "door-single",
+      variant,
       autoPlay = true,
-      className = "h-[460px] w-full rounded-xl border border-white/10 bg-black",
+      className,
       onComplete,
-      textureUrl = "/textures/door-1.png",
+      onProgress,
+      textureUrl,
       handleModelUrl,
+      cameraPanX = 0,
+      cameraPanY = 0,
       onReady,
     },
     ref
   ) => {
+    const [activePreset, setActivePreset] = useState<DoorEntrancePresetId>(
+      preset
+    );
+    useEffect(() => {
+      setActivePreset(preset);
+    }, [preset]);
+
+    const selectedPreset = useMemo(
+      () => getDoorEntrancePreset(activePreset),
+      [activePreset]
+    );
+    const resolvedVariant = variant ?? selectedPreset.variant;
+    const resolvedTextureUrl =
+      textureUrl ?? selectedPreset.textureUrl ?? DEFAULT_TEXTURE_URL;
+    const resolvedHandleModelUrl =
+      handleModelUrl ?? selectedPreset.handleModelUrl;
+    const resolvedClassName =
+      className ?? selectedPreset.className ?? DEFAULT_CLASS_NAME;
+
     const selectedConfig = useMemo(
-      () => getDoorAnimationConfig(variant),
-      [variant]
+      () => getDoorAnimationConfig(resolvedVariant),
+      [resolvedVariant]
     );
     const Renderer =
       doorAnimationRenderers[selectedConfig.id] ??
@@ -128,6 +172,22 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
     );
     const animationFrameRef = useRef<number | null>(null);
     const isAnimatingRef = useRef(false);
+    const progressRef = useRef(0);
+    const onCompleteRef = useRef(onComplete);
+    const onProgressRef = useRef(onProgress);
+    const onReadyRef = useRef(onReady);
+
+    useEffect(() => {
+      onCompleteRef.current = onComplete;
+    }, [onComplete]);
+
+    useEffect(() => {
+      onProgressRef.current = onProgress;
+    }, [onProgress]);
+
+    useEffect(() => {
+      onReadyRef.current = onReady;
+    }, [onReady]);
 
     const applyState = useCallback((nextState: DoorAnimationState) => {
       setState(nextState);
@@ -140,40 +200,100 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       }
     }, []);
 
-    const reset = useCallback(() => {
+    const resolveConfig = useCallback(
+      (nextPreset?: DoorEntrancePresetId) =>
+        getDoorAnimationConfig(
+          variant ?? getDoorEntrancePreset(nextPreset ?? activePreset).variant
+        ),
+      [activePreset, variant]
+    );
+
+    const applyProgress = useCallback(
+      (linearProgress: number, config = selectedConfig) => {
+        const clampedProgress = Math.min(Math.max(linearProgress, 0), 1);
+        const easing = config.easing ?? easeInOutCubic;
+
+        progressRef.current = clampedProgress;
+        applyState(config.getState(easing(clampedProgress)));
+        onProgressRef.current?.(clampedProgress);
+      },
+      [applyState, selectedConfig]
+    );
+
+    const reset = useCallback((nextPreset?: DoorEntrancePresetId) => {
       cancelAnimationLoop();
       isAnimatingRef.current = false;
-      applyState(selectedConfig.getState(0));
-    }, [applyState, cancelAnimationLoop, selectedConfig]);
 
-    const play = useCallback(() => {
+      const presetToReset = nextPreset ?? activePreset;
+      if (nextPreset && nextPreset !== activePreset) {
+        setActivePreset(nextPreset);
+      }
+      applyProgress(0, resolveConfig(presetToReset));
+    }, [activePreset, applyProgress, cancelAnimationLoop, resolveConfig]);
+
+    const seek = useCallback((progress: number, nextPreset?: DoorEntrancePresetId) => {
+      cancelAnimationLoop();
+      isAnimatingRef.current = false;
+
+      const presetToSeek = nextPreset ?? activePreset;
+      if (nextPreset && nextPreset !== activePreset) {
+        setActivePreset(nextPreset);
+      }
+      applyProgress(progress, resolveConfig(presetToSeek));
+    }, [activePreset, applyProgress, cancelAnimationLoop, resolveConfig]);
+
+    const play = useCallback((nextPreset?: DoorEntrancePresetId) => {
       if (isAnimatingRef.current) return;
 
-      const config = selectedConfig;
-      const duration = config.duration;
-      const easing = config.easing ?? easeInOutCubic;
+      const presetToPlay = nextPreset ?? activePreset;
+      if (nextPreset && nextPreset !== activePreset) {
+        setActivePreset(nextPreset);
+      }
+      const config = resolveConfig(presetToPlay);
 
+      const startLinearProgress =
+        progressRef.current >= 1 ? 0 : progressRef.current;
+      if (startLinearProgress !== progressRef.current) {
+        applyProgress(startLinearProgress, config);
+      }
+
+      const duration = Math.max(
+        config.duration * (1 - startLinearProgress),
+        1
+      );
       isAnimatingRef.current = true;
       const startTime = performance.now();
 
       const animate = (currentTime: number) => {
+        if (!isAnimatingRef.current) {
+          animationFrameRef.current = null;
+          return;
+        }
+
         const elapsed = currentTime - startTime;
-        const linearProgress = Math.min(elapsed / duration, 1);
-        const easedProgress = easing(linearProgress);
-        applyState(config.getState(easedProgress));
+        const linearProgress = Math.min(
+          startLinearProgress + (elapsed / duration) * (1 - startLinearProgress),
+          1
+        );
+        applyProgress(linearProgress, config);
 
         if (linearProgress < 1) {
           animationFrameRef.current = requestAnimationFrame(animate);
         } else {
           isAnimatingRef.current = false;
           animationFrameRef.current = null;
-          onComplete?.();
+          onCompleteRef.current?.();
         }
       };
 
       cancelAnimationLoop();
       animationFrameRef.current = requestAnimationFrame(animate);
-    }, [applyState, cancelAnimationLoop, onComplete, selectedConfig]);
+    }, [
+      activePreset,
+      applyProgress,
+      cancelAnimationLoop,
+      resolveConfig,
+    ]);
 
     useEffect(() => {
       reset();
@@ -188,16 +308,17 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       () => ({
         play,
         reset,
+        seek,
       }),
-      [play, reset]
+      [play, reset, seek]
     );
 
     useEffect(() => {
-      onReady?.();
-    }, [onReady]);
+      onReadyRef.current?.();
+    }, []);
 
     return (
-      <div className={`relative overflow-hidden ${className}`}>
+      <div className={`relative overflow-hidden ${resolvedClassName}`}>
         <Canvas
           camera={{ position: [0, 0, 8], fov: 60 }}
           onCreated={({ gl }) => {
@@ -206,14 +327,17 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
         >
           <Scene
             state={state}
-            textureUrl={textureUrl}
-            handleModelUrl={handleModelUrl}
+            textureUrl={resolvedTextureUrl}
+            handleModelUrl={resolvedHandleModelUrl}
+            cameraPanX={cameraPanX}
+            cameraPanY={cameraPanY}
             Renderer={Renderer}
           />
         </Canvas>
 
         <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.08em] text-white/70 backdrop-blur">
-          {doorAnimationConfigs.find((c) => c.id === variant)?.label ?? "Door"}
+          {doorAnimationConfigs.find((c) => c.id === resolvedVariant)?.label ??
+            "Door"}
         </div>
       </div>
     );

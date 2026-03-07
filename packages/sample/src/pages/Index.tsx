@@ -2,13 +2,13 @@ import ReactSample from "@/sample/ReactSample";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { doorAnimationConfigs } from "door-entrance";
+import { doorEntrancePresets } from "door-entrance";
 
 const reactSnippet = `import { DoorEntrance } from 'door-entrance';
 
 export const LandingGate = () => (
   <DoorEntrance
-    variant="top-down-entry"
+    preset="door-single"
     onComplete={() => console.log('done')}
   />
 );`;
@@ -19,7 +19,7 @@ const htmlSnippet = `<div id="door-root"></div>
 
   mountDoorEntrance({
     target: document.getElementById('door-root'),
-    variant: 'direct-entry',
+    preset: 'door-single',
     autoPlay: true,
   });
 </script>`;
@@ -33,7 +33,7 @@ const CodeBlock = ({ code }: { code: string }) => (
 const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-black to-slate-900 text-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-10 px-4 py-8 sm:px-6">
         <header className="space-y-4">
           <Badge variant="outline" className="border-emerald-500/60 text-emerald-200">
             module + samples ready
@@ -46,12 +46,12 @@ const Index = () => {
             top-down-entry（俯視降落後開門）。React 可直接引用元件，純 HTML 可透過 mount helper 動態掛載。
           </p>
           <div className="flex flex-wrap gap-2 text-sm text-white/60">
-            {doorAnimationConfigs.map((config) => (
+            {doorEntrancePresets.map((preset) => (
               <span
-                key={config.id}
+                key={preset.id}
                 className="rounded-full border border-white/10 px-3 py-1"
               >
-                {config.id}
+                {preset.id}
               </span>
             ))}
           </div>
@@ -66,7 +66,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-white/70">
-                導入 `DoorEntrance`，指定 variant（direct-entry / top-down-entry）。`onComplete` 會在動畫結束後觸發。
+                導入 `DoorEntrance`，指定 preset（例如 `door-single`）。`onComplete` 會在動畫結束後觸發。
               </p>
               <CodeBlock code={reactSnippet} />
             </CardContent>

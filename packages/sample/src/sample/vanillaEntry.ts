@@ -1,15 +1,13 @@
 import "../index.css";
 import { mountDoorEntrance } from "door-entrance/vanilla";
-import { getTextureUrl, pickTextureId } from "door-entrance";
+import type { DoorEntrancePresetId } from "door-entrance";
 
 const target = document.getElementById("door-root");
 const statusEl = document.getElementById("door-status");
-const variantSelect = document.getElementById(
-  "door-variant"
+const presetSelect = document.getElementById(
+  "door-preset"
 ) as HTMLSelectElement | null;
 const playButton = document.getElementById("door-play");
-const textureBase = import.meta.env.BASE_URL ?? "/";
-const textureUrl = getTextureUrl(pickTextureId(), textureBase);
 let ready = false;
 
 const setStatus = (text: string) => {
@@ -20,63 +18,59 @@ const setStatus = (text: string) => {
 
 const boot = () => {
   if (!target) return;
+  const getSelectedPreset = (): DoorEntrancePresetId =>
+    (presetSelect?.value as DoorEntrancePresetId) ?? "door-single";
+
   let app = mountDoorEntrance({
     target,
-    variant: "direct-entry",
+    preset: getSelectedPreset(),
     autoPlay: false,
     className:
       "h-[420px] w-full rounded-xl border border-white/10 bg-black",
-    textureUrl,
     onComplete: () => setStatus("播放完成"),
+    onReady: () => {
+      ready = true;
+      setStatus("等待播放");
+    },
   });
 
   const play = () => {
     if (!ready) {
-      setStatus("貼圖載入中...");
+      setStatus("準備中...");
       return;
     }
     setStatus("播放中...");
-    app.reset();
-    requestAnimationFrame(() => app.play());
+    const preset = getSelectedPreset();
+    app.reset(preset);
+    requestAnimationFrame(() => app.play(preset));
   };
 
   if (playButton) {
     playButton.addEventListener("click", play);
   }
 
-  if (variantSelect) {
-    variantSelect.addEventListener("change", (event) => {
-      const variant = (event.target as HTMLSelectElement).value as
-        | "direct-entry"
-        | "top-down-entry"
-        | "double-swing";
+  if (presetSelect) {
+    presetSelect.addEventListener("change", (event) => {
+      const nextPreset = (event.target as HTMLSelectElement)
+        .value as DoorEntrancePresetId;
       app.unmount();
+      ready = false;
       app = mountDoorEntrance({
         target,
-        variant,
+        preset: nextPreset,
         autoPlay: false,
         className:
           "h-[420px] w-full rounded-xl border border-white/10 bg-black",
-        textureUrl,
         onComplete: () => setStatus("播放完成"),
+        onReady: () => {
+          ready = true;
+          setStatus("等待播放");
+        },
       });
-      setStatus("等待播放");
+      setStatus("準備中...");
     });
   }
 };
 
-const preload = () => {
-  setStatus("貼圖載入中...");
-  const img = new Image();
-  img.onload = () => {
-    ready = true;
-    setStatus("等待播放");
-    boot();
-  };
-  img.onerror = () => {
-    setStatus("貼圖載入失敗");
-  };
-  img.src = textureUrl;
-};
-
-preload();
+setStatus("準備中...");
+boot();

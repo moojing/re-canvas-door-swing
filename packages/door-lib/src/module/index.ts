@@ -3,6 +3,8 @@ export type { DoorEntranceHandle } from "./types";
 export type {
   DoorAnimationVariant,
   DoorAnimationConfig,
+  DoorEntrancePreset,
+  DoorEntrancePresetId,
 } from "./types";
 export type { DoorEntranceProps } from "./DoorEntrance";
 export {
@@ -12,6 +14,11 @@ export {
   easeInOutCubic,
   doorAnimationRenderers,
 } from "./animations/index";
+export {
+  doorEntrancePresets,
+  doorEntrancePresetMap,
+  getDoorEntrancePreset,
+} from "./presets";
 export {
   textureManifest,
   textureIds,

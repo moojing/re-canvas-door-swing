@@ -1,23 +1,28 @@
 import { createRoot, Root } from "react-dom/client";
 import DoorEntrance from "./DoorEntrance";
 import {
+  DoorEntrancePresetId,
   DoorAnimationVariant,
   DoorEntranceHandle,
 } from "./types";
 
 interface MountDoorEntranceOptions {
   target: HTMLElement | null;
+  preset?: DoorEntrancePresetId;
   variant?: DoorAnimationVariant;
   autoPlay?: boolean;
   className?: string;
   onComplete?: () => void;
+  onProgress?: (progress: number) => void;
+  onReady?: () => void;
   textureUrl?: string;
   handleModelUrl?: string;
 }
 
 interface MountedDoorEntrance {
-  play: () => void;
-  reset: () => void;
+  play: (preset?: DoorEntrancePresetId) => void;
+  reset: (preset?: DoorEntrancePresetId) => void;
+  seek: (progress: number, preset?: DoorEntrancePresetId) => void;
   unmount: () => void;
 }
 
@@ -41,8 +46,9 @@ export const mountDoorEntrance = (
   root.render(<DoorEntrance ref={withHandle} {...rest} />);
 
   return {
-    play: () => handle?.play(),
-    reset: () => handle?.reset(),
+    play: (preset) => handle?.play(preset),
+    reset: (preset) => handle?.reset(preset),
+    seek: (progress, preset) => handle?.seek(progress, preset),
     unmount: () => {
       root?.unmount();
       root = null;

@@ -5,8 +5,16 @@ import {
   DoorAnimationConfig,
   DoorAnimationRenderer,
 } from "../../types";
-import { clamp, easeInOutCubic } from "../shared";
+import {
+  clamp,
+  easeInOutCubic,
+  getDoorSwingWithBounce,
+  getHandlePressProgress,
+} from "../shared";
 import { DoorHandleModel } from "../HandleModel";
+
+const MAX_HANDLE_PRESS_ANGLE = Math.PI / 7;
+const MAX_DOOR_SWING_RADIANS = Math.PI / 4;
 
 export const directEntryConfig: DoorAnimationConfig = {
   id: "direct-entry",
@@ -17,21 +25,32 @@ export const directEntryConfig: DoorAnimationConfig = {
   easing: easeInOutCubic,
   getState: (rawProgress: number) => {
     const progress = clamp(rawProgress, 0, 1);
-    let doorAngle = 0;
+    const doorAngle = getDoorSwingWithBounce(progress, {
+      start: 0.18,
+      end: 0.62,
+      bounce: 0.08,
+      damping: 18,
+      frequency: 32,
+    });
     let cameraDistance = 1;
     let fadeOut = 0;
+    const handleAngle =
+      getHandlePressProgress(progress, {
+        pressEnd: 0.12,
+        holdEnd: 0.18,
+        releaseEnd: 0.3,
+      }) * MAX_HANDLE_PRESS_ANGLE;
 
-    if (progress <= 0.6) {
-      const doorProgress = progress / 0.6;
-      doorAngle = doorProgress;
+    if (progress <= 0.18) {
+      cameraDistance = 1;
+    } else if (progress <= 0.62) {
+      const doorProgress = (progress - 0.18) / 0.44;
       cameraDistance = 1 + doorProgress * 0.3;
     } else if (progress <= 0.9) {
-      const forwardProgress = (progress - 0.6) / 0.3;
-      doorAngle = 1;
+      const forwardProgress = (progress - 0.62) / 0.28;
       cameraDistance = 1.3 + forwardProgress * 1.2;
     } else {
       const fadeProgress = (progress - 0.9) / 0.1;
-      doorAngle = 1;
       cameraDistance = 2.5;
       fadeOut = clamp(fadeProgress, 0, 1);
     }
@@ -40,6 +59,7 @@ export const directEntryConfig: DoorAnimationConfig = {
 
     return {
       doorAngle,
+      handleAngle,
       cameraPosition: [0, 0, cameraZ],
       cameraTarget: [0, 0, 0],
       fadeOut,
@@ -49,10 +69,12 @@ export const directEntryConfig: DoorAnimationConfig = {
 
 const SingleDoor = ({
   doorAngle,
+  handleAngle,
   textureUrl,
   handleModelUrl,
 }: {
   doorAngle: number;
+  handleAngle: number;
   textureUrl: string;
   handleModelUrl?: string;
 }) => {
@@ -74,7 +96,7 @@ const SingleDoor = ({
 
   useFrame(() => {
     if (doorGroupRef.current) {
-      doorGroupRef.current.rotation.y = -doorAngle * Math.PI * 0.5;
+      doorGroupRef.current.rotation.y = -doorAngle * MAX_DOOR_SWING_RADIANS;
     }
   });
 
@@ -102,7 +124,11 @@ const SingleDoor = ({
         </mesh>
 
         {handleModelUrl ? (
-          <DoorHandleModel position={[2.4, 0, 0.24]} modelUrl={handleModelUrl} />
+          <DoorHandleModel
+            position={[2.4, 0, 0.24]}
+            modelUrl={handleModelUrl}
+            pressAngle={handleAngle}
+          />
         ) : (
           <mesh position={[2.4, 0, 0.24]}>
             <sphereGeometry args={[0.08]} />
@@ -122,6 +148,7 @@ export const DirectEntryRenderer: DoorAnimationRenderer = ({
   return (
     <SingleDoor
       doorAngle={state.doorAngle}
+      handleAngle={state.handleAngle ?? 0}
       textureUrl={textureUrl}
       handleModelUrl={handleModelUrl}
     />

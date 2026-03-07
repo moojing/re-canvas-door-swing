@@ -5,8 +5,16 @@ import {
   DoorAnimationConfig,
   DoorAnimationRenderer,
 } from "../../types";
-import { clamp, easeInOutCubic } from "../shared";
+import {
+  clamp,
+  easeInOutCubic,
+  getDoorSwingWithBounce,
+  getHandlePressProgress,
+} from "../shared";
 import { DoorHandleModel } from "../HandleModel";
+
+const MAX_HANDLE_PRESS_ANGLE = Math.PI / 7;
+const MAX_DOOR_SWING_RADIANS = Math.PI / 4;
 
 export const doubleSwingConfig: DoorAnimationConfig = {
   id: "double-swing",
@@ -17,25 +25,34 @@ export const doubleSwingConfig: DoorAnimationConfig = {
   easing: easeInOutCubic,
   getState: (rawProgress: number) => {
     const progress = clamp(rawProgress, 0, 1);
-    let left = 0;
-    let right = 0;
+    const swing = getDoorSwingWithBounce(progress, {
+      start: 0.18,
+      end: 0.68,
+      bounce: 0.08,
+      damping: 18,
+      frequency: 32,
+    });
+    let left = swing;
+    let right = swing;
     let cameraDistance = 1;
     let fadeOut = 0;
+    const handleAngle =
+      getHandlePressProgress(progress, {
+        pressEnd: 0.12,
+        holdEnd: 0.18,
+        releaseEnd: 0.3,
+      }) * MAX_HANDLE_PRESS_ANGLE;
 
-    if (progress <= 0.65) {
-      const doorProgress = progress / 0.65;
-      left = doorProgress;
-      right = doorProgress;
+    if (progress <= 0.18) {
+      cameraDistance = 1;
+    } else if (progress <= 0.68) {
+      const doorProgress = (progress - 0.18) / 0.5;
       cameraDistance = 1 + doorProgress * 0.35;
     } else if (progress <= 0.9) {
-      const forward = (progress - 0.65) / 0.25;
-      left = 1;
-      right = 1;
+      const forward = (progress - 0.68) / 0.22;
       cameraDistance = 1.35 + forward * 1.1;
     } else {
       const fadeProgress = (progress - 0.9) / 0.1;
-      left = 1;
-      right = 1;
       cameraDistance = 2.45;
       fadeOut = clamp(fadeProgress, 0, 1);
     }
@@ -45,6 +62,7 @@ export const doubleSwingConfig: DoorAnimationConfig = {
     return {
       doorAngle: left,
       rightDoorAngle: right,
+      handleAngle,
       cameraPosition: [0, 0, cameraZ],
       cameraTarget: [0, 0, 0],
       fadeOut,
@@ -55,11 +73,13 @@ export const doubleSwingConfig: DoorAnimationConfig = {
 const DoubleDoor = ({
   leftAngle,
   rightAngle,
+  handleAngle,
   textureUrl,
   handleModelUrl,
 }: {
   leftAngle: number;
   rightAngle: number;
+  handleAngle: number;
   textureUrl: string;
   handleModelUrl?: string;
 }) => {
@@ -82,10 +102,10 @@ const DoubleDoor = ({
 
   useFrame(() => {
     if (leftRef.current) {
-      leftRef.current.rotation.y = -leftAngle * Math.PI * 0.5;
+      leftRef.current.rotation.y = -leftAngle * MAX_DOOR_SWING_RADIANS;
     }
     if (rightRef.current) {
-      rightRef.current.rotation.y = rightAngle * Math.PI * 0.5;
+      rightRef.current.rotation.y = rightAngle * MAX_DOOR_SWING_RADIANS;
     }
   });
 
@@ -112,7 +132,11 @@ const DoubleDoor = ({
           <meshLambertMaterial map={doorTexture} />
         </mesh>
         {handleModelUrl ? (
-          <DoorHandleModel position={[2.4, 0, 0.24]} modelUrl={handleModelUrl} />
+          <DoorHandleModel
+            position={[2.4, 0, 0.24]}
+            modelUrl={handleModelUrl}
+            pressAngle={handleAngle}
+          />
         ) : (
           <mesh position={[2.4, 0, 0.24]}>
             <sphereGeometry args={[0.08]} />
@@ -136,6 +160,7 @@ const DoubleDoor = ({
             position={[-2.4, 0, 0.24]}
             modelUrl={handleModelUrl}
             mirrorX
+            pressAngle={handleAngle}
           />
         ) : (
           <mesh position={[-2.4, 0, 0.24]}>
@@ -157,6 +182,7 @@ export const DoubleSwingRenderer: DoorAnimationRenderer = ({
     <DoubleDoor
       leftAngle={state.doorAngle}
       rightAngle={state.rightDoorAngle ?? state.doorAngle}
+      handleAngle={state.handleAngle ?? 0}
       textureUrl={textureUrl}
       handleModelUrl={handleModelUrl}
     />

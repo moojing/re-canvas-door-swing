@@ -1,5 +1,5 @@
 import { useLoader } from "@react-three/fiber";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
@@ -14,14 +14,32 @@ const DEFAULT_HANDLE_SCALE = 0.18;
 const HANDLE_SCALE_BY_NAME: Record<string, number> = {
   door_handle: 0.035,
 };
-const VINTAGE_METAL_COLOR = "#8f8a7f";
-const VINTAGE_METALNESS = 0.82;
-const VINTAGE_METAL_ROUGHNESS = 0.46;
+const HANDLE_PRESS_NODE_HINTS = ["handle", "lever", "knob", "grip"];
+const HANDLE_STATIC_NODE_HINTS = [
+  "door_handle",
+  "base",
+  "panel",
+  "plate",
+  "backplate",
+  "lock",
+  "key",
+  "screw",
+  "rosette",
+];
+const VINTAGE_METAL_COLOR = "#6f665b";
+const VINTAGE_METALNESS = 0.72;
+const VINTAGE_METAL_ROUGHNESS = 0.68;
 
 interface DoorHandleModelProps {
   position: [number, number, number];
   modelUrl: string;
   mirrorX?: boolean;
+  pressAngle?: number;
+}
+
+interface PressTarget {
+  node: THREE.Object3D;
+  baseRotation: THREE.Euler;
 }
 
 const FallbackHandle = ({ position }: { position: [number, number, number] }) => (
@@ -41,7 +59,7 @@ const toVintageMetalMaterial = (material: THREE.Material): THREE.Material => {
     material instanceof THREE.MeshPhysicalMaterial
   ) {
     const mat = material.clone();
-    mat.side = THREE.DoubleSide;
+    mat.side = THREE.FrontSide;
     mat.color.set(VINTAGE_METAL_COLOR);
     mat.metalness = Math.max(mat.metalness, VINTAGE_METALNESS);
     mat.roughness = VINTAGE_METAL_ROUGHNESS;
@@ -66,7 +84,7 @@ const toVintageMetalMaterial = (material: THREE.Material): THREE.Material => {
     roughness: VINTAGE_METAL_ROUGHNESS,
     transparent: legacy.transparent ?? false,
     opacity: legacy.opacity ?? 1,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
   });
 };
 
@@ -74,6 +92,7 @@ export const DoorHandleModel = ({
   position,
   modelUrl,
   mirrorX = false,
+  pressAngle = 0,
 }: DoorHandleModelProps) => {
   const gltf = (useLoader as unknown as any)(GLTFLoader, modelUrl) as any;
 
@@ -134,12 +153,46 @@ export const DoorHandleModel = ({
         : toVintageMetalMaterial(mesh.material);
     });
 
-    const resolvedScale =
-      HANDLE_SCALE_BY_NAME[sourceName] ?? DEFAULT_HANDLE_SCALE;
+    const pressTargetCandidates: THREE.Object3D[] = [];
+    centeredHandle.traverse((obj) => {
+      if (obj === centeredHandle || !obj.name) return;
+
+      const lowerName = obj.name.toLowerCase();
+      const matchesPressHint = HANDLE_PRESS_NODE_HINTS.some((hint) =>
+        lowerName.includes(hint)
+      );
+      const matchesStaticHint = HANDLE_STATIC_NODE_HINTS.some((hint) =>
+        lowerName.includes(hint)
+      );
+
+      if (matchesPressHint && !matchesStaticHint) {
+        pressTargetCandidates.push(obj);
+      }
+    });
+
+    const pressTargetSet = new Set(pressTargetCandidates);
+    const pressTargets: PressTarget[] = pressTargetCandidates
+      .filter((candidate) => {
+        let parent: THREE.Object3D | null = candidate.parent;
+        while (parent && parent !== centeredHandle) {
+          if (pressTargetSet.has(parent)) {
+            return false;
+          }
+          parent = parent.parent;
+        }
+        return true;
+      })
+      .map((node) => ({
+        node,
+        baseRotation: node.rotation.clone(),
+      }));
+
+    const resolvedScale = HANDLE_SCALE_BY_NAME[sourceName] ?? DEFAULT_HANDLE_SCALE;
 
     return {
       object: centeredHandle,
       scale: resolvedScale,
+      pressTargets,
     };
   }, [gltf]);
 
@@ -149,10 +202,29 @@ export const DoorHandleModel = ({
 
   const handleScale = handleSelection.scale;
   const scaleX = mirrorX ? -handleScale : handleScale;
+  const signedPressAngle = (mirrorX ? -1 : 1) * pressAngle;
+  const hasPressTargets = handleSelection.pressTargets.length > 0;
+
+  useEffect(() => {
+    if (!hasPressTargets) return;
+
+    for (const target of handleSelection.pressTargets) {
+      target.node.rotation.set(
+        target.baseRotation.x,
+        target.baseRotation.y,
+        target.baseRotation.z + signedPressAngle
+      );
+    }
+  }, [handleSelection, hasPressTargets, signedPressAngle]);
 
   return (
-    <group position={position} scale={[scaleX, handleScale, handleScale]}>
-      <primitive object={handleSelection.object} />
+    <group position={position}>
+      <group
+        rotation={hasPressTargets ? [0, 0, 0] : [0, 0, signedPressAngle]}
+        scale={[scaleX, handleScale, handleScale]}
+      >
+        <primitive object={handleSelection.object} />
+      </group>
     </group>
   );
 };

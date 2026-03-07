@@ -6,6 +6,20 @@ export type DoorAnimationVariant =
   | "top-down-entry"
   | "double-swing";
 
+export type DoorEntrancePresetId =
+  | "door-single"
+  | "door-single-overhead"
+  | "door-double";
+
+export interface DoorEntrancePreset {
+  id: DoorEntrancePresetId;
+  label: string;
+  variant: DoorAnimationVariant;
+  textureUrl?: string;
+  handleModelUrl?: string;
+  className?: string;
+}
+
 export interface DoorAnimationState {
   doorAngle: number;
   rightDoorAngle?: number;
@@ -32,8 +46,9 @@ export interface DoorAnimationConfig {
 }
 
 export interface DoorEntranceHandle {
-  play: () => void;
-  reset: () => void;
+  play: (preset?: DoorEntrancePresetId) => void;
+  reset: (preset?: DoorEntrancePresetId) => void;
+  seek: (progress: number, preset?: DoorEntrancePresetId) => void;
 }
 
 export interface DoorEntranceReadyEvent {
