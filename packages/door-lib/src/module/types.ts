@@ -42,11 +42,15 @@ export interface DoorAnimationConfig {
   duration: number;
   progressMarkers: number[];
   easing?: (progress: number) => number;
-  getState: (progress: number) => DoorAnimationState;
+  getState: (
+    progress: number,
+    context?: { linearProgress: number }
+  ) => DoorAnimationState;
 }
 
 export interface DoorEntranceHandle {
   play: (preset?: DoorEntrancePresetId) => void;
+  stop: () => void;
   reset: (preset?: DoorEntrancePresetId) => void;
   seek: (progress: number, preset?: DoorEntrancePresetId) => void;
 }

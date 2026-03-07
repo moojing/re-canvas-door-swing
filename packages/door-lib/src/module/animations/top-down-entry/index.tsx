@@ -8,14 +8,14 @@ import {
 import {
   clamp,
   easeInOutCubic,
-  getDoorSwingWithBounce,
-  getHandlePressProgress,
+  getHandlePressWithBounce,
   lerp,
 } from "../shared";
 import { DoorHandleModel } from "../HandleModel";
 
-const MAX_HANDLE_PRESS_ANGLE = Math.PI / 7;
-const MAX_DOOR_SWING_RADIANS = Math.PI / 4;
+const MAX_HANDLE_PRESS_ANGLE = (60 * Math.PI) / 180;
+const MAX_DOOR_SWING_RADIANS = Math.PI / 2;
+const SINGLE_HANDLE_POSITION: [number, number, number] = [2.26, -0.02, 0.32];
 
 export const topDownConfig: DoorAnimationConfig = {
   id: "top-down-entry",
@@ -24,21 +24,21 @@ export const topDownConfig: DoorAnimationConfig = {
   duration: 6500,
   progressMarkers: [0, 0.2, 0.35, 0.6, 0.85, 1],
   easing: easeInOutCubic,
-  getState: (rawProgress: number) => {
+  getState: (rawProgress: number, context) => {
     const progress = clamp(rawProgress, 0, 1);
-    const doorAngle = getDoorSwingWithBounce(progress, {
-      start: 0.62,
-      end: 0.87,
-      bounce: 0.07,
-      damping: 21,
-      frequency: 34,
-    });
+    const handleProgress = clamp(context?.linearProgress ?? rawProgress, 0, 1);
+    let doorAngle = 0;
     let fadeOut = 0;
     const handleAngle =
-      getHandlePressProgress(progress, {
-        pressEnd: 0.56,
-        holdEnd: 0.62,
-        releaseEnd: 0.74,
+      getHandlePressWithBounce(handleProgress, {
+        pressStart: 0.49,
+        pressEnd: 0.58,
+        bounceEnd: 0.68,
+        releaseStart: 0.9,
+        releaseEnd: 1,
+        downBounce: 0.09,
+        releaseBounce: 0.12,
+        motionSpeed: 1,
       }) * MAX_HANDLE_PRESS_ANGLE;
 
     const startPosition: [number, number, number] = [-3.8, 6, 5.2];
@@ -52,14 +52,18 @@ export const topDownConfig: DoorAnimationConfig = {
     if (progress <= 0.35) {
       const t = progress / 0.35;
       cameraPosition = lerp(startPosition, midHoverPosition, t);
+      doorAngle = 0;
     } else if (progress <= 0.62) {
       const t = (progress - 0.35) / 0.27;
       cameraPosition = lerp(midHoverPosition, frontPrepPosition, t);
+      doorAngle = 0;
     } else if (progress <= 0.87) {
       const t = (progress - 0.62) / 0.25;
+      doorAngle = t;
       cameraPosition = lerp(frontPrepPosition, closeApproachPosition, t);
     } else {
       const t = (progress - 0.87) / 0.13;
+      doorAngle = 1;
       cameraPosition = lerp(closeApproachPosition, finalFadePosition, t);
       fadeOut = clamp(t, 0, 1);
     }
@@ -129,15 +133,19 @@ const SingleDoor = ({
           <planeGeometry args={[3, 6]} />
           <meshLambertMaterial map={doorTexture} />
         </mesh>
+        <mesh position={[1.5, 0, 0]} rotation={[0, Math.PI, 0]}>
+          <planeGeometry args={[3, 6]} />
+          <meshLambertMaterial map={doorTexture} />
+        </mesh>
 
         {handleModelUrl ? (
           <DoorHandleModel
-            position={[2.4, 0, 0.24]}
+            position={SINGLE_HANDLE_POSITION}
             modelUrl={handleModelUrl}
             pressAngle={handleAngle}
           />
         ) : (
-          <mesh position={[2.4, 0, 0.24]}>
+          <mesh position={SINGLE_HANDLE_POSITION}>
             <sphereGeometry args={[0.08]} />
             <meshLambertMaterial color="#78643c" />
           </mesh>

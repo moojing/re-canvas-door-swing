@@ -11,6 +11,7 @@ const HANDLE_NODE_NAME_CANDIDATES = [
   "Object_18",
 ];
 const DEFAULT_HANDLE_SCALE = 0.18;
+const HANDLE_SIZE_MULTIPLIER = 1.44;
 const HANDLE_SCALE_BY_NAME: Record<string, number> = {
   door_handle: 0.035,
 };
@@ -44,7 +45,7 @@ interface PressTarget {
 
 const FallbackHandle = ({ position }: { position: [number, number, number] }) => (
   <mesh position={position}>
-    <sphereGeometry args={[0.08]} />
+    <sphereGeometry args={[0.08 * HANDLE_SIZE_MULTIPLIER]} />
     <meshStandardMaterial
       color={VINTAGE_METAL_COLOR}
       metalness={VINTAGE_METALNESS}
@@ -59,7 +60,7 @@ const toVintageMetalMaterial = (material: THREE.Material): THREE.Material => {
     material instanceof THREE.MeshPhysicalMaterial
   ) {
     const mat = material.clone();
-    mat.side = THREE.FrontSide;
+    mat.side = THREE.DoubleSide;
     mat.color.set(VINTAGE_METAL_COLOR);
     mat.metalness = Math.max(mat.metalness, VINTAGE_METALNESS);
     mat.roughness = VINTAGE_METAL_ROUGHNESS;
@@ -84,7 +85,7 @@ const toVintageMetalMaterial = (material: THREE.Material): THREE.Material => {
     roughness: VINTAGE_METAL_ROUGHNESS,
     transparent: legacy.transparent ?? false,
     opacity: legacy.opacity ?? 1,
-    side: THREE.FrontSide,
+    side: THREE.DoubleSide,
   });
 };
 
@@ -200,7 +201,7 @@ export const DoorHandleModel = ({
     return <FallbackHandle position={position} />;
   }
 
-  const handleScale = handleSelection.scale;
+  const handleScale = handleSelection.scale * HANDLE_SIZE_MULTIPLIER;
   const scaleX = mirrorX ? -handleScale : handleScale;
   const signedPressAngle = (mirrorX ? -1 : 1) * pressAngle;
   const hasPressTargets = handleSelection.pressTargets.length > 0;

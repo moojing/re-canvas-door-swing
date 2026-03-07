@@ -212,9 +212,12 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       (linearProgress: number, config = selectedConfig) => {
         const clampedProgress = Math.min(Math.max(linearProgress, 0), 1);
         const easing = config.easing ?? easeInOutCubic;
+        const easedProgress = easing(clampedProgress);
 
         progressRef.current = clampedProgress;
-        applyState(config.getState(easing(clampedProgress)));
+        applyState(
+          config.getState(easedProgress, { linearProgress: clampedProgress })
+        );
         onProgressRef.current?.(clampedProgress);
       },
       [applyState, selectedConfig]
@@ -241,6 +244,11 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       }
       applyProgress(progress, resolveConfig(presetToSeek));
     }, [activePreset, applyProgress, cancelAnimationLoop, resolveConfig]);
+
+    const stop = useCallback(() => {
+      cancelAnimationLoop();
+      isAnimatingRef.current = false;
+    }, [cancelAnimationLoop]);
 
     const play = useCallback((nextPreset?: DoorEntrancePresetId) => {
       if (isAnimatingRef.current) return;
@@ -307,10 +315,11 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       ref,
       () => ({
         play,
+        stop,
         reset,
         seek,
       }),
-      [play, reset, seek]
+      [play, stop, reset, seek]
     );
 
     useEffect(() => {

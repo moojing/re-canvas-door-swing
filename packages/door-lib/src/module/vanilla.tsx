@@ -21,6 +21,7 @@ interface MountDoorEntranceOptions {
 
 interface MountedDoorEntrance {
   play: (preset?: DoorEntrancePresetId) => void;
+  stop: () => void;
   reset: (preset?: DoorEntrancePresetId) => void;
   seek: (progress: number, preset?: DoorEntrancePresetId) => void;
   unmount: () => void;
@@ -47,6 +48,7 @@ export const mountDoorEntrance = (
 
   return {
     play: (preset) => handle?.play(preset),
+    stop: () => handle?.stop(),
     reset: (preset) => handle?.reset(preset),
     seek: (progress, preset) => handle?.seek(progress, preset),
     unmount: () => {

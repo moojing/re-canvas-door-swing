@@ -35,6 +35,7 @@ const ReactSample = () => {
   const [preset, setPreset] = useState<DoorEntrancePresetId>("door-single");
   const [status, setStatus] = useState("等待播放");
   const [ready, setReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -117,8 +118,17 @@ const ReactSample = () => {
       setStatus("準備中...");
       return;
     }
+
+    if (isPlaying) {
+      ref.current?.stop();
+      setIsPlaying(false);
+      setStatus("已停止");
+      return;
+    }
+
     resetZoom();
     resetView();
+    setIsPlaying(true);
     setStatus("播放中...");
     requestAnimationFrame(() => {
       ref.current?.play(preset);
@@ -128,6 +138,7 @@ const ReactSample = () => {
   const handleSeek = (nextProgress: number) => {
     const clamped = clamp(nextProgress, 0, 1);
     setProgress(clamped);
+    setIsPlaying(false);
     setStatus("調整進度");
     ref.current?.seek(clamped, preset);
   };
@@ -281,12 +292,14 @@ const ReactSample = () => {
             cameraPanY={cameraPanY}
             className="h-full w-full overflow-hidden rounded-none border-0 bg-gradient-to-br from-black via-slate-900 to-zinc-900"
             onComplete={() => {
+              setIsPlaying(false);
               setStatus("播放完成");
               setProgress(1);
             }}
             onProgress={(next) => setProgress(next)}
             onReady={() => {
               setReady(true);
+              setIsPlaying(false);
               setProgress(0);
               setStatus("等待播放");
             }}
@@ -343,12 +356,13 @@ const ReactSample = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={handlePlay} disabled={!ready}>
-            播放
+            {isPlaying ? "停止" : "播放"}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
+              setIsPlaying(false);
               setProgress(0);
               setStatus("等待播放");
               ref.current?.reset(preset);
@@ -371,6 +385,7 @@ const ReactSample = () => {
               className="shrink-0"
               onClick={() => {
                 setPreset(entry.id);
+                setIsPlaying(false);
                 setProgress(0);
                 setStatus("等待播放");
                 resetZoom();
