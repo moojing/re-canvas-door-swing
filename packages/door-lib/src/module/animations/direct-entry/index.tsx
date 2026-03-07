@@ -6,6 +6,7 @@ import {
   DoorAnimationRenderer,
 } from "../../types";
 import { clamp, easeInOutCubic } from "../shared";
+import { DoorHandleModel } from "../HandleModel";
 
 export const directEntryConfig: DoorAnimationConfig = {
   id: "direct-entry",
@@ -49,9 +50,11 @@ export const directEntryConfig: DoorAnimationConfig = {
 const SingleDoor = ({
   doorAngle,
   textureUrl,
+  handleModelUrl,
 }: {
   doorAngle: number;
   textureUrl: string;
+  handleModelUrl?: string;
 }) => {
   const doorGroupRef = useRef<any>(null);
   const doorTexture = (useLoader as unknown as any)(
@@ -98,10 +101,14 @@ const SingleDoor = ({
           <meshLambertMaterial map={doorTexture} />
         </mesh>
 
-        <mesh position={[2.4, 0, 0.2]}>
-          <sphereGeometry args={[0.08]} />
-          <meshLambertMaterial color="#78643c" />
-        </mesh>
+        {handleModelUrl ? (
+          <DoorHandleModel position={[2.4, 0, 0.24]} modelUrl={handleModelUrl} />
+        ) : (
+          <mesh position={[2.4, 0, 0.24]}>
+            <sphereGeometry args={[0.08]} />
+            <meshLambertMaterial color="#78643c" />
+          </mesh>
+        )}
       </group>
     </group>
   );
@@ -110,6 +117,13 @@ const SingleDoor = ({
 export const DirectEntryRenderer: DoorAnimationRenderer = ({
   state,
   textureUrl,
+  handleModelUrl,
 }) => {
-  return <SingleDoor doorAngle={state.doorAngle} textureUrl={textureUrl} />;
+  return (
+    <SingleDoor
+      doorAngle={state.doorAngle}
+      textureUrl={textureUrl}
+      handleModelUrl={handleModelUrl}
+    />
+  );
 };

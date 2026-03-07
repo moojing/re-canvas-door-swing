@@ -12,6 +12,7 @@ interface MountDoorEntranceOptions {
   className?: string;
   onComplete?: () => void;
   textureUrl?: string;
+  handleModelUrl?: string;
 }
 
 interface MountedDoorEntrance {

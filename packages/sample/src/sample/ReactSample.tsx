@@ -22,6 +22,12 @@ const ReactSample = () => {
     () => getTextureUrl(textureId, textureBase),
     [textureBase, textureId]
   );
+  const handleModelUrl = useMemo(() => {
+    const normalizedBase = textureBase.endsWith("/")
+      ? textureBase
+      : `${textureBase}/`;
+    return `${normalizedBase}models/door_handle_single.glb`;
+  }, [textureBase]);
 
   const currentLabel = useMemo(
     () => doorAnimationConfigs.find((c) => c.id === variant)?.label ?? "Door",
@@ -74,6 +80,7 @@ const ReactSample = () => {
           autoPlay={false}
           className="h-[420px] w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-black via-slate-900 to-zinc-900"
           textureUrl={textureUrl}
+          handleModelUrl={handleModelUrl}
           onComplete={() => setStatus("播放完成")}
           onReady={() => setReady(true)}
         />

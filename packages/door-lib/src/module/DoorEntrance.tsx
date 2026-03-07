@@ -28,6 +28,7 @@ interface DoorEntranceProps {
   className?: string;
   onComplete?: () => void;
   textureUrl?: string;
+  handleModelUrl?: string;
   onReady?: () => void;
 }
 
@@ -67,17 +68,23 @@ const CameraController = ({
 const Scene = ({
   state,
   textureUrl,
+  handleModelUrl,
   Renderer,
 }: {
   state: DoorAnimationState;
   textureUrl: string;
+  handleModelUrl?: string;
   Renderer: DoorAnimationRenderer;
 }) => (
   <>
     <ambientLight intensity={0.3} />
     <directionalLight position={[2, 5, 5]} intensity={0.8} />
     <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
-    <Renderer state={state} textureUrl={textureUrl} />
+    <Renderer
+      state={state}
+      textureUrl={textureUrl}
+      handleModelUrl={handleModelUrl}
+    />
     <CameraController
       cameraPosition={state.cameraPosition}
       cameraTarget={state.cameraTarget}
@@ -94,6 +101,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       className = "h-[460px] w-full rounded-xl border border-white/10 bg-black",
       onComplete,
       textureUrl = "/textures/door-1.png",
+      handleModelUrl,
       onReady,
     },
     ref
@@ -196,7 +204,12 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
             gl.setClearColor("#000000");
           }}
         >
-          <Scene state={state} textureUrl={textureUrl} Renderer={Renderer} />
+          <Scene
+            state={state}
+            textureUrl={textureUrl}
+            handleModelUrl={handleModelUrl}
+            Renderer={Renderer}
+          />
         </Canvas>
 
         <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.08em] text-white/70 backdrop-blur">

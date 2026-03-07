@@ -6,6 +6,7 @@ import {
   DoorAnimationRenderer,
 } from "../../types";
 import { clamp, easeInOutCubic } from "../shared";
+import { DoorHandleModel } from "../HandleModel";
 
 export const doubleSwingConfig: DoorAnimationConfig = {
   id: "double-swing",
@@ -55,10 +56,12 @@ const DoubleDoor = ({
   leftAngle,
   rightAngle,
   textureUrl,
+  handleModelUrl,
 }: {
   leftAngle: number;
   rightAngle: number;
   textureUrl: string;
+  handleModelUrl?: string;
 }) => {
   const leftRef = useRef<any>(null);
   const rightRef = useRef<any>(null);
@@ -108,10 +111,14 @@ const DoubleDoor = ({
           <planeGeometry args={[3, 6]} />
           <meshLambertMaterial map={doorTexture} />
         </mesh>
-        <mesh position={[2.4, 0, 0.2]}>
-          <sphereGeometry args={[0.08]} />
-          <meshLambertMaterial color="#78643c" />
-        </mesh>
+        {handleModelUrl ? (
+          <DoorHandleModel position={[2.4, 0, 0.24]} modelUrl={handleModelUrl} />
+        ) : (
+          <mesh position={[2.4, 0, 0.24]}>
+            <sphereGeometry args={[0.08]} />
+            <meshLambertMaterial color="#78643c" />
+          </mesh>
+        )}
       </group>
 
       {/* 右扇 */}
@@ -124,10 +131,18 @@ const DoubleDoor = ({
           <planeGeometry args={[3, 6]} />
           <meshLambertMaterial map={doorTexture} />
         </mesh>
-        <mesh position={[-2.4, 0, 0.2]}>
-          <sphereGeometry args={[0.08]} />
-          <meshLambertMaterial color="#78643c" />
-        </mesh>
+        {handleModelUrl ? (
+          <DoorHandleModel
+            position={[-2.4, 0, 0.24]}
+            modelUrl={handleModelUrl}
+            mirrorX
+          />
+        ) : (
+          <mesh position={[-2.4, 0, 0.24]}>
+            <sphereGeometry args={[0.08]} />
+            <meshLambertMaterial color="#78643c" />
+          </mesh>
+        )}
       </group>
     </group>
   );
@@ -136,12 +151,14 @@ const DoubleDoor = ({
 export const DoubleSwingRenderer: DoorAnimationRenderer = ({
   state,
   textureUrl,
+  handleModelUrl,
 }) => {
   return (
     <DoubleDoor
       leftAngle={state.doorAngle}
       rightAngle={state.rightDoorAngle ?? state.doorAngle}
       textureUrl={textureUrl}
+      handleModelUrl={handleModelUrl}
     />
   );
 };

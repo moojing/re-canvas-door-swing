@@ -18,6 +18,7 @@ export interface DoorAnimationState {
 export type DoorAnimationRenderer = (props: {
   state: DoorAnimationState;
   textureUrl: string;
+  handleModelUrl?: string;
 }) => JSX.Element;
 
 export interface DoorAnimationConfig {
