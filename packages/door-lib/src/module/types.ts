@@ -3,8 +3,10 @@ import { Vector3Tuple } from "three";
 
 export type DoorAnimationVariant =
   | "direct-entry"
-  | "top-down-entry"
+  | "single-top-down-entry"
   | "double-swing";
+
+export type HandleProfileId = "lever-l" | "knob-round";
 
 export type DoorEntrancePresetId =
   | "door-single"
@@ -17,6 +19,7 @@ export interface DoorEntrancePreset {
   variant: DoorAnimationVariant;
   textureUrl?: string;
   handleModelUrl?: string;
+  handleProfileId?: HandleProfileId;
   soundUrl?: string;
   className?: string;
 }
@@ -34,6 +37,7 @@ export type DoorAnimationRenderer = (props: {
   state: DoorAnimationState;
   textureUrl: string;
   handleModelUrl?: string;
+  handleProfileId?: HandleProfileId;
 }) => JSX.Element;
 
 export interface DoorAnimationConfig {
@@ -43,10 +47,13 @@ export interface DoorAnimationConfig {
   duration: number;
   progressMarkers: number[];
   soundStartProgress?: number;
+  soundEndProgress?: number;
+  soundSourceStartProgress?: number;
+  soundSourceEndProgress?: number;
   easing?: (progress: number) => number;
   getState: (
     progress: number,
-    context?: { linearProgress: number }
+    context?: { linearProgress: number; handleProfileId?: HandleProfileId }
   ) => DoorAnimationState;
 }
 

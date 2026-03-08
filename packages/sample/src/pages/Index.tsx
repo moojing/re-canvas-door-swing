@@ -43,7 +43,7 @@ const Index = () => {
           </h1>
           <p className="max-w-3xl text-lg text-white/70">
             兩款動畫都抽成 module：direct-entry（正面開門推進）與
-            top-down-entry（俯視降落後開門）。React 可直接引用元件，純 HTML 可透過 mount helper 動態掛載。
+            single-top-down-entry（俯視降落後開門）。React 可直接引用元件，純 HTML 可透過 mount helper 動態掛載。
           </p>
           <div className="flex flex-wrap gap-2 text-sm text-white/60">
             {doorEntrancePresets.map((preset) => (

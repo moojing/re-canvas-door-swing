@@ -5,6 +5,7 @@ import {
   DoorAnimationVariant,
   DoorEntranceHandle,
   DoorEntranceSoundState,
+  HandleProfileId,
 } from "./types";
 
 interface MountDoorEntranceOptions {
@@ -19,6 +20,7 @@ interface MountDoorEntranceOptions {
   onReady?: () => void;
   textureUrl?: string;
   handleModelUrl?: string;
+  handleProfileId?: HandleProfileId;
   soundUrl?: string;
 }
 

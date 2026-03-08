@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -23,12 +24,81 @@ const MAX_ZOOM = 3;
 const CAMERA_PAN_PER_PIXEL = 0.01;
 const MAX_CAMERA_PAN_X = 1.9;
 const MAX_CAMERA_PAN_Y = 1.6;
+const WAVESURFER_SCRIPT_ID = "door-entrance-wavesurfer";
+const WAVESURFER_CDN_URL =
+  "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js";
+
+type WaveSurferEvent = "ready" | "error";
+
+interface WaveSurferInstance {
+  destroy: () => void;
+  load: (url: string) => void;
+  seekTo: (progress: number) => void;
+  on: (
+    event: WaveSurferEvent,
+    listener: (...args: unknown[]) => void
+  ) => (() => void) | void;
+}
+
+interface WaveSurferFactory {
+  create: (options: Record<string, unknown>) => WaveSurferInstance;
+}
+
+declare global {
+  interface Window {
+    WaveSurfer?: WaveSurferFactory;
+  }
+}
 
 const formatMs = (ms: number) => {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
+const toPublicAssetUrl = (url?: string) => {
+  if (!url) return null;
+  if (/^https?:\/\//.test(url) || url.startsWith("/")) return url;
+  return `/${url}`;
+};
+
+const loadWaveSurfer = (): Promise<WaveSurferFactory> => {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("window is not available"));
+  }
+
+  if (window.WaveSurfer?.create) {
+    return Promise.resolve(window.WaveSurfer);
+  }
+
+  return new Promise<WaveSurferFactory>((resolve, reject) => {
+    const onReady = () => {
+      if (window.WaveSurfer?.create) {
+        resolve(window.WaveSurfer);
+        return;
+      }
+      reject(new Error("WaveSurfer did not initialize correctly"));
+    };
+    const onError = () => reject(new Error("Failed to load WaveSurfer script"));
+
+    const existingScript = document.getElementById(
+      WAVESURFER_SCRIPT_ID
+    ) as HTMLScriptElement | null;
+    if (existingScript) {
+      existingScript.addEventListener("load", onReady, { once: true });
+      existingScript.addEventListener("error", onError, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = WAVESURFER_SCRIPT_ID;
+    script.src = WAVESURFER_CDN_URL;
+    script.async = true;
+    script.addEventListener("load", onReady, { once: true });
+    script.addEventListener("error", onError, { once: true });
+    document.head.appendChild(script);
+  });
 };
 
 const ReactSample = () => {
@@ -47,9 +117,18 @@ const ReactSample = () => {
   const [audioReady, setAudioReady] = useState(false);
   const [audioDurationMs, setAudioDurationMs] = useState(0);
   const [audioCurrentTimeMs, setAudioCurrentTimeMs] = useState(0);
+  const [waveformLoading, setWaveformLoading] = useState(false);
+  const [waveformReady, setWaveformReady] = useState(false);
+  const [waveformHoverRatio, setWaveformHoverRatio] = useState<number | null>(
+    null
+  );
   const ref = useRef<DoorEntranceHandle>(null);
   const shellRef = useRef<HTMLElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const waveformRef = useRef<HTMLDivElement>(null);
+  const waveformCanvasRef = useRef<HTMLDivElement>(null);
+  const wavesurferRef = useRef<WaveSurferInstance | null>(null);
+  const waveformDragRef = useRef({ active: false });
   const dragRef = useRef<{
     active: boolean;
     startClientX: number;
@@ -64,9 +143,14 @@ const ReactSample = () => {
     startPanY: 0,
   });
 
-  const currentLabel = useMemo(
-    () => doorEntrancePresets.find((p) => p.id === preset)?.label ?? "Door",
+  const selectedPresetMeta = useMemo(
+    () => doorEntrancePresets.find((p) => p.id === preset),
     [preset]
+  );
+  const currentLabel = selectedPresetMeta?.label ?? "Door";
+  const selectedSoundUrl = useMemo(
+    () => toPublicAssetUrl(selectedPresetMeta?.soundUrl),
+    [selectedPresetMeta]
   );
   const config = useMemo(
     () => getDoorAnimationConfig(getDoorEntrancePreset(preset).variant),
@@ -74,11 +158,39 @@ const ReactSample = () => {
   );
   const progressMarkers = config.progressMarkers;
   const duration = config.duration;
-  const maxAudioSeekPercent = audioDurationMs > 0 ? 100 : 0;
   const audioProgressPercent =
     audioDurationMs > 0
       ? Math.round((audioCurrentTimeMs / audioDurationMs) * 1000) / 10
       : 0;
+  const audioRulerTicks = useMemo(() => {
+    if (audioDurationMs <= 0) {
+      return [0, 0.25, 0.5, 0.75, 1].map((ratio, index, array) => ({
+        ratio,
+        label: formatMs(ratio * 5000),
+        showLabel: index % 2 === 0 || index === array.length - 1,
+      }));
+    }
+
+    const durationSec = audioDurationMs / 1000;
+    const roughStep = durationSec / 8;
+    const stepCandidates = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60];
+    const step =
+      stepCandidates.find((candidate) => candidate >= roughStep) ??
+      stepCandidates[stepCandidates.length - 1];
+    const ticks: number[] = [];
+    for (let second = 0; second < durationSec; second += step) {
+      ticks.push(second);
+    }
+    ticks.push(durationSec);
+
+    return ticks.map((second, index, array) => ({
+      ratio: durationSec > 0 ? second / durationSec : 0,
+      label: formatMs(second * 1000),
+      showLabel: index % 2 === 0 || index === array.length - 1,
+    }));
+  }, [audioDurationMs]);
+  const waveformHoverTimeMs =
+    waveformHoverRatio !== null ? waveformHoverRatio * audioDurationMs : null;
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -90,6 +202,87 @@ const ReactSample = () => {
       document.removeEventListener("fullscreenchange", onFullscreenChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedSoundUrl) {
+      wavesurferRef.current?.destroy();
+      wavesurferRef.current = null;
+      setWaveformLoading(false);
+      setWaveformReady(false);
+      return;
+    }
+
+    const container = waveformCanvasRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let unsubscribeReady: (() => void) | void;
+    let unsubscribeError: (() => void) | void;
+    setWaveformReady(false);
+    setWaveformLoading(true);
+
+    void (async () => {
+      try {
+        const WaveSurfer = await loadWaveSurfer();
+        if (cancelled) return;
+
+        wavesurferRef.current?.destroy();
+        const instance = WaveSurfer.create({
+          container,
+          height: 72,
+          normalize: true,
+          interact: false,
+          autoCenter: false,
+          autoScroll: false,
+          barWidth: 2,
+          barGap: 1,
+          barRadius: 3,
+          cursorWidth: 0,
+          waveColor: "rgba(103, 232, 249, 0.55)",
+          progressColor: "rgba(103, 232, 249, 0.55)",
+        });
+        wavesurferRef.current = instance;
+
+        unsubscribeReady = instance.on("ready", () => {
+          if (cancelled) return;
+          setWaveformReady(true);
+          setWaveformLoading(false);
+        });
+        unsubscribeError = instance.on("error", () => {
+          if (cancelled) return;
+          setWaveformReady(false);
+          setWaveformLoading(false);
+        });
+
+        instance.load(selectedSoundUrl);
+      } catch {
+        if (!cancelled) {
+          setWaveformReady(false);
+          setWaveformLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (typeof unsubscribeReady === "function") {
+        unsubscribeReady();
+      }
+      if (typeof unsubscribeError === "function") {
+        unsubscribeError();
+      }
+      wavesurferRef.current?.destroy();
+      wavesurferRef.current = null;
+    };
+  }, [selectedSoundUrl]);
+
+  useEffect(() => {
+    if (!audioEnabled || !audioReady || !waveformReady || audioDurationMs <= 0) {
+      return;
+    }
+    const ratio = clamp(audioCurrentTimeMs / audioDurationMs, 0, 1);
+    wavesurferRef.current?.seekTo(ratio);
+  }, [audioEnabled, audioReady, waveformReady, audioCurrentTimeMs, audioDurationMs]);
 
   useEffect(() => {
     const el = previewRef.current;
@@ -228,10 +421,55 @@ const ReactSample = () => {
   const sliderValue = Math.round(progress * 1000) / 10;
   const currentTime = duration * progress;
 
-  const handleAudioSeek = (nextAudioProgressPercent: number) => {
+  const handleAudioSeek = useCallback((nextAudioProgressPercent: number) => {
     if (audioDurationMs <= 0) return;
-    const clamped = clamp(nextAudioProgressPercent, 0, maxAudioSeekPercent);
-    ref.current?.seekSound(clamped / 100);
+    const clamped = clamp(nextAudioProgressPercent, 0, 100);
+    const ratio = clamped / 100;
+    ref.current?.seekSound(ratio);
+    wavesurferRef.current?.seekTo(ratio);
+  }, [audioDurationMs]);
+
+  const getWaveformRatioByClientX = useCallback((clientX: number) => {
+    const el = waveformRef.current;
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0) return null;
+    return clamp((clientX - rect.left) / rect.width, 0, 1);
+  }, []);
+
+  const seekAudioByClientX = useCallback(
+    (clientX: number) => {
+      const ratio = getWaveformRatioByClientX(clientX);
+      if (ratio === null) return;
+      setWaveformHoverRatio(ratio);
+      handleAudioSeek(ratio * 100);
+    },
+    [getWaveformRatioByClientX, handleAudioSeek]
+  );
+
+  const handleWaveformPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!audioEnabled || !audioReady || !waveformReady || event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    waveformDragRef.current.active = true;
+    seekAudioByClientX(event.clientX);
+  };
+
+  const handleWaveformPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const ratio = getWaveformRatioByClientX(event.clientX);
+    if (ratio !== null) {
+      setWaveformHoverRatio(ratio);
+    }
+    if (waveformDragRef.current.active) {
+      seekAudioByClientX(event.clientX);
+    }
+  };
+
+  const handleWaveformPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    waveformDragRef.current.active = false;
   };
 
   return (
@@ -383,36 +621,94 @@ const ReactSample = () => {
             <span>{formatMs(audioDurationMs)}</span>
           </div>
 
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={0.1}
-            value={audioProgressPercent}
-            onInput={(event) =>
-              handleAudioSeek(Number((event.target as HTMLInputElement).value))
-            }
-            onChange={(event) => handleAudioSeek(Number(event.target.value))}
-            disabled={!audioEnabled || !audioReady}
-            className="h-2 w-full cursor-ew-resize appearance-none rounded-full accent-cyan-400 disabled:cursor-not-allowed"
-            style={{
-              background: `linear-gradient(to right, rgb(34 211 238) 0%, rgb(34 211 238) ${audioProgressPercent}%, rgba(255,255,255,0.14) ${audioProgressPercent}%, rgba(255,255,255,0.14) 100%)`,
+          <div
+            ref={waveformRef}
+            className={`relative h-24 select-none overflow-hidden rounded-lg border border-white/15 bg-black/35 ${
+              audioEnabled && audioReady && waveformReady
+                ? "cursor-ew-resize"
+                : "cursor-not-allowed"
+            }`}
+            onPointerDown={handleWaveformPointerDown}
+            onPointerMove={handleWaveformPointerMove}
+            onPointerUp={handleWaveformPointerUp}
+            onPointerCancel={handleWaveformPointerUp}
+            onPointerLeave={() => {
+              if (!waveformDragRef.current.active) {
+                setWaveformHoverRatio(null);
+              }
             }}
-          />
+          >
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:40px_100%]" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-cyan-500/15 via-transparent to-white/5" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-5 border-b border-white/10">
+              {audioRulerTicks.map((tick) => (
+                <span
+                  key={`audio-tick-${tick.ratio}`}
+                  className="absolute inset-y-0"
+                  style={{ left: `${tick.ratio * 100}%` }}
+                >
+                  <span className="absolute left-0 top-0 h-2 w-px bg-white/35" />
+                  {tick.showLabel ? (
+                    <span className="absolute left-1 top-0 text-[10px] text-white/60">
+                      {tick.label}
+                    </span>
+                  ) : null}
+                </span>
+              ))}
+            </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 top-5">
+              <span className="absolute inset-x-0 top-1/2 h-px bg-white/20" />
+              <div
+                ref={waveformCanvasRef}
+                className={`absolute inset-0 h-full w-full ${
+                  waveformLoading ? "animate-pulse" : ""
+                }`}
+              />
+            </div>
+            <span
+              className="pointer-events-none absolute inset-y-0 w-px bg-cyan-100/95 shadow-[0_0_8px_rgba(103,232,249,0.85)]"
+              style={{ left: `${audioProgressPercent}%` }}
+            />
+            {waveformHoverRatio !== null ? (
+              <>
+                <span
+                  className="pointer-events-none absolute inset-y-0 w-px bg-white/45"
+                  style={{ left: `${waveformHoverRatio * 100}%` }}
+                />
+                <span
+                  className="pointer-events-none absolute -top-0.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white/80"
+                  style={{
+                    left: `${waveformHoverRatio * 100}%`,
+                    transform: "translateX(-50%)",
+                  }}
+                >
+                  {formatMs(waveformHoverTimeMs ?? 0)}
+                </span>
+              </>
+            ) : null}
+          </div>
           <div className="flex items-center justify-between text-[11px] text-white/50">
             <span>
               Audio:{" "}
               {audioEnabled
-                ? audioReady
+                ? audioReady && waveformReady
                   ? `${audioProgressPercent}%`
-                  : "載入中..."
+                  : waveformLoading
+                    ? "分析音軌中..."
+                    : audioReady
+                      ? "載入波形..."
+                    : "載入中..."
                 : "此動畫無音效"}
             </span>
             <span>
               {audioEnabled
-                ? audioReady
-                  ? "Door open SFX"
-                  : "等待音檔 metadata"
+                ? audioReady && waveformReady
+                  ? "Door open SFX · 拖曳音軌可定位"
+                  : waveformLoading
+                    ? "WaveSurfer decoding..."
+                    : audioReady
+                      ? "等待 WaveSurfer 載入"
+                      : "等待音檔 metadata"
                 : "Only door-single has sound"}
             </span>
           </div>

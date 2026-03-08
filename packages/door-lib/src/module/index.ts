@@ -6,6 +6,7 @@ export type {
   DoorEntrancePreset,
   DoorEntrancePresetId,
   DoorEntranceSoundState,
+  HandleProfileId,
 } from "./types";
 export type { DoorEntranceProps } from "./DoorEntrance";
 export {
@@ -27,4 +28,9 @@ export {
   pickTextureId,
 } from "./assets/textures";
 export type { TextureId, TextureMeta } from "./assets/textures";
+export {
+  handleProfileMap,
+  getHandleProfile,
+  DEFAULT_HANDLE_PROFILE_ID,
+} from "./handles/profiles";
 export { mountDoorEntrance } from "./vanilla";

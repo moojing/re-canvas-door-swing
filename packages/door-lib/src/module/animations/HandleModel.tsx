@@ -2,38 +2,15 @@ import { useLoader } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { getHandleProfile } from "../handles/profiles";
+import { HandleProfileId } from "../types";
 
-const HANDLE_NODE_NAME_CANDIDATES = [
-  "door_handle",
-  "Door Handle 3_1",
-  "Metal Handle_7",
-  "Object_6",
-  "Object_18",
-];
-const DEFAULT_HANDLE_SCALE = 0.18;
-const HANDLE_SIZE_MULTIPLIER = 1.44;
-const HANDLE_SCALE_BY_NAME: Record<string, number> = {
-  door_handle: 0.035,
-};
-const HANDLE_PRESS_NODE_HINTS = ["handle", "lever", "knob", "grip"];
-const HANDLE_STATIC_NODE_HINTS = [
-  "door_handle",
-  "base",
-  "panel",
-  "plate",
-  "backplate",
-  "lock",
-  "key",
-  "screw",
-  "rosette",
-];
-const VINTAGE_METAL_COLOR = "#6f665b";
-const VINTAGE_METALNESS = 0.72;
-const VINTAGE_METAL_ROUGHNESS = 0.68;
+const DEFAULT_PROFILE_ID: HandleProfileId = "lever-l";
 
 interface DoorHandleModelProps {
   position: [number, number, number];
   modelUrl: string;
+  profileId?: HandleProfileId;
   mirrorX?: boolean;
   pressAngle?: number;
 }
@@ -43,27 +20,45 @@ interface PressTarget {
   baseRotation: THREE.Euler;
 }
 
-const FallbackHandle = ({ position }: { position: [number, number, number] }) => (
-  <mesh position={position}>
-    <sphereGeometry args={[0.08 * HANDLE_SIZE_MULTIPLIER]} />
-    <meshStandardMaterial
-      color={VINTAGE_METAL_COLOR}
-      metalness={VINTAGE_METALNESS}
-      roughness={VINTAGE_METAL_ROUGHNESS}
-    />
-  </mesh>
-);
+const resolveMaterialSide = (side: "front" | "double") =>
+  side === "double" ? THREE.DoubleSide : THREE.FrontSide;
 
-const toVintageMetalMaterial = (material: THREE.Material): THREE.Material => {
+const FallbackHandle = ({
+  position,
+  profileId = DEFAULT_PROFILE_ID,
+}: {
+  position: [number, number, number];
+  profileId?: HandleProfileId;
+}) => {
+  const profile = getHandleProfile(profileId);
+  return (
+    <mesh position={position}>
+      <sphereGeometry args={[0.08 * profile.sizeMultiplier]} />
+      <meshStandardMaterial
+        color={profile.material.color}
+        metalness={profile.material.metalness}
+        roughness={profile.material.roughness}
+        side={resolveMaterialSide(profile.material.side)}
+      />
+    </mesh>
+  );
+};
+
+const toVintageMetalMaterial = (
+  material: THREE.Material,
+  profileId: HandleProfileId
+): THREE.Material => {
+  const profile = getHandleProfile(profileId);
+
   if (
     material instanceof THREE.MeshStandardMaterial ||
     material instanceof THREE.MeshPhysicalMaterial
   ) {
     const mat = material.clone();
-    mat.side = THREE.DoubleSide;
-    mat.color.set(VINTAGE_METAL_COLOR);
-    mat.metalness = Math.max(mat.metalness, VINTAGE_METALNESS);
-    mat.roughness = VINTAGE_METAL_ROUGHNESS;
+    mat.side = resolveMaterialSide(profile.material.side);
+    mat.color.set(profile.material.color);
+    mat.metalness = Math.max(mat.metalness, profile.material.metalness);
+    mat.roughness = profile.material.roughness;
     mat.needsUpdate = true;
     return mat;
   }
@@ -77,27 +72,29 @@ const toVintageMetalMaterial = (material: THREE.Material): THREE.Material => {
   };
 
   return new THREE.MeshStandardMaterial({
-    color: legacy.color?.clone().multiply(new THREE.Color(VINTAGE_METAL_COLOR)) ??
-      new THREE.Color(VINTAGE_METAL_COLOR),
+    color: legacy.color?.clone().multiply(new THREE.Color(profile.material.color)) ??
+      new THREE.Color(profile.material.color),
     map: legacy.map ?? null,
     normalMap: legacy.normalMap ?? null,
-    metalness: VINTAGE_METALNESS,
-    roughness: VINTAGE_METAL_ROUGHNESS,
+    metalness: profile.material.metalness,
+    roughness: profile.material.roughness,
     transparent: legacy.transparent ?? false,
     opacity: legacy.opacity ?? 1,
-    side: THREE.DoubleSide,
+    side: resolveMaterialSide(profile.material.side),
   });
 };
 
 export const DoorHandleModel = ({
   position,
   modelUrl,
+  profileId = DEFAULT_PROFILE_ID,
   mirrorX = false,
   pressAngle = 0,
 }: DoorHandleModelProps) => {
   const gltf = (useLoader as unknown as any)(GLTFLoader, modelUrl) as any;
 
   const handleSelection = useMemo(() => {
+    const profile = getHandleProfile(profileId);
     const originalScene = gltf?.scene as THREE.Object3D | undefined;
     const scene = originalScene?.clone(true);
     if (!scene) {
@@ -108,7 +105,7 @@ export const DoorHandleModel = ({
 
     let source: THREE.Object3D | null = null;
     let sourceName = "";
-    for (const candidate of HANDLE_NODE_NAME_CANDIDATES) {
+    for (const candidate of profile.nodeNameCandidates) {
       const match = scene.getObjectByName(candidate);
       if (match) {
         source = match;
@@ -120,7 +117,12 @@ export const DoorHandleModel = ({
     if (!source) {
       scene.traverse((obj) => {
         if (source || !obj.name) return;
-        if (obj.name.toLowerCase().includes("metal handle")) {
+        const lower = obj.name.toLowerCase();
+        if (
+          lower.includes("handle") ||
+          lower.includes("knob") ||
+          lower.includes("grip")
+        ) {
           source = obj;
           sourceName = obj.name;
         }
@@ -150,8 +152,8 @@ export const DoorHandleModel = ({
       if (!mesh.isMesh || !mesh.material) return;
 
       mesh.material = Array.isArray(mesh.material)
-        ? mesh.material.map(toVintageMetalMaterial)
-        : toVintageMetalMaterial(mesh.material);
+        ? mesh.material.map((mat) => toVintageMetalMaterial(mat, profileId))
+        : toVintageMetalMaterial(mesh.material, profileId);
     });
 
     const pressTargetCandidates: THREE.Object3D[] = [];
@@ -159,10 +161,10 @@ export const DoorHandleModel = ({
       if (obj === centeredHandle || !obj.name) return;
 
       const lowerName = obj.name.toLowerCase();
-      const matchesPressHint = HANDLE_PRESS_NODE_HINTS.some((hint) =>
+      const matchesPressHint = profile.pressNodeHints.some((hint) =>
         lowerName.includes(hint)
       );
-      const matchesStaticHint = HANDLE_STATIC_NODE_HINTS.some((hint) =>
+      const matchesStaticHint = profile.staticNodeHints.some((hint) =>
         lowerName.includes(hint)
       );
 
@@ -188,20 +190,22 @@ export const DoorHandleModel = ({
         baseRotation: node.rotation.clone(),
       }));
 
-    const resolvedScale = HANDLE_SCALE_BY_NAME[sourceName] ?? DEFAULT_HANDLE_SCALE;
+    const resolvedScale =
+      profile.scaleByNodeName?.[sourceName] ?? profile.defaultScale;
 
     return {
       object: centeredHandle,
       scale: resolvedScale,
       pressTargets,
+      sizeMultiplier: profile.sizeMultiplier,
     };
-  }, [gltf]);
+  }, [gltf, profileId]);
 
   if (!handleSelection) {
-    return <FallbackHandle position={position} />;
+    return <FallbackHandle position={position} profileId={profileId} />;
   }
 
-  const handleScale = handleSelection.scale * HANDLE_SIZE_MULTIPLIER;
+  const handleScale = handleSelection.scale * handleSelection.sizeMultiplier;
   const scaleX = mirrorX ? -handleScale : handleScale;
   const signedPressAngle = (mirrorX ? -1 : 1) * pressAngle;
   const hasPressTargets = handleSelection.pressTargets.length > 0;

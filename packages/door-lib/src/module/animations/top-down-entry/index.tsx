@@ -2,51 +2,44 @@ import { useEffect, useRef } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import {
+  HandleProfileId,
   DoorAnimationConfig,
   DoorAnimationRenderer,
 } from "../../types";
-import {
-  clamp,
-  easeInOutCubic,
-  getHandlePressWithBounce,
-  lerp,
-} from "../shared";
+import { clamp, easeInOutCubic, lerp } from "../shared";
 import { DoorHandleModel } from "../HandleModel";
+import { getHandlePressAngle } from "../../handles/motion";
 
-const MAX_HANDLE_PRESS_ANGLE = (60 * Math.PI) / 180;
 const MAX_DOOR_SWING_RADIANS = Math.PI / 2;
 const SINGLE_HANDLE_POSITION: [number, number, number] = [2.26, -0.02, 0.32];
 
-export const topDownConfig: DoorAnimationConfig = {
-  id: "top-down-entry",
+export const singleTopDownConfig: DoorAnimationConfig = {
+  id: "single-top-down-entry",
   label: "Overhead Entry",
   description: "俯視下降後靠近門再淡出",
   duration: 6500,
   progressMarkers: [0, 0.2, 0.35, 0.6, 0.85, 1],
-  soundStartProgress: 0.35,
+  soundStartProgress: 0.5,
+  soundEndProgress: 0.88,
+  soundSourceStartProgress: 0.06,
   easing: easeInOutCubic,
   getState: (rawProgress: number, context) => {
     const progress = clamp(rawProgress, 0, 1);
     const handleProgress = clamp(context?.linearProgress ?? rawProgress, 0, 1);
+    const handleProfileId = context?.handleProfileId;
     let doorAngle = 0;
     let fadeOut = 0;
-    const handleAngle =
-      getHandlePressWithBounce(handleProgress, {
-        pressStart: 0.49,
-        pressEnd: 0.58,
-        bounceEnd: 0.68,
-        releaseStart: 0.9,
-        releaseEnd: 1,
-        downBounce: 0.09,
-        releaseBounce: 0.12,
-        motionSpeed: 1,
-      }) * MAX_HANDLE_PRESS_ANGLE;
+    const handleAngle = getHandlePressAngle({
+      profileId: handleProfileId,
+      variant: "single-top-down-entry",
+      progress: handleProgress,
+    });
 
     const startPosition: [number, number, number] = [-3.8, 6, 5.2];
     const midHoverPosition: [number, number, number] = [-2.6, 3.8, 5];
     const frontPrepPosition: [number, number, number] = [-1.2, 2, 4.6];
     const closeApproachPosition: [number, number, number] = [-0.4, 0.8, 3.4];
-    const finalFadePosition: [number, number, number] = [0, 0, 0.8];
+    const finalFadePosition: [number, number, number] = [0, 0, -1.2];
 
     let cameraPosition: [number, number, number] = [...startPosition];
 
@@ -84,16 +77,18 @@ const SingleDoor = ({
   handleAngle,
   textureUrl,
   handleModelUrl,
+  handleProfileId,
 }: {
   doorAngle: number;
   handleAngle: number;
   textureUrl: string;
   handleModelUrl?: string;
+  handleProfileId?: HandleProfileId;
 }) => {
   const doorGroupRef = useRef<any>(null);
   const doorTexture = (useLoader as unknown as any)(
     THREE.TextureLoader,
-    textureUrl
+    textureUrl,
   ) as any;
 
   useEffect(() => {
@@ -143,6 +138,7 @@ const SingleDoor = ({
           <DoorHandleModel
             position={SINGLE_HANDLE_POSITION}
             modelUrl={handleModelUrl}
+            profileId={handleProfileId}
             pressAngle={handleAngle}
           />
         ) : (
@@ -156,10 +152,11 @@ const SingleDoor = ({
   );
 };
 
-export const TopDownEntryRenderer: DoorAnimationRenderer = ({
+export const SingleTopDownEntryRenderer: DoorAnimationRenderer = ({
   state,
   textureUrl,
   handleModelUrl,
+  handleProfileId,
 }) => {
   return (
     <SingleDoor
@@ -167,6 +164,7 @@ export const TopDownEntryRenderer: DoorAnimationRenderer = ({
       handleAngle={state.handleAngle ?? 0}
       textureUrl={textureUrl}
       handleModelUrl={handleModelUrl}
+      handleProfileId={handleProfileId}
     />
   );
 };

@@ -4,13 +4,16 @@ import {
   DoorAnimationVariant,
 } from "../types";
 import { directEntryConfig, DirectEntryRenderer } from "./direct-entry";
-import { topDownConfig, TopDownEntryRenderer } from "./top-down-entry";
+import {
+  singleTopDownConfig,
+  SingleTopDownEntryRenderer,
+} from "./top-down-entry";
 import { doubleSwingConfig, DoubleSwingRenderer } from "./double-swing";
 export * from "./shared";
 
 export const doorAnimationConfigs: DoorAnimationConfig[] = [
   directEntryConfig,
-  topDownConfig,
+  singleTopDownConfig,
   doubleSwingConfig,
 ];
 
@@ -19,7 +22,7 @@ export const doorAnimationRenderers: Record<
   DoorAnimationRenderer
 > = {
   "direct-entry": DirectEntryRenderer,
-  "top-down-entry": TopDownEntryRenderer,
+  "single-top-down-entry": SingleTopDownEntryRenderer,
   "double-swing": DoubleSwingRenderer,
 };
 

@@ -23,7 +23,9 @@ import {
   DoorAnimationVariant,
   DoorEntranceHandle,
   DoorEntranceSoundState,
+  HandleProfileId,
 } from "./types";
+import { getHandleProfile } from "./handles/profiles";
 
 interface DoorEntranceProps {
   preset?: DoorEntrancePresetId;
@@ -35,6 +37,7 @@ interface DoorEntranceProps {
   onSoundProgress?: (state: DoorEntranceSoundState) => void;
   textureUrl?: string;
   handleModelUrl?: string;
+  handleProfileId?: HandleProfileId;
   soundUrl?: string;
   cameraPanX?: number;
   cameraPanY?: number;
@@ -44,6 +47,11 @@ interface DoorEntranceProps {
 const DEFAULT_CLASS_NAME =
   "h-[460px] w-full rounded-xl border border-white/10 bg-black";
 const DEFAULT_TEXTURE_URL = "/textures/door-1.png";
+const toPublicAssetUrl = (url?: string) => {
+  if (!url) return undefined;
+  if (/^https?:\/\//.test(url) || url.startsWith("/")) return url;
+  return `/${url.replace(/^\.?\//, "")}`;
+};
 
 const CameraController = ({
   cameraPosition,
@@ -86,6 +94,7 @@ const Scene = ({
   state,
   textureUrl,
   handleModelUrl,
+  handleProfileId,
   cameraPanX,
   cameraPanY,
   Renderer,
@@ -93,6 +102,7 @@ const Scene = ({
   state: DoorAnimationState;
   textureUrl: string;
   handleModelUrl?: string;
+  handleProfileId?: HandleProfileId;
   cameraPanX: number;
   cameraPanY: number;
   Renderer: DoorAnimationRenderer;
@@ -106,6 +116,7 @@ const Scene = ({
       state={state}
       textureUrl={textureUrl}
       handleModelUrl={handleModelUrl}
+      handleProfileId={handleProfileId}
     />
     <CameraController
       cameraPosition={state.cameraPosition}
@@ -129,6 +140,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       onSoundProgress,
       textureUrl,
       handleModelUrl,
+      handleProfileId,
       soundUrl,
       cameraPanX = 0,
       cameraPanY = 0,
@@ -150,9 +162,16 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
     const resolvedVariant = variant ?? selectedPreset.variant;
     const resolvedTextureUrl =
       textureUrl ?? selectedPreset.textureUrl ?? DEFAULT_TEXTURE_URL;
+    const resolvedHandleProfileId =
+      handleProfileId ?? selectedPreset.handleProfileId ?? "lever-l";
+    const resolvedHandleProfile = getHandleProfile(resolvedHandleProfileId);
     const resolvedHandleModelUrl =
-      handleModelUrl ?? selectedPreset.handleModelUrl;
-    const resolvedSoundUrl = soundUrl ?? selectedPreset.soundUrl;
+      handleModelUrl ??
+      selectedPreset.handleModelUrl ??
+      resolvedHandleProfile.defaultModelUrl;
+    const resolvedSoundUrl = toPublicAssetUrl(
+      soundUrl ?? selectedPreset.soundUrl
+    );
     const resolvedClassName =
       className ?? selectedPreset.className ?? DEFAULT_CLASS_NAME;
 
@@ -174,7 +193,10 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
         </mesh>
       )) as DoorAnimationRenderer);
     const [state, setState] = useState<DoorAnimationState>(
-      selectedConfig.getState(0)
+      selectedConfig.getState(0, {
+        linearProgress: 0,
+        handleProfileId: resolvedHandleProfileId,
+      })
     );
     const animationFrameRef = useRef<number | null>(null);
     const isAnimatingRef = useRef(false);
@@ -185,6 +207,8 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
     const onReadyRef = useRef(onReady);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const audioDelayTimerRef = useRef<number | null>(null);
+    const soundProgressFrameRef = useRef<number | null>(null);
+    const soundStartedRef = useRef(false);
 
     useEffect(() => {
       onCompleteRef.current = onComplete;
@@ -250,9 +274,33 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       }
     }, []);
 
-    const pauseSound = useCallback(() => {
-      audioRef.current?.pause();
+    const stopSoundProgressLoop = useCallback(() => {
+      if (soundProgressFrameRef.current !== null) {
+        cancelAnimationFrame(soundProgressFrameRef.current);
+        soundProgressFrameRef.current = null;
+      }
     }, []);
+
+    const startSoundProgressLoop = useCallback(() => {
+      stopSoundProgressLoop();
+      const tick = () => {
+        const audio = audioRef.current;
+        if (!audio || audio.paused || audio.ended) {
+          soundProgressFrameRef.current = null;
+          emitSoundProgress();
+          return;
+        }
+        emitSoundProgress();
+        soundProgressFrameRef.current = requestAnimationFrame(tick);
+      };
+      soundProgressFrameRef.current = requestAnimationFrame(tick);
+    }, [emitSoundProgress, stopSoundProgressLoop]);
+
+    const pauseSound = useCallback(() => {
+      stopSoundProgressLoop();
+      audioRef.current?.pause();
+      soundStartedRef.current = false;
+    }, [stopSoundProgressLoop]);
 
     const resetSound = useCallback(() => {
       const audio = audioRef.current;
@@ -263,8 +311,37 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
 
       audio.pause();
       audio.currentTime = 0;
+      soundStartedRef.current = false;
       emitSoundProgress();
     }, [emitSoundProgress]);
+
+    const getSoundProgressWindow = useCallback((config = selectedConfig) => {
+      const startProgress = Math.min(
+        Math.max(config.soundStartProgress ?? 0.18, 0),
+        1
+      );
+      const endProgress = Math.min(
+        Math.max(config.soundEndProgress ?? 1, startProgress + 0.001),
+        1
+      );
+      const sourceStartProgress = Math.min(
+        Math.max(config.soundSourceStartProgress ?? 0, 0),
+        1
+      );
+      const sourceEndProgress = Math.min(
+        Math.max(
+          config.soundSourceEndProgress ?? 1,
+          sourceStartProgress + Number.EPSILON
+        ),
+        1
+      );
+      return {
+        startProgress,
+        endProgress,
+        sourceStartProgress,
+        sourceEndProgress,
+      };
+    }, [selectedConfig]);
 
     const syncSoundToTimelineProgress = useCallback(
       (timelineProgress: number, config = selectedConfig) => {
@@ -278,24 +355,47 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
           return;
         }
 
-        const startProgress = Math.min(
-          Math.max(config.soundStartProgress ?? 0.18, 0),
-          1
-        );
-        const denominator = Math.max(1 - startProgress, Number.EPSILON);
-        const normalized = Math.min(
-          Math.max((timelineProgress - startProgress) / denominator, 0),
-          1
-        );
-        audio.currentTime = audio.duration * normalized;
+        const {
+          startProgress,
+          endProgress,
+          sourceStartProgress,
+          sourceEndProgress,
+        } = getSoundProgressWindow(config);
+
+        let sourceProgress = 0;
+        if (timelineProgress >= endProgress) {
+          sourceProgress = sourceEndProgress;
+        } else if (timelineProgress >= 0 && timelineProgress < startProgress) {
+          const preRollDenominator = Math.max(startProgress, Number.EPSILON);
+          const preRoll = Math.min(
+            Math.max(timelineProgress / preRollDenominator, 0),
+            1
+          );
+          sourceProgress = sourceStartProgress * preRoll;
+        } else if (timelineProgress >= startProgress) {
+          const denominator = Math.max(
+            endProgress - startProgress,
+            Number.EPSILON
+          );
+          const normalized = Math.min(
+            Math.max((timelineProgress - startProgress) / denominator, 0),
+            1
+          );
+          sourceProgress =
+            sourceStartProgress +
+            normalized * (sourceEndProgress - sourceStartProgress);
+        }
+
+        audio.currentTime = audio.duration * sourceProgress;
         emitSoundProgress();
       },
-      [emitSoundProgress, resolvedSoundUrl, selectedConfig]
+      [emitSoundProgress, getSoundProgressWindow, resolvedSoundUrl, selectedConfig]
     );
 
     const playSoundForTimeline = useCallback(
       (startProgress: number, config = selectedConfig) => {
         clearAudioDelayTimer();
+        soundStartedRef.current = false;
 
         const audio = audioRef.current;
         if (!audio || !resolvedSoundUrl) {
@@ -307,16 +407,23 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
           return;
         }
 
-        const soundStartProgress = Math.min(
-          Math.max(config.soundStartProgress ?? 0.18, 0),
-          1
-        );
+        const { startProgress: soundStartProgress } =
+          getSoundProgressWindow(config);
+
         const playNow = () => {
           syncSoundToTimelineProgress(
             Math.max(startProgress, soundStartProgress),
             config
           );
-          void audio.play().catch(() => undefined);
+          void audio
+            .play()
+            .then(() => {
+              soundStartedRef.current = true;
+              startSoundProgressLoop();
+            })
+            .catch(() => {
+              soundStartedRef.current = false;
+            });
         };
 
         if (startProgress >= soundStartProgress) {
@@ -331,8 +438,10 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       [
         clearAudioDelayTimer,
         emitSoundProgress,
+        getSoundProgressWindow,
         resolvedSoundUrl,
         selectedConfig,
+        startSoundProgressLoop,
         syncSoundToTimelineProgress,
       ]
     );
@@ -353,11 +462,14 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
 
         progressRef.current = clampedProgress;
         applyState(
-          config.getState(easedProgress, { linearProgress: clampedProgress })
+          config.getState(easedProgress, {
+            linearProgress: clampedProgress,
+            handleProfileId: resolvedHandleProfileId,
+          })
         );
         onProgressRef.current?.(clampedProgress);
       },
-      [applyState, selectedConfig]
+      [applyState, resolvedHandleProfileId, selectedConfig]
     );
 
     const reset = useCallback((nextPreset?: DoorEntrancePresetId) => {
@@ -428,6 +540,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
 
         const clamped = Math.min(Math.max(progress, 0), 1);
         audio.currentTime = audio.duration * clamped;
+        soundStartedRef.current = false;
         emitSoundProgress();
       },
       [clearAudioDelayTimer, emitSoundProgress, pauseSound, resolvedSoundUrl]
@@ -468,6 +581,9 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
           1
         );
         applyProgress(linearProgress, config);
+        if (!soundStartedRef.current) {
+          syncSoundToTimelineProgress(linearProgress, config);
+        }
 
         if (linearProgress < 1) {
           animationFrameRef.current = requestAnimationFrame(animate);
@@ -486,6 +602,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       cancelAnimationLoop,
       playSoundForTimeline,
       resolveConfig,
+      syncSoundToTimelineProgress,
     ]);
 
     useEffect(() => {
@@ -497,6 +614,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
         cancelAnimationLoop();
         clearAudioDelayTimer();
         pauseSound();
+        stopSoundProgressLoop();
       };
     }, [
       autoPlay,
@@ -505,6 +623,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       cancelAnimationLoop,
       clearAudioDelayTimer,
       pauseSound,
+      stopSoundProgressLoop,
       selectedConfig.id,
     ]);
 
@@ -541,6 +660,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
             state={state}
             textureUrl={resolvedTextureUrl}
             handleModelUrl={resolvedHandleModelUrl}
+            handleProfileId={resolvedHandleProfileId}
             cameraPanX={cameraPanX}
             cameraPanY={cameraPanY}
             Renderer={Renderer}
@@ -560,9 +680,21 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
             onLoadedMetadata={emitSoundProgress}
             onCanPlay={emitSoundProgress}
             onTimeUpdate={emitSoundProgress}
-            onEnded={emitSoundProgress}
-            onPause={emitSoundProgress}
-            onPlay={emitSoundProgress}
+            onEnded={() => {
+              soundStartedRef.current = false;
+              stopSoundProgressLoop();
+              emitSoundProgress();
+            }}
+            onPause={() => {
+              soundStartedRef.current = false;
+              stopSoundProgressLoop();
+              emitSoundProgress();
+            }}
+            onPlay={() => {
+              soundStartedRef.current = true;
+              startSoundProgressLoop();
+              emitSoundProgress();
+            }}
           />
         ) : null}
       </div>
