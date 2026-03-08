@@ -50,7 +50,17 @@ const DEFAULT_TEXTURE_URL = "/textures/door-1.png";
 const toPublicAssetUrl = (url?: string) => {
   if (!url) return undefined;
   if (/^https?:\/\//.test(url) || url.startsWith("/")) return url;
-  return `/${url.replace(/^\.?\//, "")}`;
+
+  const normalized = url.replace(/^\.?\//, "");
+  if (typeof document !== "undefined") {
+    try {
+      return new URL(normalized, document.baseURI).toString();
+    } catch {
+      return normalized;
+    }
+  }
+
+  return normalized;
 };
 
 const CameraController = ({

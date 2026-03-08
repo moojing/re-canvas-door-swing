@@ -60,7 +60,17 @@ const formatMs = (ms: number) => {
 const toPublicAssetUrl = (url?: string) => {
   if (!url) return null;
   if (/^https?:\/\//.test(url) || url.startsWith("/")) return url;
-  return `/${url}`;
+
+  const normalized = url.replace(/^\.?\//, "");
+  if (typeof document !== "undefined") {
+    try {
+      return new URL(normalized, document.baseURI).toString();
+    } catch {
+      return normalized;
+    }
+  }
+
+  return normalized;
 };
 
 const loadWaveSurfer = (): Promise<WaveSurferFactory> => {
