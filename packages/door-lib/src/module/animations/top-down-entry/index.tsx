@@ -23,6 +23,7 @@ export const topDownConfig: DoorAnimationConfig = {
   description: "俯視下降後靠近門再淡出",
   duration: 6500,
   progressMarkers: [0, 0.2, 0.35, 0.6, 0.85, 1],
+  soundStartProgress: 0.35,
   easing: easeInOutCubic,
   getState: (rawProgress: number, context) => {
     const progress = clamp(rawProgress, 0, 1);

@@ -17,6 +17,7 @@ export interface DoorEntrancePreset {
   variant: DoorAnimationVariant;
   textureUrl?: string;
   handleModelUrl?: string;
+  soundUrl?: string;
   className?: string;
 }
 
@@ -41,6 +42,7 @@ export interface DoorAnimationConfig {
   description?: string;
   duration: number;
   progressMarkers: number[];
+  soundStartProgress?: number;
   easing?: (progress: number) => number;
   getState: (
     progress: number,
@@ -48,11 +50,20 @@ export interface DoorAnimationConfig {
   ) => DoorAnimationState;
 }
 
+export interface DoorEntranceSoundState {
+  enabled: boolean;
+  ready: boolean;
+  currentTimeMs: number;
+  durationMs: number;
+  progress: number;
+}
+
 export interface DoorEntranceHandle {
   play: (preset?: DoorEntrancePresetId) => void;
   stop: () => void;
   reset: (preset?: DoorEntrancePresetId) => void;
   seek: (progress: number, preset?: DoorEntrancePresetId) => void;
+  seekSound: (progress: number) => void;
 }
 
 export interface DoorEntranceReadyEvent {

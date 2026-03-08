@@ -5,6 +5,7 @@ export type {
   DoorAnimationConfig,
   DoorEntrancePreset,
   DoorEntrancePresetId,
+  DoorEntranceSoundState,
 } from "./types";
 export type { DoorEntranceProps } from "./DoorEntrance";
 export {

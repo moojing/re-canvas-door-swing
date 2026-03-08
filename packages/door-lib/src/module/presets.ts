@@ -2,6 +2,8 @@ import { DoorEntrancePreset, DoorEntrancePresetId } from "./types";
 
 const DEFAULT_DOOR_TEXTURE = "textures/door-1.png";
 const DEFAULT_HANDLE_MODEL = "models/door_handle_single.glb";
+const DEFAULT_SINGLE_DOOR_SOUND =
+  "sounds/freesound_community-main-door-opening-closing-38280.mp3";
 
 export const doorEntrancePresetMap: Record<
   DoorEntrancePresetId,
@@ -13,6 +15,7 @@ export const doorEntrancePresetMap: Record<
     variant: "direct-entry",
     textureUrl: DEFAULT_DOOR_TEXTURE,
     handleModelUrl: DEFAULT_HANDLE_MODEL,
+    soundUrl: DEFAULT_SINGLE_DOOR_SOUND,
   },
   "door-single-overhead": {
     id: "door-single-overhead",
@@ -20,6 +23,7 @@ export const doorEntrancePresetMap: Record<
     variant: "top-down-entry",
     textureUrl: DEFAULT_DOOR_TEXTURE,
     handleModelUrl: DEFAULT_HANDLE_MODEL,
+    soundUrl: DEFAULT_SINGLE_DOOR_SOUND,
   },
   "door-double": {
     id: "door-double",
@@ -37,4 +41,3 @@ export const doorEntrancePresets: DoorEntrancePreset[] = Object.values(
 export const getDoorEntrancePreset = (
   preset: DoorEntrancePresetId = "door-single"
 ) => doorEntrancePresetMap[preset] ?? doorEntrancePresets[0];
-

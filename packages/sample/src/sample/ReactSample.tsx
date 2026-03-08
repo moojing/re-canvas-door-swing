@@ -43,6 +43,10 @@ const ReactSample = () => {
   const [cameraPanX, setCameraPanX] = useState(0);
   const [cameraPanY, setCameraPanY] = useState(0);
   const [isDraggingView, setIsDraggingView] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
+  const [audioDurationMs, setAudioDurationMs] = useState(0);
+  const [audioCurrentTimeMs, setAudioCurrentTimeMs] = useState(0);
   const ref = useRef<DoorEntranceHandle>(null);
   const shellRef = useRef<HTMLElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -70,6 +74,11 @@ const ReactSample = () => {
   );
   const progressMarkers = config.progressMarkers;
   const duration = config.duration;
+  const maxAudioSeekPercent = audioDurationMs > 0 ? 100 : 0;
+  const audioProgressPercent =
+    audioDurationMs > 0
+      ? Math.round((audioCurrentTimeMs / audioDurationMs) * 1000) / 10
+      : 0;
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -219,6 +228,12 @@ const ReactSample = () => {
   const sliderValue = Math.round(progress * 1000) / 10;
   const currentTime = duration * progress;
 
+  const handleAudioSeek = (nextAudioProgressPercent: number) => {
+    if (audioDurationMs <= 0) return;
+    const clamped = clamp(nextAudioProgressPercent, 0, maxAudioSeekPercent);
+    ref.current?.seekSound(clamped / 100);
+  };
+
   return (
     <section
       ref={shellRef}
@@ -296,7 +311,15 @@ const ReactSample = () => {
               setStatus("播放完成");
               setProgress(1);
             }}
-            onProgress={(next) => setProgress(next)}
+            onProgress={(next) => {
+              setProgress(next);
+            }}
+            onSoundProgress={(sound) => {
+              setAudioEnabled(sound.enabled);
+              setAudioReady(sound.ready);
+              setAudioDurationMs(sound.durationMs);
+              setAudioCurrentTimeMs(sound.currentTimeMs);
+            }}
             onReady={() => {
               setReady(true);
               setIsPlaying(false);
@@ -354,6 +377,47 @@ const ReactSample = () => {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-white/70">
+            <span>音效 {formatMs(audioCurrentTimeMs)}</span>
+            <span>{formatMs(audioDurationMs)}</span>
+          </div>
+
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={0.1}
+            value={audioProgressPercent}
+            onInput={(event) =>
+              handleAudioSeek(Number((event.target as HTMLInputElement).value))
+            }
+            onChange={(event) => handleAudioSeek(Number(event.target.value))}
+            disabled={!audioEnabled || !audioReady}
+            className="h-2 w-full cursor-ew-resize appearance-none rounded-full accent-cyan-400 disabled:cursor-not-allowed"
+            style={{
+              background: `linear-gradient(to right, rgb(34 211 238) 0%, rgb(34 211 238) ${audioProgressPercent}%, rgba(255,255,255,0.14) ${audioProgressPercent}%, rgba(255,255,255,0.14) 100%)`,
+            }}
+          />
+          <div className="flex items-center justify-between text-[11px] text-white/50">
+            <span>
+              Audio:{" "}
+              {audioEnabled
+                ? audioReady
+                  ? `${audioProgressPercent}%`
+                  : "載入中..."
+                : "此動畫無音效"}
+            </span>
+            <span>
+              {audioEnabled
+                ? audioReady
+                  ? "Door open SFX"
+                  : "等待音檔 metadata"
+                : "Only door-single has sound"}
+            </span>
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={handlePlay} disabled={!ready}>
             {isPlaying ? "停止" : "播放"}
@@ -398,6 +462,7 @@ const ReactSample = () => {
           ))}
         </div>
       </footer>
+
     </section>
   );
 };

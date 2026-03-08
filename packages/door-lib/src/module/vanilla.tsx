@@ -4,6 +4,7 @@ import {
   DoorEntrancePresetId,
   DoorAnimationVariant,
   DoorEntranceHandle,
+  DoorEntranceSoundState,
 } from "./types";
 
 interface MountDoorEntranceOptions {
@@ -14,9 +15,11 @@ interface MountDoorEntranceOptions {
   className?: string;
   onComplete?: () => void;
   onProgress?: (progress: number) => void;
+  onSoundProgress?: (state: DoorEntranceSoundState) => void;
   onReady?: () => void;
   textureUrl?: string;
   handleModelUrl?: string;
+  soundUrl?: string;
 }
 
 interface MountedDoorEntrance {
@@ -24,6 +27,7 @@ interface MountedDoorEntrance {
   stop: () => void;
   reset: (preset?: DoorEntrancePresetId) => void;
   seek: (progress: number, preset?: DoorEntrancePresetId) => void;
+  seekSound: (progress: number) => void;
   unmount: () => void;
 }
 
@@ -51,6 +55,7 @@ export const mountDoorEntrance = (
     stop: () => handle?.stop(),
     reset: (preset) => handle?.reset(preset),
     seek: (progress, preset) => handle?.seek(progress, preset),
+    seekSound: (progress) => handle?.seekSound(progress),
     unmount: () => {
       root?.unmount();
       root = null;
