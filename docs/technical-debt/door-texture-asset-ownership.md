@@ -1,7 +1,8 @@
 # Door Texture Asset Ownership
 
 Date: 2026-05-23
-Status: Open
+Last updated: 2026-06-14
+Status: **Decision made — pending implementation**
 
 ## Summary
 
@@ -14,12 +15,11 @@ shipping a specific static asset at a specific public URL.
 
 ## Current State
 
-- Default texture path is defined in `packages/door-lib/src/module/presets.ts`.
-- Texture manifest also points to `textures/door-1.png` in
-  `packages/door-lib/src/module/assets/textures.ts`.
+- Default texture path is defined in `packages/door-lib/src/module/presets.ts` as a plain string `"textures/door-1.png"`.
+- Texture manifest in `packages/door-lib/src/module/assets/textures.ts` also uses string paths and a `getTextureUrl(id, base)` helper that prepends a consumer-supplied base URL.
 - The concrete asset currently lives in `packages/sample/public/textures/door-1.png`.
-- `packages/door-lib/package.json` only publishes `dist`, so the texture is not
-  packaged with the library itself.
+- `packages/door-lib/package.json` only publishes `dist`, so the texture is not packaged with the library itself.
+- Sound assets have the same problem — also referenced as plain string paths.
 
 ## Why This Is Technical Debt
 
@@ -39,22 +39,104 @@ shipping a specific static asset at a specific public URL.
 - GitHub Pages or other non-root deployments can expose path assumptions more
   easily.
 
-## Recommended Direction
+## Decision: Bundler Import
 
-Choose one of these and standardize it:
+**Use bundler import (not CDN, not consumer-hosted paths).**
 
-1. Make `door-lib` own and publish its default texture assets.
-2. Remove the implicit default texture and require consumers to pass
-   `textureUrl`.
-3. Keep a default only for the sample app, and document that the library itself
-   does not ship built-in textures.
+Rationale:
+- Self-contained: no external service dependency (CDN downtime, network, firewall).
+- Tree-shaking: consumer only bundles the textures they actually use — unused ones from the 100+ catalog are dropped at build time.
+- Modern consumers (Vite, Webpack, Next.js) all support PNG imports natively.
+- Pool size will be small (consumer picks 3–5 variants), so bundle impact is acceptable.
 
-Preferred direction: make `door-lib` explicitly own the default asset, or stop
-advertising a built-in default at all.
+CDN (jsDelivr) was considered but rejected: the pool design means the set of
+textures is fixed at build time, not runtime, so CDN's "load anything at
+runtime" advantage does not apply here.
 
-## Follow-up Work
+## Target Architecture
 
-- Decide asset ownership model for published builds.
-- Update packaging/build so asset behavior matches runtime expectations.
-- Align README usage examples with the final asset strategy.
-- Replace the current sample-hosted texture only after ownership is clarified.
+### 1. Library owns and imports its assets
+
+Move image and sound files into the library source tree and import them as modules:
+
+```
+packages/door-lib/src/assets/
+  textures/
+    door-bars.png
+    door-wood.png
+    door-metal.png
+    ... (100+ files)
+  sounds/
+    door-creak.mp3
+    door-slide.mp3
+    ...
+```
+
+Each texture exported as a named export:
+
+```ts
+// packages/door-lib/src/assets/textures/index.ts
+export { default as doorBars } from './door-bars.png';
+export { default as doorWood } from './door-wood.png';
+// ...
+```
+
+At build time, Vite converts each import to a bundler-resolvable asset URL.
+Consumer's bundler then handles inlining (small files) or separate chunk
+(large files) via its own `assetsInlineLimit` setting.
+
+### 2. Presets reference imported asset values, not string paths
+
+```ts
+// presets.ts (after)
+import { doorWood } from '../assets/textures';
+import { doorCreak } from '../assets/sounds';
+
+const DEFAULT_DOOR_TEXTURE = doorWood;   // resolved URL or data URL
+const DEFAULT_SINGLE_DOOR_SOUND = doorCreak;
+```
+
+`getTextureUrl(id, base)` in `textures.ts` is removed — the base-URL
+indirection is no longer needed because paths are resolved at build time.
+
+### 3. Consumer pool API
+
+Consumer selects from the catalog; bundler tree-shakes the rest:
+
+```ts
+import { doorBars, doorMetal } from 'door-lib/textures';
+
+useDoorEntrance({
+  pool: [
+    { variant: 'sliding-panel', textureUrl: doorBars },
+    { variant: 'direct-entry',  textureUrl: doorMetal },
+  ]
+})
+```
+
+Library preloads only the pool entries at mount time. Random selection
+picks from the pre-loaded pool only.
+
+### 4. Consumer override still works
+
+If a consumer wants to supply their own texture URL (remote URL, their own
+public asset, or a data URL), the `textureUrl` prop continues to accept any
+string — the bundler-import default is just the fallback.
+
+## Files to Change
+
+| File | Change |
+|------|--------|
+| `packages/door-lib/src/module/assets/textures.ts` | Remove `getTextureUrl` / `normalizeBase`; replace manifest string paths with imported asset values |
+| `packages/door-lib/src/module/presets.ts` | Import asset values from `../assets/textures` and `../assets/sounds` instead of plain string defaults |
+| `packages/door-lib/vite.config.ts` | Verify asset handling for lib build; confirm PNG imports resolve correctly |
+| `packages/door-lib/package.json` | Add `exports` entry for `door-lib/textures` subpath if consumer direct-imports are needed |
+| `packages/sample/public/textures/` | Remove `door-1.png` after migration (or keep for sample-only overrides) |
+| `packages/door-lib/src/assets/` | Create directory; add texture and sound files |
+
+## Follow-up Work (out of scope for this change)
+
+- Decide catalog size and naming convention before adding 100+ textures.
+- Add pool preload hook (`useDoorEntrance({ pool: [...] })`).
+- Validate that tree-shaking actually drops unused texture imports in a Vite consumer build.
+- Document the pool API in README.
