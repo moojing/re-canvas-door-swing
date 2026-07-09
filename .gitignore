@@ -25,5 +25,8 @@ dist-ssr
 .mcp.json
 materials/
 
+# 從遊戲實機畫面抽出的參考素材(scope 用,版權原畫,不進版控/發佈包)
+docs/door-gallery/
+
 # Claude Code local (personal) settings — keep out of version control
 .claude/settings.local.json
