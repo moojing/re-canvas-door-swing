@@ -161,6 +161,29 @@ def render(game, code):
     gif = base64.b64encode(open(gdst,"rb").read()).decode()
     return hero, gif, hrel, grel
 
+def skeleton(form, a):
+    if "中分" in a: return "中分滑動(雙扇對開)"
+    if "折" in a or "摺" in a: return "折疊/摺疊壓縮"
+    if "垂直上" in a or "上滑" in a or "捲升" in a or "垂直上升" in a: return "垂直移動/捲升"
+    if "原地旋轉" in a: return "原地旋轉"
+    if "水平滑動" in a or ("滑動" in a and "門栓" not in a) or "拉開" in a: return "水平滑動(單扇)"
+    if "雙開" in a or "雙扇" in a or "對開" in a: return "鉸鏈雙開"
+    if "鉸鏈" in a or "單開" in a or "推門" in a or "前推後拉" in a or "推拉" in a: return "鉸鏈單開"
+    if "鏡頭" in a or "非門" in form: return "純鏡頭移動(非門)"
+    return "其他/特殊"
+
+# 字串分類的邊角人工校正(逐支目視後判定)
+SKELETON_FIX = {
+    ("1-2","b03"): "鉸鏈雙開・僅單扇動",   # 雙門僅右扇可動
+    ("1-5","b04"): "鉸鏈雙開・僅單扇動",   # 雙門僅單扇拉開
+    ("1-1","c03"): "純鏡頭移動(非門)",     # 升降平台(字面「旋轉」誤入原地旋轉)
+    ("1-1","d01"): "鉸鏈單開",             # cutscene 門體本身是單開
+    ("1-5","c04"): "其他/特殊(剪刀式拉門)",
+}
+
+def door_skeleton(d):
+    return SKELETON_FIX.get((d["game"], d["code"])) or skeleton(d["form"], d["anim"])
+
 def vclass(v):
     return ("v-no" if "無法製作" in v else "v-opt" if "比評估樂觀" in v
             else "v-warn" if ("需重估" in v or "有出入" in v) else "v-ok")
@@ -180,7 +203,9 @@ cnt = Counter(vlabel(d["verdict"]) for d in doors)
 manifest = [{
     "game": d["game"], "code": d["code"], "name": d["name"], "variants": d["variants"],
     "form": d["form"], "material": d["mat"], "animation": d["anim"], "accessory": d["acc"],
-    "csv": d["csv"], "verdict": vlabel(d["verdict"]),
+    "skeleton": door_skeleton(d),                      # 動畫骨架區塊(統計用,已含人工校正)
+    "csv": d["csv"], "csv_excluded": "❌" in d["csv"],  # 原評估標 ❌ = 照原計畫不會製作
+    "verdict": vlabel(d["verdict"]),
     "verdict_class": vclass(d["verdict"]), "note": d["note"],
     "optimism_risk": (d["game"], d["code"]) in OPTIMISM_RISK,
     "still": d.get("still_path"), "gif": d.get("gif_path"),
@@ -194,16 +219,18 @@ idx_of = {(d["game"], d["code"]): di for di, d in enumerate(doors)}
 cards = []
 for di, d in enumerate(doors):
     risk = (d["game"], d["code"]) in OPTIMISM_RISK
+    excl = "❌" in d["csv"]
     vc = vclass(d["verdict"])
-    filt = vc + (" risk" if risk else "")
+    filt = vc + (" risk" if risk else "") + (" csvno" if excl else "")
     img = (f'<img class="thumb" data-idx="{di}" alt="{d["game"]} {d["code"]} {html.escape(d["name"])}">'
            if d["b64"] else '<div class="noimg">（無縮圖）</div>')
     rb = '<span class="risk-badge">⚠ 待驗證</span>' if risk else ''
+    excl_badge = '<span class="badge b-csvno">🚫 原評估不做</span>' if excl else ''
     cards.append(f'''<figure class="card {filt}" data-game="{d['game']}" data-idx="{di}">
   <div class="imgwrap">{img}<span class="zoom">⤢</span></div>
   <figcaption class="body">
     <div class="hd"><span class="code">{d['game']} {html.escape(d['code'])}</span>
-      <span class="badge {vc}">{vlabel(d['verdict'])}</span></div>
+      <span class="badges">{excl_badge}<span class="badge {vc}">{vlabel(d['verdict'])}</span></span></div>
     <div class="name">{html.escape(d['name'])} {rb}<span class="var">×{html.escape(d['variants'])}</span></div>
     <div class="axes">
       <span><b>形</b>{html.escape(d['form'])}</span>
@@ -225,17 +252,6 @@ def form_bucket(form):
     for k in ("非門","大扇門","雙門","單門"):
         if k in form: return "非門轉場" if k=="非門" else k
     return "其他"
-
-def skeleton(form, a):
-    if "中分" in a: return "中分滑動（雙扇對開滑）"
-    if "折" in a: return "折疊 / 摺疊"
-    if "垂直上" in a or "上滑" in a or "捲升" in a or "垂直上升" in a: return "垂直移動 / 捲升"
-    if "原地旋轉" in a or ("旋轉" in a and "鉸鏈" not in a): return "原地旋轉"
-    if "水平滑動" in a or "滑動" in a or "拉開" in a or "拉門" in a: return "水平滑動（單扇拉）"
-    if "雙開" in a or "雙扇" in a: return "鉸鏈雙開"
-    if "鉸鏈" in a or "單開" in a or "推門" in a or "前推後拉" in a or "推拉" in a: return "鉸鏈單開 / 開合"
-    if "非門" in form or "鏡頭" in a: return "純鏡頭移動（非門轉場）"
-    return "其他 / 特殊"
 
 def chip(di, note_key=None):
     d = doors[di]
@@ -272,13 +288,14 @@ opt_ids  = [di for di,d in enumerate(doors) if vclass(d["verdict"])=="v-opt"]
 no_ids   = [di for di,d in enumerate(doors) if vclass(d["verdict"])=="v-no"]
 warn_ids = [di for di,d in enumerate(doors) if vclass(d["verdict"])=="v-warn"]
 risk_ids = [di for di,d in enumerate(doors) if (d["game"],d["code"]) in OPTIMISM_RISK]
+excl_ids = [di for di,d in enumerate(doors) if "❌" in d["csv"]]
 
 # F. 動畫分類階層:形式 → 骨架(只收可製作門型)
 FORM_ORDER = ["單門","雙門","大扇門","非門轉場","其他"]
 hier = {}
 for di,d in enumerate(doors):
     if vclass(d["verdict"])=="v-no": continue
-    fb = form_bucket(d["form"]); sk = skeleton(d["form"], d["anim"])
+    fb = form_bucket(d["form"]); sk = door_skeleton(d)
     hier.setdefault(fb, {}).setdefault(sk, []).append(di)
 hier_html = ""
 for fb in FORM_ORDER:
@@ -296,6 +313,7 @@ analysis_html = f'''
   <div class="abox opt"><b>{len(opt_ids)}</b><span>可救回(原❌)</span></div>
   <div class="abox warn"><b>{len(warn_ids)}</b><span>有出入/需重估</span></div>
   <div class="abox no"><b>{len(no_ids)}</b><span>無法製作</span></div>
+  <div class="abox no"><b>{len(excl_ids)}</b><span>🚫 原評估不做(❌)</span></div>
   <div class="abox risk"><b>{len(risk_ids)}</b><span>樂觀待驗證</span></div>
 </div>
 <p class="atake">原 CSV 估 130h,但那已是「非❌」的既有範圍。實看後:22 個原標 ❌ 的門其實可做(平面貼圖/基本幾何可仿製,約可救回 60–85h);2 個原列工時的項目其實依賴環境做不了(應扣約 7h);另有電梯搭乘類嚴重低估。動畫骨架其實只有約 4 套,成本集中在配件模型與貼圖變體數。</p>
@@ -361,7 +379,9 @@ font-size:13px;padding:2px 7px;border-radius:5px;opacity:0;transition:opacity .1
 .body{padding:9px 11px 11px}
 .hd{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .code{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .badge{font-size:11px;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.b-csvno{background:rgba(240,86,77,.22);color:#ff9c96;border:1px dashed rgba(240,86,77,.6);font-weight:600}
 .v-ok{background:rgba(63,185,80,.15);color:var(--ok);border:1px solid rgba(63,185,80,.4)}
 .v-opt{background:rgba(88,155,255,.15);color:var(--opt);border:1px solid rgba(88,155,255,.4)}
 .v-warn{background:rgba(214,160,33,.15);color:var(--warn);border:1px solid rgba(214,160,33,.4)}
@@ -502,6 +522,7 @@ body = f"""{style}
   <button class="fbtn" data-f="v-warn">⚠️ 有出入/需重估</button>
   <button class="fbtn" data-f="v-no">❌ 無法製作</button>
   <button class="fbtn" data-f="risk">⚠ 樂觀待驗證</button>
+  <button class="fbtn" data-f="csvno">🚫 原評估不做</button>
 </div>
 {"".join(sections)}
 </div>
