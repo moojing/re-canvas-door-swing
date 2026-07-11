@@ -34,3 +34,4 @@ packages/sample/public/textures/poc-b10/
 .claude/settings.local.json
 # Claude Code 平行作業的暫存 worktree
 .claude/worktrees/
+*.tsbuildinfo
