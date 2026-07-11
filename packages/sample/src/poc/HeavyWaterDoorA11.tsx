@@ -101,13 +101,24 @@ const ReliefPart = ({
   );
 };
 
-const ValveWheel = ({ position }: { position: [number, number, number] }) => {
+const ValveWheel = ({
+  position,
+  spinAngle,
+}: {
+  position: [number, number, number];
+  spinAngle: number;
+}) => {
   const tex = useDoorTexture("wheel.png");
   const r = SRC.wheel.r * S;
+  const wheelRef = useRef<THREE.Mesh>(null);
+  // 繞圓柱自身軸(局部 y)轉 = 閥輪解鎖轉動
+  useFrame(() => {
+    if (wheelRef.current) wheelRef.current.rotation.y = spinAngle;
+  });
   return (
     <group position={position} rotation={[Math.PI / 2, 0, 0]}>
       {/* 圓柱側面 = 輪圈厚度;頂蓋貼閥輪截圖 */}
-      <mesh>
+      <mesh ref={wheelRef}>
         <cylinderGeometry args={[r, r, 0.14, 24]} />
         <meshLambertMaterial attach="material-0" color="#5d4a41" />
         <meshLambertMaterial
@@ -122,7 +133,13 @@ const ValveWheel = ({ position }: { position: [number, number, number] }) => {
   );
 };
 
-const A11Door = ({ doorAngle }: { doorAngle: number }) => {
+const A11Door = ({
+  doorAngle,
+  wheelAngle,
+}: {
+  doorAngle: number;
+  wheelAngle: number;
+}) => {
   const doorGroupRef = useRef<THREE.Group>(null);
   const faceTex = useDoorTexture("door.png");
 
@@ -172,7 +189,7 @@ const A11Door = ({ doorAngle }: { doorAngle: number }) => {
           <ReliefPart rect={railBottom} z={0.12} depth={0.12} file="rail-bottom.png" sideColor="#8d8578" />
           <ReliefPart rect={panel} z={0.14} depth={0.14} file="panel.png" sideColor="#74615a" />
           <ReliefPart rect={housing} z={0.22} depth={0.16} file="valve-housing.png" sideColor="#867d70" />
-          <ValveWheel position={wheelPos} />
+          <ValveWheel position={wheelPos} spinAngle={wheelAngle} />
         </group>
       </group>
     </group>
@@ -227,9 +244,15 @@ const HeavyWaterDoorA11 = () => {
     []
   );
 
-  const state = config.getState(easeInOutCubic(progress), {
+  const eased = easeInOutCubic(progress);
+  const state = config.getState(eased, {
     linearProgress: progress,
   });
+
+  // 閥輪解鎖:原片是「先轉閥輪、轉完門才開」。direct-entry 的門在 eased 0.18 起擺,
+  // 閥輪安排在 0.03–0.18 轉約 5/8 圈,門動時剛好轉完。
+  const wheelAngle =
+    -Math.min(Math.max((eased - 0.03) / 0.15, 0), 1) * Math.PI * 1.25;
 
   return (
     <div className="min-h-screen bg-black p-6 text-white">
@@ -251,7 +274,7 @@ const HeavyWaterDoorA11 = () => {
             <directionalLight position={[2, 5, 5]} intensity={0.7} />
             <directionalLight position={[-3, 2, -4]} intensity={0.35} color="#8fa8c7" />
             <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
-            <A11Door doorAngle={state.doorAngle} />
+            <A11Door doorAngle={state.doorAngle} wheelAngle={wheelAngle} />
             <CameraRig z={state.cameraPosition[2]} />
             <FadePlane opacity={state.fadeOut} cameraZ={state.cameraPosition[2]} />
           </Canvas>
