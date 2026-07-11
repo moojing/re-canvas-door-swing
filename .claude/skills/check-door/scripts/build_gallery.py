@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # 開門動畫視覺圖庫:每門型一張最清楚的門正面 + 點擊放大 modal
-import base64, glob, html, json, os, re, subprocess, tempfile
+# 用法: build_gallery.py [輸出 html 路徑](預設 docs/door-gallery/door-gallery.html)
+import base64, glob, html, json, os, re, subprocess, sys, tempfile
 from collections import Counter
 
-ROOT = "/Users/mujingtsai/Case/BioHazard/re-canvas-door-swing"
-FR = "/private/tmp/claude-501/-Users-mujingtsai-Case-BioHazard-re-canvas-door-swing/131267d0-d43f-47ea-8e62-deaf8ed42fe4/scratchpad/check-all/frames"
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 MAT = os.path.join(ROOT, "materials/1 開門動畫轉場製作")
 MD = os.path.join(ROOT, "docs/door-classifications.md")
 SKILL = os.path.join(ROOT, ".claude/skills/check-door/scripts")
 TMP = tempfile.mkdtemp(prefix="gallery2-")
-OUT = "/private/tmp/claude-501/-Users-mujingtsai-Case-BioHazard-re-canvas-door-swing/131267d0-d43f-47ea-8e62-deaf8ed42fe4/scratchpad/door-gallery.html"
 
 # 本地資產輸出(供之後做 local web 用):獨立 still / gif 檔 + doors.json 清單
 ASSETS = os.path.join(ROOT, "docs/door-gallery")
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ASSETS, "door-gallery.html")
 os.makedirs(os.path.join(ASSETS, "stills"), exist_ok=True)
 os.makedirs(os.path.join(ASSETS, "gifs"), exist_ok=True)
 
@@ -457,8 +457,10 @@ hero_js = "const HERO=[" + ",".join(
     (f'"data:image/jpeg;base64,{d["b64"]}"' if d.get("b64") else "null") for d in doors) + "];"
 anim_js = "const ANIM=[" + ",".join(
     (f'"data:image/gif;base64,{d["gif"]}"' if d.get("gif") else "null") for d in doors) + "];"
-meta_js = "const META=[" + ",".join(
+# "<" 逸出為 <:Markdown 來的 name 不得含 "</script>" 之類序列終止腳本區塊
+meta_js = ("const META=[" + ",".join(
     (json.dumps({"c": d["game"]+" "+d["code"], "n": d["name"]}, ensure_ascii=False)) for d in doors) + "];"
+    ).replace("<", "\\u003c")
 
 script = "<script>\n" + hero_js + "\n" + anim_js + "\n" + meta_js + "\n" + """
 // 所有縮圖(卡片 + 分析 chip)共用 HERO[],載入時依 data-idx 設 src(避免重複嵌入)
@@ -475,7 +477,10 @@ function openModal(idx){
   if(g){mgif.src=g;mgif.style.display='';mgifsec.style.display='';}
   else{mgif.style.display='none';mgifsec.style.display='none';}
   mimg.src=HERO[idx]||'';
-  mcap.innerHTML='<span class="mc">'+META[idx].c+'</span>'+META[idx].n;
+  // 以 textContent 組 caption,避免分類資料被當 HTML 解析
+  mcap.textContent='';
+  const mc=document.createElement('span'); mc.className='mc'; mc.textContent=META[idx].c;
+  mcap.appendChild(mc); mcap.append(META[idx].n);
   modal.scrollTop=0; modal.classList.add('on');
 }
 document.querySelectorAll('.card .imgwrap').forEach(w=>{

@@ -316,6 +316,14 @@ const SewerGateB10 = () => {
     frameRef.current = requestAnimationFrame(tick);
   }, [config.duration]);
 
+  // 手動操作(重置/拉桿)前先取消進行中的播放,避免下一個 RAF tick 蓋掉使用者選的進度
+  const stopPlayback = useCallback(() => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+  }, []);
+
   useEffect(
     () => () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
@@ -363,7 +371,10 @@ const SewerGateB10 = () => {
             播放
           </button>
           <button
-            onClick={() => setProgress(0)}
+            onClick={() => {
+              stopPlayback();
+              setProgress(0);
+            }}
             className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/10"
           >
             重置
@@ -374,7 +385,10 @@ const SewerGateB10 = () => {
             max={1}
             step={0.001}
             value={progress}
-            onChange={(e) => setProgress(Number(e.target.value))}
+            onChange={(e) => {
+              stopPlayback();
+              setProgress(Number(e.target.value));
+            }}
             className="w-56"
           />
           <span className="text-xs tabular-nums text-white/60">

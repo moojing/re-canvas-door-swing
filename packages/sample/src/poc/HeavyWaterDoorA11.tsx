@@ -179,10 +179,11 @@ const A11Door = ({ doorAngle }: { doorAngle: number }) => {
   );
 };
 
-const FadePlane = ({ opacity }: { opacity: number }) => (
-  <mesh position={[0, 0, 5]}>
+/** 淡出黑幕:跟著相機走(固定 z 會被前推的相機超過而失效) */
+const FadePlane = ({ opacity, cameraZ }: { opacity: number; cameraZ: number }) => (
+  <mesh position={[0, 0, cameraZ - 0.5]}>
     <planeGeometry args={[20, 20]} />
-    <meshBasicMaterial color="#000000" transparent opacity={opacity} />
+    <meshBasicMaterial color="#000000" transparent opacity={opacity} depthTest={false} />
   </mesh>
 );
 
@@ -210,6 +211,14 @@ const HeavyWaterDoorA11 = () => {
     };
     frameRef.current = requestAnimationFrame(tick);
   }, [config.duration]);
+
+  // 手動操作(重置/拉桿)前先取消進行中的播放,避免下一個 RAF tick 蓋掉使用者選的進度
+  const stopPlayback = useCallback(() => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+  }, []);
 
   useEffect(
     () => () => {
@@ -244,7 +253,7 @@ const HeavyWaterDoorA11 = () => {
             <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
             <A11Door doorAngle={state.doorAngle} />
             <CameraRig z={state.cameraPosition[2]} />
-            <FadePlane opacity={state.fadeOut} />
+            <FadePlane opacity={state.fadeOut} cameraZ={state.cameraPosition[2]} />
           </Canvas>
         </div>
 
@@ -256,7 +265,10 @@ const HeavyWaterDoorA11 = () => {
             播放
           </button>
           <button
-            onClick={() => setProgress(0)}
+            onClick={() => {
+              stopPlayback();
+              setProgress(0);
+            }}
             className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/10"
           >
             重置
@@ -267,7 +279,10 @@ const HeavyWaterDoorA11 = () => {
             max={1}
             step={0.001}
             value={progress}
-            onChange={(e) => setProgress(Number(e.target.value))}
+            onChange={(e) => {
+              stopPlayback();
+              setProgress(Number(e.target.value));
+            }}
             className="w-56"
           />
           <span className="text-xs tabular-nums text-white/60">

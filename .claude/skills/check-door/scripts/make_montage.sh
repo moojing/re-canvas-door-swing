@@ -5,13 +5,15 @@
 set -euo pipefail
 DIR="$1"; OUT="$2"
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+shopt -s nullglob
+frames=("$DIR"/frame_*.png)
+N=${#frames[@]}
+[ "$N" -eq 0 ] && { echo "no frames in $DIR" >&2; exit 1; }
 i=1
-for f in "$DIR"/frame_*.png; do
+for f in "${frames[@]}"; do
   cp "$f" "$TMP/seq_$(printf %02d $i).png"
   i=$((i+1))
 done
-N=$((i-1))
-[ "$N" -eq 0 ] && { echo "no frames in $DIR" >&2; exit 1; }
 COLS=3; ROWS=$(( (N + COLS - 1) / COLS ))
 ffmpeg -y -loglevel error -framerate 1 -i "$TMP/seq_%02d.png" \
   -vf "scale=500:-1,tile=${COLS}x${ROWS}" -frames:v 1 "$OUT"

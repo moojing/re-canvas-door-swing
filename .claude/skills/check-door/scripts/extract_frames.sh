@@ -46,16 +46,22 @@ fi
 
 # 由黑幕區段反推出「有畫面」的區段,依長度比例分配取樣數
 echo "$BLACK_LOG" | awk -v dur="$DUR" -v n="$COUNT" '
-  BEGIN { prev = 0; nseg = 0 }
-  {
+  BEGIN { prev = 0; nseg = 0; nblack = 0 }
+  NF > 0 {
     split($1, a, ":"); split($2, b, ":")
-    bs = a[2]; be = b[2]
+    bs = a[2]; be = b[2]; nblack++
     if (bs - prev > 0.3) { segs[nseg] = prev "," bs; nseg++ }
     prev = be
   }
   END {
     if (dur - prev > 0.3) { segs[nseg] = prev "," dur; nseg++ }
-    if (nseg == 0) { segs[0] = 0 "," dur; nseg = 1 }  # 全片無黑幕或全黑:整段均勻取樣
+    if (nseg == 0) {
+      if (nblack > 0) {  # 黑幕覆蓋全片:依約定回報錯誤,不取樣全黑影格
+        print "error: no non-black frames (black segments cover the whole video)" > "/dev/stderr"
+        exit 1
+      }
+      segs[0] = 0 "," dur; nseg = 1  # 全片無黑幕:整段均勻取樣
+    }
     total = 0
     for (i = 0; i < nseg; i++) { split(segs[i], s, ","); total += s[2] - s[1] }
     for (i = 0; i < nseg; i++) {

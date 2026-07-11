@@ -4,7 +4,7 @@
     {
       "name": "gallery-preview",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8091", "--directory", "/private/tmp/claude-501/-Users-mujingtsai-Case-BioHazard-re-canvas-door-swing/131267d0-d43f-47ea-8e62-deaf8ed42fe4/scratchpad"],
+      "runtimeArgs": ["-m", "http.server", "8091", "--directory", "docs/door-gallery"],
       "port": 8091
     },
     {
