@@ -45,10 +45,24 @@ const rectToLocal = (r: { w: number; h: number; x: number; y: number }) => ({
 const useDoorTexture = (file: string) => {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   useEffect(() => {
-    const tex = new THREE.TextureLoader().load(`${TEX_BASE}/${file}`);
+    let alive = true;
+    // 載入「成功」才綁上材質;載入中/失敗一律走鏽色 fallback,避免空貼圖渲染成白模
+    const tex = new THREE.TextureLoader().load(
+      `${TEX_BASE}/${file}`,
+      () => {
+        if (alive) setTexture(tex);
+      },
+      undefined,
+      () => {
+        console.warn(`[poc-a11] 貼圖載入失敗:${TEX_BASE}/${file}(先執行 scripts/poc/extract-a11-textures.sh?)`);
+      }
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
-    setTexture(tex);
-    return () => tex.dispose();
+    return () => {
+      alive = false;
+      setTexture(null);
+      tex.dispose();
+    };
   }, [file]);
   return texture;
 };
