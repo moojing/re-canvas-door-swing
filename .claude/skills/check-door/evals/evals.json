@@ -1,0 +1,17 @@
+{
+  "skill_name": "check-door",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/check-door 1-1 b06",
+      "expected_output": "b06 電梯拉門的分鏡結構、五軸分類(應判讀為水平滑動)、CSV 對照(難度5、⚠️、8小時)、寫入 docs/door-classifications.md",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/check-door(無參數)",
+      "expected_output": "自動從檢查紀錄找下一個未檢查門型並完成整套判讀",
+      "files": []
+    }
+  ]
+}
