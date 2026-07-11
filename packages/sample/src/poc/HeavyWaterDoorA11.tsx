@@ -90,11 +90,12 @@ const ReliefPart = ({
       </mesh>
       <mesh position={[0, 0, depth / 2 + 0.002]}>
         <planeGeometry args={[rect.w, rect.h]} />
-        {tex ? (
-          <meshLambertMaterial map={tex} />
-        ) : (
-          <meshLambertMaterial color={sideColor} />
-        )}
+        {/* key 強制換新材質:shader 需以 USE_MAP 重新編譯,否則沿用無貼圖材質會渲染成白色 */}
+        <meshLambertMaterial
+          key={tex ? "textured" : "flat"}
+          map={tex ?? undefined}
+          color={tex ? undefined : sideColor}
+        />
       </mesh>
     </group>
   );
@@ -109,11 +110,12 @@ const ValveWheel = ({ position }: { position: [number, number, number] }) => {
       <mesh>
         <cylinderGeometry args={[r, r, 0.14, 24]} />
         <meshLambertMaterial attach="material-0" color="#5d4a41" />
-        {tex ? (
-          <meshLambertMaterial attach="material-1" map={tex} />
-        ) : (
-          <meshLambertMaterial attach="material-1" color="#6a564c" />
-        )}
+        <meshLambertMaterial
+          key={tex ? "textured" : "flat"}
+          attach="material-1"
+          map={tex ?? undefined}
+          color={tex ? undefined : "#6a564c"}
+        />
         <meshLambertMaterial attach="material-2" color="#4a3a33" />
       </mesh>
     </group>
@@ -158,11 +160,11 @@ const A11Door = ({ doorAngle }: { doorAngle: number }) => {
           </mesh>
           <mesh position={[0, 0, 0.077]}>
             <planeGeometry args={[DOOR_WIDTH, DOOR_HEIGHT]} />
-            {faceTex ? (
-              <meshLambertMaterial map={faceTex} />
-            ) : (
-              <meshLambertMaterial color="#5f4c43" />
-            )}
+            <meshLambertMaterial
+              key={faceTex ? "textured" : "flat"}
+              map={faceTex ?? undefined}
+              color={faceTex ? undefined : "#5f4c43"}
+            />
           </mesh>
 
           {/* 浮凸部件:上/下橫樑、中央面板、閥輪座、閥輪 */}
