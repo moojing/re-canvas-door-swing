@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && rm -rf dist/textures/poc-*",
-    "build:dev": "vite build --mode development && rm -rf dist/textures/poc-*",
+    "build": "vite build && rm -rf dist/textures/poc-* && cp dist/index.html dist/404.html",
+    "build:dev": "vite build --mode development && rm -rf dist/textures/poc-* && cp dist/index.html dist/404.html",
     "lint": "eslint .",
     "preview": "vite preview"
   },
