@@ -151,21 +151,28 @@ const ToothedPlate = ({
     [shape]
   );
   useEffect(() => () => geometry.dispose(), [geometry]);
-  // 貼圖到位後命令式掛上 + needsUpdate 重編譯 shader(USE_MAP)。
-  // 不用 key 重掛:attach="material-0" 的 keyed 置換會讓材質陣列瞬間出現空洞而崩潰。
-  const matRef = useRef<THREE.MeshLambertMaterial>(null);
-  useEffect(() => {
-    const m = matRef.current;
-    if (!m) return;
-    m.map = texture ?? null;
-    m.color.set(texture ? "#ffffff" : fallback);
-    m.needsUpdate = true;
-  }, [texture, fallback]);
+  // 材質整組用建構式重建、原子替換:
+  // - keyed attach="material-0" 置換會讓材質陣列瞬間出現空洞而崩潰
+  // - 命令式 m.map=... 又繞過建構期的 colorSpace 設定,顏色會洗白
+  const materials = useMemo(
+    () => [
+      new THREE.MeshLambertMaterial(
+        texture ? { map: texture } : { color: fallback }
+      ),
+      new THREE.MeshLambertMaterial({ color: sideColor }),
+    ],
+    [texture, fallback, sideColor]
+  );
+  useEffect(
+    () => () => materials.forEach((m) => m.dispose()),
+    [materials]
+  );
   return (
-    <mesh geometry={geometry} position={[0, 0, -PLATE_DEPTH / 2]}>
-      <meshLambertMaterial ref={matRef} attach="material-0" color={fallback} />
-      <meshLambertMaterial attach="material-1" color={sideColor} />
-    </mesh>
+    <mesh
+      geometry={geometry}
+      material={materials}
+      position={[0, 0, -PLATE_DEPTH / 2]}
+    />
   );
 };
 
@@ -337,10 +344,11 @@ const SewerGateB10 = () => {
             camera={{ position: [0, 0, 8], fov: 60 }}
             onCreated={({ gl }) => gl.setClearColor("#000000")}
           >
-            <ambientLight intensity={0.3} />
-            <directionalLight position={[1.5, 4, 5]} intensity={0.65} />
-            <directionalLight position={[-3, 1, -4]} intensity={0.3} color="#8fa8c7" />
-            <pointLight position={[0, -1, 3]} intensity={0.35} color="#c7b189" />
+            <ambientLight intensity={0.15} />
+            <directionalLight position={[2, 5, 5]} intensity={0.4} />
+            <directionalLight position={[-3, 2, -4]} intensity={0.2} color="#8fa8c7" />
+            {/* 暖橘點光源壓色調,同 a11 的鏽紅氛圍;總光量壓在 1 以下維持底片感 */}
+            <pointLight position={[0, 1, 3]} intensity={0.35} color="#ff8844" />
             <B10Gate doorAngle={state.doorAngle} />
             <CameraRig z={state.cameraPosition[2]} />
             <FadePlane opacity={state.fadeOut} cameraZ={state.cameraPosition[2]} />
