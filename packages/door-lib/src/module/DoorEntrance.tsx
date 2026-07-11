@@ -26,6 +26,7 @@ import {
   HandleProfileId,
 } from "./types";
 import { getHandleProfile } from "./handles/profiles";
+import { doorWood } from "../assets/textures";
 
 interface DoorEntranceProps {
   preset?: DoorEntrancePresetId;
@@ -46,7 +47,7 @@ interface DoorEntranceProps {
 
 const DEFAULT_CLASS_NAME =
   "h-[460px] w-full rounded-xl border border-white/10 bg-black";
-const DEFAULT_TEXTURE_URL = "/textures/door-1.png";
+const DEFAULT_TEXTURE_URL = doorWood;
 const toPublicAssetUrl = (url?: string) => {
   if (!url) return undefined;
   if (/^https?:\/\//.test(url) || url.startsWith("/")) return url;

@@ -23,7 +23,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup src/index.ts src/vanilla.ts --dts --format esm,cjs --sourcemap --clean",
+    "build": "tsup",
     "dev": "npm run build -- --watch"
   },
   "peerDependencies": {

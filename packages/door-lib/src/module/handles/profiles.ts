@@ -1,4 +1,5 @@
 import { HandleProfileId } from "../types";
+import { doorHandleSingle } from "../../assets/models";
 
 export type HandleMaterialSide = "front" | "double";
 
@@ -38,7 +39,7 @@ export const handleProfileMap: Record<HandleProfileId, HandleModelProfile> = {
   "lever-l": {
     id: "lever-l",
     label: "Lever L",
-    defaultModelUrl: "models/door_handle_single.glb",
+    defaultModelUrl: doorHandleSingle,
     nodeNameCandidates: [
       "door_handle",
       "Door Handle 3_1",
@@ -63,7 +64,7 @@ export const handleProfileMap: Record<HandleProfileId, HandleModelProfile> = {
   "knob-round": {
     id: "knob-round",
     label: "Round Knob",
-    defaultModelUrl: "models/door_handle_single.glb",
+    defaultModelUrl: doorHandleSingle,
     nodeNameCandidates: ["knob", "round_knob", "Door Knob", "Object_6"],
     defaultScale: 0.2,
     pressNodeHints: ["knob", "grip"],

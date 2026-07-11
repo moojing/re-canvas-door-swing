@@ -1,8 +1,8 @@
 # Door Texture Asset Ownership
 
 Date: 2026-05-23
-Last updated: 2026-06-14
-Status: **Decision made — pending implementation**
+Last updated: 2026-07-11
+Status: **Implemented** (see Implementation Notes below)
 
 ## Summary
 
@@ -134,9 +134,41 @@ string — the bundler-import default is just the fallback.
 | `packages/sample/public/textures/` | Remove `door-1.png` after migration (or keep for sample-only overrides) |
 | `packages/door-lib/src/assets/` | Create directory; add texture and sound files |
 
+## Implementation Notes (2026-07-11)
+
+Implemented as decided, with the following deviations from the target
+architecture above (which assumed a Vite library build):
+
+- **tsup/esbuild `copy` loader instead of Vite asset handling.** The library
+  builds with tsup, so `tsup.config.ts` maps `.png`/`.mp3`/`.glb` to esbuild's
+  `copy` loader: each imported asset is copied into `dist/` with a content
+  hash and the import statement is preserved in the output JS. The consumer's
+  bundler resolves that import to a final URL (inline or file per its own
+  config), which matches the "bundler import" decision.
+- **Handle models included.** `handles/profiles.ts` had the same problem
+  (`defaultModelUrl: "models/door_handle_single.glb"`), so the GLB moved into
+  `src/assets/models/` and is imported the same way. The unused
+  `door_handles.glb` is kept in source but deliberately not exported, so it is
+  never copied into consumer builds.
+- **`getTextureUrl(id)` kept, `base` parameter removed.** The manifest now
+  stores resolved URLs (`TextureMeta.url` replaces `TextureMeta.file`), so the
+  base-URL indirection (`normalizeBase`) is gone, but the lookup helper stays
+  for API continuity.
+- **Consumers must treat `.glb` as an asset.** Vite (as of v5) does not
+  include `.glb` in its default asset types, so consumers need
+  `assetsInclude: ["**/*.glb"]` (the sample app's `vite.config.ts` does this).
+- Asset files now live in `packages/door-lib/src/assets/{textures,sounds,models}`
+  with an `index.ts` per folder exporting named URLs (`doorWood`,
+  `doorOpenClose`, `doorHandleSingle`). `packages/sample/public/` no longer
+  hosts library defaults (`door-2.png` remains as a sample-only asset).
+
+Verified manually per repo convention: library and sample production builds
+pass, and the sample dev server loads texture/sound/model from the library
+`dist/` with the door animation rendering correctly.
+
 ## Follow-up Work (out of scope for this change)
 
 - Decide catalog size and naming convention before adding 100+ textures.
 - Add pool preload hook (`useDoorEntrance({ pool: [...] })`).
 - Validate that tree-shaking actually drops unused texture imports in a Vite consumer build.
-- Document the pool API in README.
+- Document the pool API in README (including the `assetsInclude` requirement for `.glb`).

@@ -1,14 +1,16 @@
+import { doorWood } from "../../assets/textures";
+
 export type TextureId = "door-1";
 
 export interface TextureMeta {
-  file: string;
+  url: string;
   label?: string;
   note?: string;
 }
 
 export const textureManifest: Record<TextureId, TextureMeta> = {
   "door-1": {
-    file: "textures/door-1.png",
+    url: doorWood,
     label: "Default Wood",
   },
 };
@@ -17,21 +19,12 @@ export const textureIds: TextureId[] = Object.keys(
   textureManifest
 ) as TextureId[];
 
-const normalizeBase = (base: string) => {
-  if (!base) return "/";
-  return base.endsWith("/") ? base : `${base}/`;
-};
-
-export const getTextureUrl = (
-  id: TextureId,
-  base: string = "/"
-): string => {
+export const getTextureUrl = (id: TextureId): string => {
   const entry = textureManifest[id];
   if (!entry) {
     throw new Error(`Unknown texture id: ${id}`);
   }
-  const normalized = normalizeBase(base);
-  return `${normalized}${entry.file}`;
+  return entry.url;
 };
 
 export const pickTextureId = (

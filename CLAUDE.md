@@ -26,7 +26,7 @@ No test framework is configured in either package.
 
 ## Library: `packages/door-lib` (`door-entrance`)
 
-- **Build**: tsup, dual entry points → `dist/index.{js,cjs}` and `dist/vanilla.{js,cjs}` with `.d.ts`. Only `dist/` is published.
+- **Build**: tsup (`tsup.config.ts`), dual entry points → `dist/index.{js,cjs}` and `dist/vanilla.{js,cjs}` with `.d.ts`. Only `dist/` is published. Asset imports (`.png`/`.mp3`/`.glb`) use esbuild's `copy` loader: files are copied into `dist/` with content hashes and the import statements are preserved for the consumer's bundler to resolve.
 - **Peer deps**: `react` ^18, `@react-three/fiber` ^8, `three` ^0.133.
 - **TypeScript**: `strict: true`.
 
@@ -38,23 +38,28 @@ No test framework is configured in either package.
   - `top-down-entry` — single door viewed top-down (`single-top-down-entry` variant id)
   - `double-swing` — double doors swing open
   - `shared.ts` — shared helpers (easing functions, handle-press progress); `HandleModel.tsx` — GLTF door-handle loader; `animation.template.ts` — boilerplate for adding a new variant
-- `presets.ts` — preset map (`door-single`, `door-single-overhead`, `door-double`) binding a variant to default texture/handle/sound URLs.
+- `presets.ts` — preset map (`door-single`, `door-single-overhead`, `door-double`) binding a variant to default texture/handle/sound URLs (bundler-imported from `src/assets/`).
 - `handles/` — handle profile definitions (`profiles.ts`) and handle motion (`motion.ts`).
-- `assets/textures.ts` — texture manifest with string paths and `getTextureUrl(id, base)` helper.
+- `assets/textures.ts` — texture manifest (resolved asset URLs) and `getTextureUrl(id)` / `pickTextureId` helpers.
 - `types.ts` — public types (`DoorAnimationVariant`, `DoorEntrancePreset`, sound progress options, etc.).
 - `vanilla.tsx` — `mountDoorEntrance(...)`, wraps the React component for non-React consumers (exported as the `door-entrance/vanilla` subpath).
 
-### Asset caveat (known tech debt)
+### Assets (`src/assets/`)
 
-Default texture/sound/model paths in `presets.ts` are plain strings (`textures/door-1.png`, `sounds/*.mp3`) resolved against the **consumer's** public root — the actual files live in `packages/sample/public/`. The library is not self-contained; the decided fix (bundler imports) is documented in `docs/technical-debt/door-texture-asset-ownership.md` and not yet implemented.
+Default texture/sound/handle-model files live in
+`src/assets/{textures,sounds,models}/`, each folder exporting named URLs from
+its `index.ts` (`doorWood`, `doorOpenClose`, `doorHandleSingle`). They are
+bundler imports, so the library is self-contained; history and design in
+`docs/technical-debt/door-texture-asset-ownership.md`. Consumers must treat
+`.glb` as an asset (Vite: `assetsInclude: ["**/*.glb"]`).
 
 ## Sample App: `packages/sample`
 
 - **Stack**: Vite + `@vitejs/plugin-react`, Tailwind CSS + shadcn/ui (`src/components/ui/`), React Router DOM, TanStack React Query, lovable-tagger (dev mode only).
-- **Vite config**: dev server on `127.0.0.1:5173`; `base` is `/re-canvas-door-swing/` in production builds (GitHub Pages); path alias `@/` → `src/`.
+- **Vite config**: dev server on `127.0.0.1:5173`; `base` is `/re-canvas-door-swing/` in production builds (GitHub Pages); path alias `@/` → `src/`; `assetsInclude` covers `.glb` for the library's handle models.
 - **Routing**: `src/App.tsx` with `BrowserRouter basename={import.meta.env.BASE_URL}` — `/` → `pages/Index.tsx`, `*` → `pages/NotFound.tsx`.
 - **Demo code**: `src/sample/ReactSample.tsx` (React usage) and `src/sample/vanillaEntry.ts` (vanilla `mountDoorEntrance` usage), both embedded in the Index page.
-- **Assets**: `public/textures/`, `public/sounds/`, `public/models/` — these also back the library's default presets (see asset caveat above).
+- **Assets**: `public/textures/` holds sample-only assets (e.g. `door-2.png`); the library's default presets ship their own assets (see above).
 - **TypeScript**: non-strict (`strict: false`, `noImplicitAny: false`, `strictNullChecks: false`) — unlike the library.
 - Legacy pre-monorepo components (`src/components/DoorAnimation3D.tsx`, `MainContent.tsx`) still exist but are not referenced by any route.
 

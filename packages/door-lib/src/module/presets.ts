@@ -3,13 +3,14 @@ import {
   DEFAULT_HANDLE_PROFILE_ID,
   getHandleProfile,
 } from "./handles/profiles";
+import { doorWood } from "../assets/textures";
+import { doorOpenClose } from "../assets/sounds";
 
-const DEFAULT_DOOR_TEXTURE = "textures/door-1.png";
+const DEFAULT_DOOR_TEXTURE = doorWood;
 const DEFAULT_HANDLE_MODEL = getHandleProfile(
   DEFAULT_HANDLE_PROFILE_ID
 ).defaultModelUrl;
-const DEFAULT_SINGLE_DOOR_SOUND =
-  "sounds/freesound_community-main-door-opening-closing-38280.mp3";
+const DEFAULT_SINGLE_DOOR_SOUND = doorOpenClose;
 
 export const doorEntrancePresetMap: Record<
   DoorEntrancePresetId,
