@@ -24,15 +24,16 @@ ffmpeg -y -loglevel error -ss "$T_CLOSED" -i "$VIDEO" -frames:v 1 -vf "$BRI" "$C
 ffmpeg -y -loglevel error -ss "$T_OPEN"   -i "$VIDEO" -frames:v 1 -vf "$BRI" "$OPEN"
 
 # 各部件在來源影格上的像素矩形(w:h:x:y)。
-# 閘門 bbox:x 345–905,齒根 y=403、齒尖 y=440;4 齒,齒心 rel x=75/212/344/476。
-# 地面齒條齒尖固定在影格 y≈487(rack.png crop 第 7 列)。
+# 上閘板 bbox:x 345–905,齒根 y=403、齒尖 y=440;4 齒,齒心 rel x=75/212/344/476。
+# 下閘板(開門時下沉):t=5.2 時齒尖在影格 y≈487(lower.png crop 第 2 列);
+# 閉合時齒尖上移至 y≈405,與上閘板齒互鎖成一整片門板。
 # 元件端 (SewerGateB10.tsx) 以同一組數字換算世界座標,兩邊要同步改。
 crop() { ffmpeg -y -loglevel error -i "$1" -vf "crop=$2" "$OUT/$3"; }
 
-crop "$CLOSED" "560:440:345:0"   door.png        # 閘門整面(含齒區,缺口處無幾何不會顯示)
+crop "$CLOSED" "560:440:345:0"   door.png        # 上閘板整面(含齒區,缺口處無幾何不會顯示)
 crop "$CLOSED" "70:30:388:194"   lever-sign.png  # 拉桿上方黃色警示牌
 crop "$CLOSED" "110:88:382:226"  lever-box.png   # 拉桿盒(黃黑警示條)
-crop "$OPEN"   "560:120:345:480" rack.png        # 地面齒條(齒尖朝上 + 基座)
+crop "$OPEN"   "560:315:345:485" lower.png       # 下閘板(齒尖朝上 + 板身,取開門時受光影格)
 
 echo "PoC 貼圖已產出 → $OUT"
 ls "$OUT"

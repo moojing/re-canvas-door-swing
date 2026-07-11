@@ -3,7 +3,8 @@
  *
  * 驗證目標:「齒緣垂直閘門」不需外找模型——齒形用 THREE.Shape 描 2D 輪廓
  * 再 ExtrudeGeometry 擠出厚度即可,齒的內側面天生存在(alpha 貼圖做不到的部分)。
- * 場景 = 齒緣閘門(垂直上升)+ 地面固定齒條(互補齒形)+ 門上拉桿盒,黑背景特寫。
+ * 原作是上下顎式閘門:閉合時上下閘板齒形互鎖成一整片門板,
+ * 開門時上閘板上升、下閘板等速下沉(影格逐格量測確認)。門上有拉桿盒,黑背景特寫。
  *
  * ⚠️ 貼圖是遊戲畫面截圖(placeholder,gitignored,不進發佈包)。
  *    執行 scripts/poc/extract-b10-textures.sh 產生。
@@ -19,7 +20,7 @@ import { getDoorAnimationConfig, easeInOutCubic } from "door-entrance";
 const TEX_BASE = "/textures/poc-b10";
 
 // ---- 來源影格量測值(px,亮度剖面量得)。與 extract-b10-textures.sh 的 crop 參數同步 ----
-// 閘門 bbox x 345–905、y 0–440(t=3.6s 關門特寫);齒根 y=403、齒尖 y=440。
+// 上閘板 bbox x 345–905、y 0–440(t=3.6s 關門特寫);齒根 y=403、齒尖 y=440。
 const GATE_PX = { w: 560, h: 440 };
 const TEETH = {
   centers: [75, 212, 344, 476], // 齒中心(閘門左緣起算),兩側邊緣是缺口
@@ -28,18 +29,21 @@ const TEETH = {
   rootY: 403, // 齒根(px,影格 y 向下)
   tipY: 440, // 齒尖
 };
-const RACK_PX = { w: 560, h: 120 }; // rack.png 裁切區(t=5.2s,y 480 起)
-// 齒條齒心在閘門齒的半距偏移處;齒尖在 crop 第 7 列(影格 y≈487,固定不動)
-const RACK = { centers: [34, 148, 278, 407, 510], tipRow: 7, rootRow: 44 };
-const RACK_TIP_FRAME_Y = 487; // 齒條齒尖的影格絕對 y(關門時與閘門齒尖 440 之間是暗縫)
+const LOWER_PX = { w: 560, h: 315 }; // lower.png 裁切區(t=5.2s,y 485 起)
+// 下閘板齒心在上閘板齒的半距偏移處;齒尖在 crop 第 2 列
+const LOWER = { centers: [34, 148, 278, 407, 510], tipRow: 2, rootRow: 39 };
+// 閉合時下閘板齒尖的影格絕對 y:互鎖到上閘板齒根(403)下緣,留 2px 縫
+const LOWER_TIP_CLOSED_Y = 405;
 const LEVER_SIGN = { w: 70, h: 30, x: 388, y: 194 }; // 影格絕對座標
 const LEVER_BOX = { w: 110, h: 88, x: 382, y: 226 };
 const GATE_X0 = 345; // 閘門左緣在影格上的 x
 
-const DOOR_HEIGHT = 6; // 世界單位(可見高度)
+const DOOR_HEIGHT = 5; // 上閘板高度(世界單位)
 const S = DOOR_HEIGHT / GATE_PX.h; // px → 世界單位
 const PLATE_DEPTH = 26; // 鐵板厚度(px,擠出深度)——齒的內側面靠這個
-const LIFT_WORLD = 5.4; // doorAngle=1 時的上升量(世界單位)
+const LIFT_WORLD = 5.4; // doorAngle=1 時上閘板上升量;下閘板等速反向下沉
+// 閉合門板全高約影格 y 0–718;把內容中心(y≈360)移到鏡頭中心用的偏移
+const ASSEMBLY_OFFSET_PX = 140;
 
 /** 影格絕對 px 矩形 → 閘門局部座標(px,閘門中心為原點,+y 向上) */
 const rectToLocal = (r: { w: number; h: number; x: number; y: number }) => ({
@@ -71,18 +75,18 @@ const buildGateShape = () => {
   return shape;
 };
 
-/** 地面齒條:基座 + 頂緣五個朝上的梯形齒(在閘門齒的半距偏移處,座標對齊 rack.png) */
-const buildRackShape = () => {
-  const L = -RACK_PX.w / 2;
-  const R = RACK_PX.w / 2;
-  const base = -RACK_PX.h / 2;
-  const rootLine = RACK_PX.h / 2 - RACK.rootRow;
-  const tip = RACK_PX.h / 2 - RACK.tipRow;
+/** 下閘板:板身 + 頂緣五個朝上的梯形齒(在上閘板齒的半距偏移處,座標對齊 lower.png) */
+const buildLowerShape = () => {
+  const L = -LOWER_PX.w / 2;
+  const R = LOWER_PX.w / 2;
+  const base = -LOWER_PX.h / 2;
+  const rootLine = LOWER_PX.h / 2 - LOWER.rootRow;
+  const tip = LOWER_PX.h / 2 - LOWER.tipRow;
   const shape = new THREE.Shape();
   shape.moveTo(L, base);
   shape.lineTo(L, rootLine);
-  for (const c of RACK.centers) {
-    const cx = c - RACK_PX.w / 2;
+  for (const c of LOWER.centers) {
+    const cx = c - LOWER_PX.w / 2;
     shape.lineTo(cx - TEETH.rootHalf, rootLine);
     shape.lineTo(cx - TEETH.tipHalf, tip);
     shape.lineTo(cx + TEETH.tipHalf, tip);
@@ -147,15 +151,19 @@ const ToothedPlate = ({
     [shape]
   );
   useEffect(() => () => geometry.dispose(), [geometry]);
+  // 貼圖到位後命令式掛上 + needsUpdate 重編譯 shader(USE_MAP)。
+  // 不用 key 重掛:attach="material-0" 的 keyed 置換會讓材質陣列瞬間出現空洞而崩潰。
+  const matRef = useRef<THREE.MeshLambertMaterial>(null);
+  useEffect(() => {
+    const m = matRef.current;
+    if (!m) return;
+    m.map = texture ?? null;
+    m.color.set(texture ? "#ffffff" : fallback);
+    m.needsUpdate = true;
+  }, [texture, fallback]);
   return (
     <mesh geometry={geometry} position={[0, 0, -PLATE_DEPTH / 2]}>
-      {/* key 強制換新材質:shader 需以 USE_MAP 重編譯,否則貼圖被忽略、color 重設為白 → 白模 */}
-      <meshLambertMaterial
-        key={texture ? "textured" : "flat"}
-        attach="material-0"
-        map={texture ?? undefined}
-        color={texture ? undefined : fallback}
-      />
+      <meshLambertMaterial ref={matRef} attach="material-0" color={fallback} />
       <meshLambertMaterial attach="material-1" color={sideColor} />
     </mesh>
   );
@@ -219,44 +227,51 @@ const FlatReliefPart = ({
 
 const B10Gate = ({ doorAngle }: { doorAngle: number }) => {
   const gateRef = useRef<THREE.Group>(null);
+  const lowerRef = useRef<THREE.Group>(null);
   const gateShape = useMemo(buildGateShape, []);
-  const rackShape = useMemo(buildRackShape, []);
+  const lowerShape = useMemo(buildLowerShape, []);
   const gateTex = useCropTexture("door.png", GATE_PX.w, GATE_PX.h);
-  const rackTex = useCropTexture("rack.png", RACK_PX.w, RACK_PX.h);
+  const lowerTex = useCropTexture("lower.png", LOWER_PX.w, LOWER_PX.h);
+
+  // 下閘板閉合位置:齒尖(crop 第 2 列)對到影格 y=405,與上閘板齒互鎖
+  const lowerClosedY =
+    GATE_PX.h / 2 - LOWER_TIP_CLOSED_Y - (LOWER_PX.h / 2 - LOWER.tipRow);
+  const travelPx = LIFT_WORLD / S;
 
   useFrame(() => {
     if (gateRef.current) {
-      gateRef.current.position.y = doorAngle * (LIFT_WORLD / S); // px 空間
+      gateRef.current.position.y = doorAngle * travelPx; // px 空間
+    }
+    if (lowerRef.current) {
+      lowerRef.current.position.y = lowerClosedY - doorAngle * travelPx;
     }
   });
 
-  // 齒條定位:齒尖固定在影格 y≈487(比閘門齒尖低 47px,關門時中間留暗縫,同原作)
-  const rackY =
-    GATE_PX.h / 2 - RACK_TIP_FRAME_Y - (RACK_PX.h / 2 - RACK.tipRow);
-
   return (
     <group scale={[S, S, S]}>
-      {/* 閘門(垂直上升) */}
-      <group ref={gateRef}>
-        <ToothedPlate
-          shape={gateShape}
-          texture={gateTex}
-          fallback="#4a3b32"
-          sideColor="#33281f"
-        />
-        {/* 門上拉桿盒 + 黃色警示牌(跟著閘門一起升) */}
-        <FlatReliefPart rect={LEVER_SIGN} depth={8} file="lever-sign.png" sideColor="#6b6428" />
-        <FlatReliefPart rect={LEVER_BOX} depth={14} file="lever-box.png" sideColor="#3c3a2c" />
-      </group>
+      <group position={[0, ASSEMBLY_OFFSET_PX, 0]}>
+        {/* 上閘板(上升) */}
+        <group ref={gateRef}>
+          <ToothedPlate
+            shape={gateShape}
+            texture={gateTex}
+            fallback="#4a3b32"
+            sideColor="#33281f"
+          />
+          {/* 門上拉桿盒 + 黃色警示牌(跟著上閘板一起升) */}
+          <FlatReliefPart rect={LEVER_SIGN} depth={8} file="lever-sign.png" sideColor="#6b6428" />
+          <FlatReliefPart rect={LEVER_BOX} depth={14} file="lever-box.png" sideColor="#3c3a2c" />
+        </group>
 
-      {/* 地面齒條(固定不動),稍微後移避免與閘門 z-fighting */}
-      <group position={[0, rackY, -3]}>
-        <ToothedPlate
-          shape={rackShape}
-          texture={rackTex}
-          fallback="#3a2e26"
-          sideColor="#241c16"
-        />
+        {/* 下閘板(下沉),稍微後移避免互鎖區 z-fighting */}
+        <group ref={lowerRef} position={[0, lowerClosedY, -3]}>
+          <ToothedPlate
+            shape={lowerShape}
+            texture={lowerTex}
+            fallback="#3a2e26"
+            sideColor="#241c16"
+          />
+        </group>
       </group>
     </group>
   );
@@ -309,10 +324,11 @@ const SewerGateB10 = () => {
     <div className="min-h-screen bg-black p-6 text-white">
       <div className="mx-auto max-w-3xl space-y-4">
         <h1 className="text-xl font-bold">
-          PoC:1-2 b10 下水道閘門(Shape 齒形擠出 + 垂直上升)
+          PoC:1-2 b10 下水道閘門(Shape 齒形擠出 + 上下對開)
         </h1>
         <p className="text-sm text-white/60">
           驗證「齒緣閘門可用 ExtrudeGeometry 自組,齒有厚度、內側面可見,不需外找模型」。
+          閉合時上下閘板齒形互鎖成一整片門板,開門時上升/下沉對拉(同原作)。
           貼圖為遊戲截圖 placeholder(gitignored),正式版需替換為自製 / CC0 材質。
         </p>
 
