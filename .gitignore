@@ -28,6 +28,9 @@ materials/
 # 從遊戲實機畫面抽出的參考素材(scope 用,版權原畫,不進版控/發佈包)
 docs/door-gallery/
 packages/sample/public/textures/poc-a11/
+packages/sample/public/textures/poc-b10/
 
 # Claude Code local (personal) settings — keep out of version control
 .claude/settings.local.json
+# Claude Code 平行作業的暫存 worktree
+.claude/worktrees/
