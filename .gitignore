@@ -36,3 +36,6 @@ packages/sample/public/textures/poc-b10/
 .claude/worktrees/
 *.tsbuildinfo
 __pycache__/
+# Codex CLI 本地工作目錄
+.codex/
+.agents/
