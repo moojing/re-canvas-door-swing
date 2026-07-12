@@ -21,6 +21,9 @@ class AssetError(RuntimeError):
 
 
 VIDEO_SUFFIXES = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"}
+EXPECTED_VIDEO_COUNT = 318
+EXPECTED_FRAME_COUNT = 12_332
+EXPECTED_FRAME_UNIQUE_HASHES = 10_982
 FIELDS = (
     "game", "code", "name", "variants", "form", "material",
     "animation", "accessory", "csv", "verdict", "note",
@@ -268,7 +271,7 @@ def _write_atomic(path, content):
         raise AssetError(f"cannot write {path}: {exc}") from exc
 
 
-def _report_text(status, entries, source_root, mirror_root, destination_root):
+def _report_text(status, entries, source_root, mirror_root, destination_root, main_repo):
     """Render the video migration evidence recorded before and after deletion."""
     source_mp4 = len(list(Path(source_root).rglob("*.mp4")))
     mirror_mp4 = len(list(Path(mirror_root).rglob("*.mp4")))
@@ -280,9 +283,9 @@ def _report_text(status, entries, source_root, mirror_root, destination_root):
         "",
         f"- date: {date.today().isoformat()}",
         f"- status: {status}",
-        f"- canonical source: `{source_root}`",
-        f"- mirror source: `{mirror_root}`",
-        f"- destination: `{destination_root}`",
+        f"- canonical source: `{_report_relative(source_root, main_repo)}`",
+        f"- mirror source: `{_report_relative(mirror_root, main_repo)}`",
+        f"- destination: `{_report_relative(destination_root, main_repo)}`",
         f"- manifest entries: {len(entries)}",
         f"- unique SHA-256 values: {len({entry['sha256'] for entry in entries})}",
         f"- canonical/mirror SHA-256 verification: passed ({len(entries)} files)",
@@ -292,8 +295,15 @@ def _report_text(status, entries, source_root, mirror_root, destination_root):
         f"- destination MP4 count: {destination_mp4}",
         f"- canonical PNG count: {source_png}",
         f"- mirror PNG count: {mirror_png}",
+        "- canonical repository materials boundary: passed (ignored; 0 tracked files)",
+        "- gallery repository materials boundary: passed (ignored; 0 tracked files)",
         "",
     ])
+
+
+def _report_relative(path, main_repo):
+    """Render a stable path relative to the main repository checkout."""
+    return Path(os.path.relpath(Path(path).resolve(), Path(main_repo).resolve())).as_posix()
 
 
 def _verified_unlink(path, expected_hash):
@@ -322,11 +332,15 @@ def migrate_videos(source_root, mirror_root, destination_root, manifest_path, re
     manifest_path = Path(manifest_path)
     report_path = Path(report_path)
 
-    entries = _resume_entries(
+    migration_state = _resume_entries(
         manifest_path, "videos", source_root, mirror_root, destination_root,
     )
-    if entries is None:
+    if migration_state is None:
         entries = build_inventory(source_root, mirror_root)
+    else:
+        entries, status = migration_state
+        if status == "complete":
+            return {"migrated": len(entries), "unique_hashes": len(entries)}
     _validate_destination_path(destination_root)
     for entry in entries:
         source = source_root / entry["source_relative"]
@@ -341,7 +355,11 @@ def migrate_videos(source_root, mirror_root, destination_root, manifest_path, re
     ready_manifest = _manifest_payload("videos", entries, "ready-to-delete")
     _write_atomic(manifest_path, json.dumps(ready_manifest, ensure_ascii=False, indent=2) + "\n")
     _validate_manifest(manifest_path, "videos", entries, "ready-to-delete")
-    _write_atomic(report_path, _report_text("ready-to-delete", entries, source_root, mirror_root, destination_root))
+    main_repo, _ = _validate_repository_boundaries(source_root, mirror_root, destination_root)
+    _write_atomic(
+        report_path,
+        _report_text("ready-to-delete", entries, source_root, mirror_root, destination_root, main_repo),
+    )
 
     for entry in entries:
         for root in (source_root, mirror_root):
@@ -349,7 +367,10 @@ def migrate_videos(source_root, mirror_root, destination_root, manifest_path, re
             if source.exists() or source.is_symlink():
                 _verified_unlink(source, entry["sha256"])
 
-    _write_atomic(report_path, _report_text("complete", entries, source_root, mirror_root, destination_root))
+    _write_atomic(
+        report_path,
+        _report_text("complete", entries, source_root, mirror_root, destination_root, main_repo),
+    )
     complete_manifest = _manifest_payload("videos", entries, "complete")
     _write_atomic(manifest_path, json.dumps(complete_manifest, ensure_ascii=False, indent=2) + "\n")
     _validate_manifest(manifest_path, "videos", entries, "complete")
@@ -361,11 +382,18 @@ def migrate_frames(source_root, mirror_root, destination_root, manifest_path, re
     source_root = Path(source_root)
     mirror_root = Path(mirror_root)
     destination_root = Path(destination_root)
-    entries = _resume_entries(
+    migration_state = _resume_entries(
         manifest_path, "frames", source_root, mirror_root, destination_root,
     )
-    if entries is None:
+    if migration_state is None:
         entries = build_frame_inventory(source_root, mirror_root)
+    else:
+        entries, status = migration_state
+        if status == "complete":
+            return {
+                "migrated": len(entries),
+                "unique_hashes": len({entry["sha256"] for entry in entries}),
+            }
     _validate_destination_path(destination_root)
     for entry in entries:
         _copy_exclusive(
@@ -382,6 +410,7 @@ def migrate_frames(source_root, mirror_root, destination_root, manifest_path, re
     ready_manifest = _manifest_payload("frames", entries, "ready-to-delete")
     _write_atomic(manifest_path, json.dumps(ready_manifest, ensure_ascii=False, indent=2) + "\n")
     _validate_manifest(manifest_path, "frames", entries, "ready-to-delete")
+    _validate_repository_boundaries(source_root, mirror_root, destination_root)
     report = Path(report_path).read_text(encoding="utf-8") if Path(report_path).exists() else "# Gallery Migration Verification\n"
     unique_hashes = len({entry["sha256"] for entry in entries})
     pre_section = "\n".join([
@@ -390,6 +419,8 @@ def migrate_frames(source_root, mirror_root, destination_root, manifest_path, re
         f"- duplicate logical frames preserved: {len(entries) - unique_hashes}", "",
         f"- canonical/mirror SHA-256 verification: passed ({len(entries)} files)",
         f"- canonical/destination SHA-256 verification: passed ({len(entries)} files)", "",
+        "- canonical repository materials boundary: passed (ignored; 0 tracked files)",
+        "- gallery repository materials boundary: passed (ignored; 0 tracked files)", "",
     ])
     _write_atomic(report_path, report.rstrip() + "\n" + pre_section)
 
@@ -453,6 +484,57 @@ def _tracked_materials(repo):
     return result.stdout.splitlines()
 
 
+def _git_repository_root(path):
+    """Resolve the Git worktree containing an asset path."""
+    git = shutil.which("git")
+    if not git:
+        raise AssetError("git executable is required for material-boundary checks")
+    candidate = Path(path).absolute()
+    while not candidate.exists() and candidate != candidate.parent:
+        candidate = candidate.parent
+    result = subprocess.run(
+        [git, "rev-parse", "--show-toplevel"],
+        cwd=candidate,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise AssetError(f"asset path is not inside a Git repository: {path}")
+    return Path(result.stdout.strip()).absolute()
+
+
+def _validate_material_boundary(repo):
+    """Require an ignored and entirely untracked repository materials tree."""
+    tracked = _tracked_materials(repo)
+    if tracked:
+        raise AssetError(f"tracked materials in {repo}: {', '.join(tracked)}")
+    git = shutil.which("git")
+    if not git:
+        raise AssetError("git executable is required for material-boundary checks")
+    ignore = subprocess.run(
+        [git, "check-ignore", "--no-index", "materials/probe.asset"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    if ignore.returncode != 0:
+        raise AssetError(f"materials directory is not ignored in {repo}")
+
+
+def _validate_repository_boundaries(source_root, mirror_root, destination_root):
+    """Validate both repository boundaries before any source asset deletion."""
+    source_repo = _git_repository_root(source_root)
+    mirror_repo = _git_repository_root(mirror_root)
+    gallery_repo = _git_repository_root(destination_root)
+    if source_repo != mirror_repo:
+        raise AssetError("canonical and mirror assets must belong to the same repository")
+    if source_repo == gallery_repo:
+        raise AssetError("gallery destination must belong to a separate repository")
+    _validate_material_boundary(source_repo)
+    _validate_material_boundary(gallery_repo)
+    return source_repo, gallery_repo
+
+
 def _manifest_payload(key, entries, status):
     """Create a durable manifest payload that can resume partial deletion."""
     return {
@@ -477,7 +559,7 @@ def _validate_manifest(path, key, entries, expected_status):
 
 
 def _resume_entries(manifest_path, key, source_root, mirror_root, destination_root):
-    """Load and validate a ready-to-delete manifest for an interrupted run."""
+    """Load and validate a resumable ready or completed migration manifest."""
     manifest_path = Path(manifest_path)
     if not manifest_path.is_file():
         return None
@@ -485,7 +567,8 @@ def _resume_entries(manifest_path, key, source_root, mirror_root, destination_ro
         payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise AssetError(f"invalid migration manifest: {manifest_path}") from exc
-    if payload.get("migration_status") != "ready-to-delete":
+    status = payload.get("migration_status")
+    if status not in ("ready-to-delete", "complete"):
         return None
     entries = payload.get(key)
     if not isinstance(entries, list) or not entries:
@@ -499,9 +582,11 @@ def _resume_entries(manifest_path, key, source_root, mirror_root, destination_ro
         for root in (source_root, mirror_root):
             source = Path(root) / entry["source_relative"]
             if source.exists() or source.is_symlink():
+                if status == "complete":
+                    raise AssetError(f"source reappeared after completed migration: {source}")
                 if source.is_symlink() or not source.is_file() or sha256_file(source) != entry["sha256"]:
                     raise AssetError(f"resume source mismatch: {source}")
-    return entries
+    return entries, status
 
 
 def gallery_consistency(main_root, gallery_root, expected_count=113):
@@ -537,33 +622,30 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
     if stills != expected_count or gifs != expected_count:
         raise AssetError(f"asset count mismatch: stills={stills}, gifs={gifs}")
 
-    git = shutil.which("git")
-    if not git:
-        raise AssetError("git executable is required for material-boundary checks")
     for repo in (main_root, gallery_root):
-        tracked = _tracked_materials(repo)
-        if tracked:
-            raise AssetError(f"tracked materials in {repo}: {', '.join(tracked)}")
-        ignore = subprocess.run(
-            [git, "check-ignore", "--no-index", "materials/probe.asset"],
-            cwd=repo,
-            capture_output=True,
-            text=True,
-        )
-        if ignore.returncode != 0:
-            raise AssetError(f"/materials/ is not ignored in {repo}")
+        _validate_material_boundary(repo)
 
     manifest_path = main_root / "docs/gallery-video-manifest.json"
     video_root = gallery_root / "materials/door-transitions"
     manifest_count = None
+    skipped = []
+    video_payload = None
     if manifest_path.exists():
         video_payload = json.loads(manifest_path.read_text(encoding="utf-8"))
         if video_payload.get("migration_status") not in (None, "complete"):
             raise AssetError("video manifest migration is incomplete")
+    if video_root.exists() or video_root.is_symlink():
+        if video_payload is None:
+            raise AssetError("video manifest is missing while local videos exist")
         videos = video_payload["videos"]
+        if len(videos) != EXPECTED_VIDEO_COUNT:
+            raise AssetError(f"expected {EXPECTED_VIDEO_COUNT} videos, found {len(videos)} manifest entries")
         hashes = {entry["sha256"] for entry in videos}
         if len(hashes) != len(videos):
             raise AssetError("manifest contains duplicate SHA-256 values")
+        destinations = {entry["destination"] for entry in videos}
+        if len(destinations) != len(videos):
+            raise AssetError("video manifest contains duplicate destination paths")
         actual_videos = discover_mp4(video_root)
         if len(actual_videos) != len(videos):
             raise AssetError(f"video manifest count mismatch: manifest={len(videos)}, destination={len(actual_videos)}")
@@ -572,14 +654,34 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
             if path.is_symlink() or not path.is_file() or sha256_file(path) != entry["sha256"]:
                 raise AssetError(f"manifest video mismatch: {entry['destination']}")
         manifest_count = len(videos)
+    else:
+        skipped.append("videos: materials/door-transitions absent")
     frame_count = None
     frame_manifest = main_root / "docs/gallery-frame-manifest.json"
     frame_root = gallery_root / "materials/frame-extracts"
+    frame_payload = None
     if frame_manifest.exists():
         frame_payload = json.loads(frame_manifest.read_text(encoding="utf-8"))
         if frame_payload.get("migration_status") not in (None, "complete"):
             raise AssetError("frame manifest migration is incomplete")
+    if frame_root.exists() or frame_root.is_symlink():
+        if frame_payload is None:
+            raise AssetError("frame manifest is missing while local frames exist")
         frames = frame_payload["frames"]
+        if len(frames) != EXPECTED_FRAME_COUNT:
+            raise AssetError(f"expected {EXPECTED_FRAME_COUNT} frames, found {len(frames)} manifest entries")
+        frame_hashes = {entry["sha256"] for entry in frames}
+        if len(frame_hashes) != EXPECTED_FRAME_UNIQUE_HASHES:
+            raise AssetError(
+                f"expected {EXPECTED_FRAME_UNIQUE_HASHES} unique frame hashes, found {len(frame_hashes)}"
+            )
+        repeated_frames = len(frames) - len(frame_hashes)
+        expected_repeated = EXPECTED_FRAME_COUNT - EXPECTED_FRAME_UNIQUE_HASHES
+        if repeated_frames != expected_repeated:
+            raise AssetError(f"expected {expected_repeated} repeated frames, found {repeated_frames}")
+        destinations = {entry["destination"] for entry in frames}
+        if len(destinations) != len(frames):
+            raise AssetError("frame manifest contains duplicate destination paths")
         actual_frames = _discover_png(frame_root)
         if len(actual_frames) != len(frames):
             raise AssetError(f"frame manifest count mismatch: manifest={len(frames)}, destination={len(actual_frames)}")
@@ -588,7 +690,12 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
             if path.is_symlink() or not path.is_file() or sha256_file(path) != entry["sha256"]:
                 raise AssetError(f"manifest frame mismatch: {entry['destination']}")
         frame_count = len(frames)
-    return {"doors": len(doors), "stills": stills, "gifs": gifs, "videos": manifest_count, "frames": frame_count}
+    else:
+        skipped.append("frames: materials/frame-extracts absent")
+    return {
+        "doors": len(doors), "stills": stills, "gifs": gifs,
+        "videos": manifest_count, "frames": frame_count, "skipped": skipped,
+    }
 
 
 def clean_local_gallery(main_root, gallery_root, report_path):

@@ -69,7 +69,7 @@ Migration is staged and verified in this order:
 9. Remove only the individually revalidated 318 MP4 and 12,332 PNG files from each main-project source tree; leave `.DS_Store` files and directories untouched.
 10. Inventory every file under the ignored `docs/door-gallery/`, map `door-gallery.html` to the gallery's `index.html`, and compare content hashes against the tracked gallery. Remove the local tree only when every file has a counterpart and is either byte-identical or an explicitly documented stale generated file whose gallery counterpart matches the current source evaluation documents. Any missing, unique, or unexplained mismatch stops deletion.
 
-Before deletion, each migration atomically writes and re-reads a `ready-to-delete` manifest containing source-relative paths and expected hashes. If canonical deletion, mirror deletion, or the final report write fails, a rerun validates the destination and every still-present source file, treats already-absent validated entries as completed, and resumes. The manifest changes to `complete` only after deletion and final evidence succeed. If any pre-deletion check fails, no source asset is removed.
+Before deletion, each migration atomically writes and re-reads a `ready-to-delete` manifest containing source-relative paths and expected hashes. It then resolves both Git worktrees, requires `/materials/` ignore coverage and zero tracked material files in each, and records those boundary checks in the pre-deletion report. If canonical deletion, mirror deletion, or the final report write fails, a rerun validates the destination and every still-present source file, treats already-absent validated entries as completed, and resumes. The manifest changes to `complete` only after deletion and final evidence succeed. If any pre-deletion check fails, no source asset is removed.
 
 ## Tooling Changes
 
@@ -82,7 +82,7 @@ A tracked consistency checker in the main project will verify:
 - the three published evaluation documents match the main source files;
 - still and GIF counts are 113 each;
 - `git ls-files -- materials` returns no tracked material files in either repository, and `/materials/` ignore coverage exists in both;
-- local videos and frame extracts match their tracked manifests when present.
+- when their local roots are present, videos and frame extracts match every manifest path and hash, including exactly 318 videos, 12,332 frames, 10,982 unique frame hashes, and 1,350 repeated logical frames.
 
 The check should report a clear skip for local-only asset validation when the sibling repository or materials are absent, while still linking to the canonical GitHub repository.
 

@@ -14,6 +14,8 @@
 - destination MP4 count: 318
 - canonical PNG count before frame migration: 12332
 - mirror PNG count before frame migration: 12332
+- canonical repository materials boundary: passed (ignored; 0 tracked files)
+- gallery repository materials boundary: passed (ignored; 0 tracked files)
 
 ## Local Gallery Cleanup
 
@@ -28,7 +30,7 @@
 
 ## Final Checks
 
-- unit tests: 14 passed
+- unit tests: 23 passed
 - gallery consistency: 113 doors x 11 fields, 113 stills, 113 GIFs, 318 videos, 12,332 frames
 - gallery `/materials/` ignore rule: passed
 - tracked videos in main repository: 0
@@ -47,6 +49,8 @@
 - duplicate logical frames preserved: 1350
 - canonical/mirror SHA-256 verification: passed (12,332/12,332 files)
 - canonical/destination SHA-256 verification: passed (12,332/12,332 files)
+- canonical repository materials boundary: passed (ignored; 0 tracked files)
+- gallery repository materials boundary: passed (ignored; 0 tracked files)
 
 - canonical PNG count after migration: 0
 - mirror PNG count after migration: 0

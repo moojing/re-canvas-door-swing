@@ -12,5 +12,8 @@
     "build:sample": "npm run build --workspace door-entrance-sample",
     "lint": "npm run lint --workspace door-entrance && npm run lint --workspace door-entrance-sample",
     "gallery:check": "python3 scripts/gallery_assets.py check"
+  },
+  "devDependencies": {
+    "@types/three": "^0.160.0"
   }
 }

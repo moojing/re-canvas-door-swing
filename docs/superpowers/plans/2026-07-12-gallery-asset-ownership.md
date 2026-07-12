@@ -46,6 +46,8 @@ Use temporary directories to prove migration:
 - revalidates each source and mirror MP4 immediately before unlinking and leaves any late-added or replaced file untouched;
 - resumes safely when canonical deletion succeeds but mirror deletion fails;
 - resumes safely when all source deletions succeed but the final report write fails;
+- aborts before deletion unless both repositories ignore `/materials/` and track no files below it;
+- records only repository-relative source and destination paths in tracked evidence;
 - fails closed when migration verification-report generation fails.
 
 - [ ] **Step 5: Run safety tests and verify RED**
@@ -73,7 +75,7 @@ Expected: all tests PASS.
 
 - [ ] **Step 1: Write failing tests for document and gallery consistency**
 
-Test 113-row field comparison, document-copy equality, HTML note presence, still/GIF counts, manifest uniqueness, `/materials/` ignore coverage, and failure when either repository tracks a video extension with any letter casing.
+Test 113-row field comparison, document-copy equality, HTML note presence, still/GIF counts, exact 318-video and 12,332-frame manifest totals, 10,982 unique frame hashes, 1,350 repeated logical frames, `/materials/` ignore coverage, and failure when either repository tracks any material file. Also prove that an absent local-only material root is reported as skipped rather than treated as corruption.
 
 - [ ] **Step 2: Run consistency tests and verify RED**
 
@@ -83,7 +85,7 @@ Expected: FAIL on missing consistency checks.
 
 - [ ] **Step 3: Implement read-only consistency checks**
 
-Parse Markdown rows and `doors.json`, normalize verdict spacing, compare the 11 source fields, inspect `index.html`, count assets, invoke read-only Git queries, and validate the tracked manifest when local videos exist. Missing sibling/local videos must produce explicit SKIP messages where permitted.
+Parse Markdown rows and `doors.json`, normalize verdict spacing, compare the 11 source fields, inspect `index.html`, count assets, invoke read-only Git queries, and validate exact manifest path/hash and inventory totals when the corresponding local material root exists. Missing local-only video or frame roots must produce explicit SKIP messages where permitted.
 
 - [ ] **Step 4: Add npm entry point**
 
@@ -134,13 +136,13 @@ Expected: each agent entry point and builder references the canonical gallery wo
 
 - [ ] **Step 1: Capture pre-migration inventory**
 
-Record 318 MP4s and 12,332 PNGs in each source tree, no symlinks, no destination mapping collisions, and no tracked videos.
+Record 318 MP4s and 12,332 PNGs in each source tree, no symlinks, no destination mapping collisions, and no tracked files under either repository's `materials/` directory. Verify both repositories ignore `/materials/`.
 
 - [ ] **Step 2: Run migration copy and SHA-256 verification**
 
 Run: `python3 scripts/gallery_assets.py migrate`
 
-Expected before deletion: 318 canonical entries, 318 unique hashes, source/mirror/destination hash equality, gallery `/materials/` ignored, all destination paths contained and free of symlinks/non-regular entries, and a valid tracked pre-deletion report written successfully.
+Expected before deletion: 318 canonical entries, 318 unique hashes, source/mirror/destination hash equality, both repositories' `/materials/` trees ignored and untracked, all destination paths contained and free of symlinks/non-regular entries, and a valid tracked pre-deletion report written successfully with repository-relative paths only.
 
 - [ ] **Step 3: Remove only verified source MP4s**
 
@@ -172,7 +174,7 @@ Expected before deletion: 12,332 destination files, 10,982 unique hashes, 1,350 
 
 - [ ] **Step 3: Remove only revalidated source frames**
 
-Treat the validated `ready-to-delete` frame manifest as a mandatory gate. Re-hash each existing source and mirror PNG immediately before unlinking. Leave any changed or newly added file untouched and fail the migration; a rerun resumes from source-relative manifest entries when one side is already absent.
+Treat the validated `ready-to-delete` frame manifest and both repositories' ignored/untracked `/materials/` boundaries as mandatory gates. Re-hash each existing source and mirror PNG immediately before unlinking. Leave any changed or newly added file untouched and fail the migration; a rerun resumes from source-relative manifest entries when one side is already absent.
 
 - [ ] **Step 4: Verify post-migration state**
 
