@@ -1,11 +1,13 @@
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import scripts.gallery_assets as gallery_assets
 from scripts.gallery_assets import (
     AssetError,
     build_inventory,
@@ -14,6 +16,7 @@ from scripts.gallery_assets import (
     destination_relative,
     migrate_videos,
     migrate_frames,
+    _tracked_materials,
     validate_no_symlinks,
 )
 
@@ -183,6 +186,58 @@ class GalleryAssetTests(unittest.TestCase):
         self.assertEqual(len(list(self.mirror.rglob("*.png"))), 0)
         expected_sha = hashlib.sha256(b"png-frame").hexdigest()
         self.assertEqual(json.loads(manifest.read_text())["frames"][0]["sha256"], expected_sha)
+
+    def test_video_migration_resumes_after_second_unlink_failure(self):
+        source, mirror = self.add_pair()
+        real_unlink = gallery_assets._verified_unlink
+
+        def fail_mirror(path, expected_hash):
+            if Path(path) == mirror:
+                raise AssetError("simulated mirror unlink failure")
+            return real_unlink(path, expected_hash)
+
+        with patch("scripts.gallery_assets._verified_unlink", side_effect=fail_mirror):
+            with self.assertRaisesRegex(AssetError, "simulated"):
+                migrate_videos(self.source, self.mirror, self.destination, self.manifest, self.report)
+
+        self.assertFalse(source.exists())
+        self.assertTrue(mirror.exists())
+        self.assertEqual(json.loads(self.manifest.read_text())["migration_status"], "ready-to-delete")
+
+        result = migrate_videos(self.source, self.mirror, self.destination, self.manifest, self.report)
+        self.assertEqual(result["migrated"], 1)
+        self.assertFalse(mirror.exists())
+        self.assertEqual(json.loads(self.manifest.read_text())["migration_status"], "complete")
+
+    def test_video_migration_recovers_when_final_report_write_fails(self):
+        source, mirror = self.add_pair()
+        real_write = gallery_assets._write_atomic
+
+        def fail_complete_report(path, content):
+            if Path(path) == self.report and "- status: complete" in content:
+                raise AssetError("simulated final report failure")
+            return real_write(path, content)
+
+        with patch("scripts.gallery_assets._write_atomic", side_effect=fail_complete_report):
+            with self.assertRaisesRegex(AssetError, "simulated"):
+                migrate_videos(self.source, self.mirror, self.destination, self.manifest, self.report)
+
+        self.assertFalse(source.exists())
+        self.assertFalse(mirror.exists())
+        self.assertEqual(json.loads(self.manifest.read_text())["migration_status"], "ready-to-delete")
+
+        migrate_videos(self.source, self.mirror, self.destination, self.manifest, self.report)
+        self.assertIn("status: complete", self.report.read_text())
+
+    def test_tracked_materials_detects_non_video_assets(self):
+        repo = self.root / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        frame = repo / "materials/frame-extracts/frame.png"
+        frame.parent.mkdir(parents=True)
+        frame.write_bytes(b"png")
+        subprocess.run(["git", "add", "-f", "materials/frame-extracts/frame.png"], cwd=repo, check=True)
+        self.assertEqual(_tracked_materials(repo), ["materials/frame-extracts/frame.png"])
 
 
 if __name__ == "__main__":

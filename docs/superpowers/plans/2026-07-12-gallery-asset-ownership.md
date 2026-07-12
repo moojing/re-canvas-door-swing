@@ -4,7 +4,7 @@
 
 **Goal:** Move 318 unique door-transition MP4s and 12,332 logical PNG frames into the ignored sibling gallery `materials/` tree, remove verified duplicate source copies and local gallery outputs from the main checkout, and make cross-repository ownership discoverable and testable.
 
-**Architecture:** A focused Python tool owns path mapping, SHA-256 inventory generation, migration safety gates, and consistency checks. The main repository remains the evaluation source of truth; the sibling gallery remains the published snapshot and single local material owner. Migration copies first, verifies source, mirror, and destination, then deletes only revalidated source files.
+**Architecture:** A focused Python tool owns path mapping, SHA-256 inventory generation, migration safety gates, and consistency checks. The main repository remains the evaluation source of truth; the sibling gallery remains the published snapshot and single local material owner. Migration copies first, atomically records a resumable `ready-to-delete` manifest, verifies source/mirror/destination, and then deletes only revalidated source files. Filesystem presence plus manifest hashes provide durable per-entry recovery until the final report and manifest are both recorded as `complete`.
 
 **Tech Stack:** Python 3 standard library, Node/npm script entry point, Markdown documentation, Git ignore rules.
 
@@ -44,6 +44,8 @@ Use temporary directories to prove migration:
 - is safe to rerun after an interrupted or completed copy;
 - accepts pre-existing destinations only when their hashes match;
 - revalidates each source and mirror MP4 immediately before unlinking and leaves any late-added or replaced file untouched;
+- resumes safely when canonical deletion succeeds but mirror deletion fails;
+- resumes safely when all source deletions succeed but the final report write fails;
 - fails closed when migration verification-report generation fails.
 
 - [ ] **Step 5: Run safety tests and verify RED**
@@ -54,7 +56,7 @@ Expected: FAIL on missing migration behavior.
 
 - [ ] **Step 6: Implement migration and verification commands**
 
-Add `migrate`, `check`, and `clean-local-gallery` subcommands. Defaults resolve the sibling gallery from the main checkout, with `DOOR_GALLERY_ROOT` override. `migrate` must copy and hash, generate and validate a tracked pre-deletion report state, revalidate every source file immediately before its individual unlink, then regenerate and validate the final post-deletion `docs/gallery-migration-verification.md`. Destination path components must be regular directories within the contained destination root, never symlinks. `clean-local-gallery` must re-inventory and hash every file immediately before deletion, validate all counterpart mappings, permit only a documented stale `doors.json` whose gallery replacement matches current source data, update and validate the tracked verification report, then unlink only the exact validated files and remove only empty directories. `check` must never mutate files.
+Add `migrate`, `migrate-frames`, `check`, and `clean-local-gallery` subcommands. Defaults resolve the sibling gallery from the main checkout, with `DOOR_GALLERY_ROOT` override. Both migration commands must copy and hash, atomically generate and re-read a `ready-to-delete` manifest containing source-relative paths, generate the pre-deletion report, revalidate every existing source file immediately before its individual unlink, then regenerate the final report and manifest as `complete`. If either unlink or final evidence write fails, rerunning uses the durable manifest plus existing/missing file state to resume safely. Destination path components must be regular directories within the contained destination root, never symlinks. `clean-local-gallery` must re-inventory and hash every file immediately before deletion, validate all counterpart mappings, permit only a documented stale `doors.json` whose gallery replacement matches current source data, update and validate the tracked verification report, then unlink only the exact validated files and remove only empty directories. `check` must never mutate files.
 
 - [ ] **Step 7: Run tests and verify GREEN**
 
@@ -166,17 +168,17 @@ Require 12,332 source and 12,332 mirror PNG paths with matching byte sizes and S
 
 Run: `python3 scripts/gallery_assets.py migrate-frames`
 
-Expected before deletion: 12,332 destination files, 10,982 unique hashes, 1,350 repeated logical frames preserved, and source/mirror/destination hash equality.
+Expected before deletion: 12,332 destination files, 10,982 unique hashes, 1,350 repeated logical frames preserved, source/mirror/destination hash equality, and an atomically written `docs/gallery-frame-manifest.json` that passes an immediate exact-content re-read.
 
 - [ ] **Step 3: Remove only revalidated source frames**
 
-Re-hash each source and mirror PNG immediately before unlinking. Leave any changed or newly added file untouched and fail the migration.
+Treat the validated `ready-to-delete` frame manifest as a mandatory gate. Re-hash each existing source and mirror PNG immediately before unlinking. Leave any changed or newly added file untouched and fail the migration; a rerun resumes from source-relative manifest entries when one side is already absent.
 
 - [ ] **Step 4: Verify post-migration state**
 
 Run: `npm run gallery:check`
 
-Expected: 12,332 destination frames, zero canonical/mirror PNGs, an exact manifest match, ASCII-only destination directories, and no tracked files under gallery `materials/`.
+Expected: `gallery:check` requires a `complete` frame manifest, exactly 12,332 destination PNGs, and a per-path SHA-256 match for every manifest entry. It also requires zero canonical/mirror PNGs, ASCII-only destination directories, and no tracked files under either repository's `materials/` directory.
 
 ## Task 6: Duplicate Local Gallery Cleanup
 
