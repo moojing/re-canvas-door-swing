@@ -61,7 +61,6 @@ bundler imports, so the library is self-contained; history and design in
 - **Demo code**: `src/sample/ReactSample.tsx` (React usage) and `src/sample/vanillaEntry.ts` (vanilla `mountDoorEntrance` usage), both embedded in the Index page.
 - **Assets**: `public/textures/` holds sample-only assets (e.g. `door-2.png`); the library's default presets ship their own assets (see above).
 - **TypeScript**: non-strict (`strict: false`, `noImplicitAny: false`, `strictNullChecks: false`) — unlike the library.
-- Legacy pre-monorepo components (`src/components/DoorAnimation3D.tsx`, `MainContent.tsx`) still exist but are not referenced by any route.
 
 ## Conventions
 
