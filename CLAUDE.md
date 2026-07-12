@@ -56,7 +56,6 @@ Default texture/sound/model paths in `presets.ts` are plain strings (`textures/d
 - **Demo code**: `src/sample/ReactSample.tsx` (React usage) and `src/sample/vanillaEntry.ts` (vanilla `mountDoorEntrance` usage), both embedded in the Index page.
 - **Assets**: `public/textures/`, `public/sounds/`, `public/models/` — these also back the library's default presets (see asset caveat above).
 - **TypeScript**: non-strict (`strict: false`, `noImplicitAny: false`, `strictNullChecks: false`) — unlike the library.
-- Legacy pre-monorepo components (`src/components/DoorAnimation3D.tsx`, `MainContent.tsx`) still exist but are not referenced by any route.
 
 ## Conventions
 
