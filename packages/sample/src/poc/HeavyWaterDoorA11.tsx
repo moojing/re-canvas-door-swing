@@ -184,12 +184,29 @@ const A11Door = ({
             />
           </mesh>
 
+          {/* 背面:素材只有正面影格,重用正面貼圖鏡像近似(從背面看門本來就左右相反) */}
+          <mesh position={[0, 0, -0.077]} rotation={[0, Math.PI, 0]}>
+            <planeGeometry args={[DOOR_WIDTH, DOOR_HEIGHT]} />
+            <meshLambertMaterial
+              key={faceTex ? "textured" : "flat"}
+              map={faceTex ?? undefined}
+              color={faceTex ? undefined : "#5f4c43"}
+            />
+          </mesh>
+
           {/* 浮凸部件:上/下橫樑、中央面板、閥輪座、閥輪 */}
           <ReliefPart rect={railTop} z={0.12} depth={0.12} file="rail-top.png" sideColor="#8d8578" />
           <ReliefPart rect={railBottom} z={0.12} depth={0.12} file="rail-bottom.png" sideColor="#8d8578" />
           <ReliefPart rect={panel} z={0.14} depth={0.14} file="panel.png" sideColor="#74615a" />
           <ReliefPart rect={housing} z={0.22} depth={0.16} file="valve-housing.png" sideColor="#867d70" />
           <ValveWheel position={wheelPos} spinAngle={wheelAngle} />
+
+          {/* 背面浮凸:繞 y 鏡像一組上下橫樑,穿門回望時不是平板;
+              中央面板(貼紙)與閥輪座只存在於正面,不鏡像 */}
+          <group rotation={[0, Math.PI, 0]}>
+            <ReliefPart rect={railTop} z={0.12} depth={0.12} file="rail-top.png" sideColor="#8d8578" />
+            <ReliefPart rect={railBottom} z={0.12} depth={0.12} file="rail-bottom.png" sideColor="#8d8578" />
+          </group>
         </group>
       </group>
     </group>
