@@ -67,3 +67,11 @@ bundler imports, so the library is self-contained; history and design in
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`), short lowercase scopes.
 - New animation variants: start from `animations/animation.template.ts`, register the variant in `animations/index.ts` and (optionally) a preset in `presets.ts`.
 - Verification is manual — exercise the door animations and texture/sound loading in the sample app before opening a PR.
+# Evaluation gallery
+
+The source evaluation records are in `docs/`. Their published gallery is the sibling
+repository `../re-door-gallery` and the canonical remote is
+https://github.com/moojing/re-door-gallery. When classifications, the report, or the CSV
+change, update the gallery and run `npm run gallery:check`; the work is incomplete until
+that check passes. Local source videos and frame extracts belong only in the gallery's ignored
+`materials/door-transitions/` and `materials/frame-extracts/` directories and must never be committed.

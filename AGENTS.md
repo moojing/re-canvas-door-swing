@@ -14,3 +14,6 @@ The project currently relies on manual verification. Before opening a pull reque
 
 ## Commit & Pull Request Guidelines
 Follow conventional commits (`feat:`, `fix:`, `chore:`) as reflected in the git history, keeping scopes short and lowercased. Each commit should address a single concern and leave the build lint-clean. Pull requests must include a summary, screenshots or short clips for UI changes, and references to related issues. Note any configuration updates or required migrations in the PR description so reviewers can verify them promptly.
+
+## Evaluation Gallery
+The evaluation source files live in `docs/`, while the published gallery is the sibling repository `../re-door-gallery` ([GitHub](https://github.com/moojing/re-door-gallery)). Any change to door classifications, the report, or the evaluation CSV must be reflected in the gallery. Run `npm run gallery:check` before considering evaluation work complete. Gallery source videos and frame extracts are local-only under the sibling repository's ignored `materials/door-transitions/` and `materials/frame-extracts/` directories and must never be committed.

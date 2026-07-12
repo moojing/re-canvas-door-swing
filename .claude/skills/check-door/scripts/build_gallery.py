@@ -5,20 +5,21 @@ import base64, glob, html, json, os, re, subprocess, sys, tempfile
 from collections import Counter
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
-MAT = os.path.join(ROOT, "materials/1 開門動畫轉場製作")
+GALLERY_ROOT = os.path.abspath(os.environ.get(
+    "DOOR_GALLERY_ROOT", os.path.join(ROOT, "..", "re-door-gallery")))
+MAT = os.path.abspath(os.environ.get(
+    "DOOR_VIDEO_ROOT", os.path.join(GALLERY_ROOT, "materials", "door-transitions")))
 MD = os.path.join(ROOT, "docs/door-classifications.md")
 SKILL = os.path.join(ROOT, ".claude/skills/check-door/scripts")
 TMP = tempfile.mkdtemp(prefix="gallery2-")
 
 # 本地資產輸出(供之後做 local web 用):獨立 still / gif 檔 + doors.json 清單
-ASSETS = os.path.join(ROOT, "docs/door-gallery")
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ASSETS, "door-gallery.html")
+ASSETS = GALLERY_ROOT
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ASSETS, "index.html")
 os.makedirs(os.path.join(ASSETS, "stills"), exist_ok=True)
 os.makedirs(os.path.join(ASSETS, "gifs"), exist_ok=True)
 
-GAME_FOLDER = {"1-1":"1-1 1996 Biohazard","1-2":"1-2 1998 Biohazard 2",
-    "1-3":"1-3 1999 Biohazard 3","1-4":"1-4 2000 Biohazard Gun Survivor",
-    "1-5":"1-5 2000 Biohazard Code Veronica"}
+GAME_FOLDER = {game: game for game in ("1-1", "1-2", "1-3", "1-4", "1-5")}
 GAME_TITLE = {"1-1":"1-1 1996 Biohazard","1-2":"1-2 1998 Biohazard 2",
     "1-3":"1-3 1999 Biohazard 3","1-4":"1-4 2000 Gun Survivor","1-5":"1-5 2000 Code Veronica"}
 OPTIMISM_RISK = {("1-1","b05"),("1-2","a04"),("1-3","a09"),("1-3","a10"),("1-5","a04"),
