@@ -30,7 +30,7 @@
 
 ## Final Checks
 
-- unit tests: 23 passed
+- unit tests: 26 passed
 - gallery consistency: 113 doors x 11 fields, 113 stills, 113 GIFs, 318 videos, 12,332 frames
 - gallery `/materials/` ignore rule: passed
 - tracked videos in main repository: 0

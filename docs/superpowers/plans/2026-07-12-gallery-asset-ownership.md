@@ -48,6 +48,7 @@ Use temporary directories to prove migration:
 - resumes safely when all source deletions succeed but the final report write fails;
 - aborts before deletion unless both repositories ignore `/materials/` and track no files below it;
 - records only repository-relative source and destination paths in tracked evidence;
+- rejects absolute, traversal, non-string, and malformed paths loaded from resumable manifests before any copy or unlink;
 - fails closed when migration verification-report generation fails.
 
 - [ ] **Step 5: Run safety tests and verify RED**
@@ -75,7 +76,7 @@ Expected: all tests PASS.
 
 - [ ] **Step 1: Write failing tests for document and gallery consistency**
 
-Test 113-row field comparison, document-copy equality, HTML note presence, still/GIF counts, exact 318-video and 12,332-frame manifest totals, 10,982 unique frame hashes, 1,350 repeated logical frames, `/materials/` ignore coverage, and failure when either repository tracks any material file. Also prove that an absent local-only material root is reported as skipped rather than treated as corruption.
+Test 113-row field comparison, document-copy equality, HTML note presence, still/GIF counts, exact 318-video and 12,332-frame manifest totals, 10,982 unique frame hashes, 1,350 repeated logical frames, `/materials/` ignore coverage, and failure when either repository tracks any material file. Also prove that an absent local-only material root is reported as skipped while tracked manifest schema and inventory metadata remain mandatory.
 
 - [ ] **Step 2: Run consistency tests and verify RED**
 

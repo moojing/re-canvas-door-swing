@@ -1,5 +1,6 @@
 import hashlib
 import json
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -25,6 +26,9 @@ class GalleryAssetTests(unittest.TestCase):
 
     def setUp(self):
         """Create isolated source, mirror, destination, and Git repositories."""
+        self.git = shutil.which("git")
+        if self.git is None:
+            self.skipTest("git executable is required")
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         self.source = self.root / "materials" / "1 開門動畫轉場製作"
@@ -42,7 +46,9 @@ class GalleryAssetTests(unittest.TestCase):
     def _init_material_repo(self, root):
         """Initialize a repository whose materials tree is ignored."""
         root.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(  # noqa: S603 - executable is resolved; arguments are fixed
+            [self.git, "init", "-q"], cwd=root, check=True,
+        )
         (root / ".gitignore").write_text("/materials/\n", encoding="utf-8")
 
     def _consistency_fixture(self):
@@ -184,6 +190,54 @@ class GalleryAssetTests(unittest.TestCase):
         self.assertEqual(self.manifest.read_text(encoding="utf-8"), expected_manifest)
         self.assertIn("manifest entries: 1", self.report.read_text(encoding="utf-8"))
 
+    def test_resumed_manifest_rejects_source_path_traversal(self):
+        """Reject traversal paths before they can delete files outside a source root."""
+        outside = self.source.parent / "outside.mp4"
+        outside.parent.mkdir(parents=True, exist_ok=True)
+        outside.write_bytes(b"video")
+        destination = self.destination / "1-1/c05/door.mp4"
+        destination.parent.mkdir(parents=True)
+        destination.write_bytes(b"video")
+        payload = {
+            "version": 2,
+            "migration_status": "ready-to-delete",
+            "videos": [{
+                "source_relative": "../outside.mp4",
+                "destination": "1-1/c05/door.mp4",
+                "bytes": 5,
+                "sha256": hashlib.sha256(b"video").hexdigest(),
+            }],
+        }
+        self.manifest.parent.mkdir(parents=True)
+        self.manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+        with self.assertRaisesRegex(AssetError, "source.*escapes asset root"):
+            migrate_videos(self.source, self.mirror, self.destination, self.manifest, self.report)
+
+        self.assertTrue(outside.exists())
+
+    def test_resumed_manifest_rejects_absolute_destination(self):
+        """Reject absolute manifest destinations outside the gallery asset root."""
+        outside = self.root / "outside-destination.mp4"
+        outside.write_bytes(b"video")
+        payload = {
+            "version": 2,
+            "migration_status": "ready-to-delete",
+            "videos": [{
+                "source_relative": "missing.mp4",
+                "destination": str(outside),
+                "bytes": 5,
+                "sha256": hashlib.sha256(b"video").hexdigest(),
+            }],
+        }
+        self.manifest.parent.mkdir(parents=True)
+        self.manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+        with self.assertRaisesRegex(AssetError, "destination.*escapes asset root"):
+            migrate_videos(self.source, self.mirror, self.destination, self.manifest, self.report)
+
+        self.assertTrue(outside.exists())
+
     def test_preexisting_different_destination_is_rejected(self):
         """Reject a pre-existing destination with unrelated content."""
         self.add_pair()
@@ -278,7 +332,7 @@ class GalleryAssetTests(unittest.TestCase):
 
         def fail_mirror(path, expected_hash):
             """Simulate a one-sided source deletion failure."""
-            if Path(path) == mirror:
+            if Path(path).resolve() == mirror.resolve():
                 raise AssetError("simulated mirror unlink failure")
             return real_unlink(path, expected_hash)
 
@@ -321,11 +375,17 @@ class GalleryAssetTests(unittest.TestCase):
         """Detect every tracked material type rather than videos alone."""
         repo = self.root / "repo"
         repo.mkdir()
-        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(  # noqa: S603 - executable is resolved; arguments are fixed
+            [self.git, "init", "-q"], cwd=repo, check=True,
+        )
         frame = repo / "materials/frame-extracts/frame.png"
         frame.parent.mkdir(parents=True)
         frame.write_bytes(b"png")
-        subprocess.run(["git", "add", "-f", "materials/frame-extracts/frame.png"], cwd=repo, check=True)
+        subprocess.run(  # noqa: S603 - executable is resolved; arguments are fixed
+            [self.git, "add", "-f", "materials/frame-extracts/frame.png"],
+            cwd=repo,
+            check=True,
+        )
         self.assertEqual(_tracked_materials(repo), ["materials/frame-extracts/frame.png"])
 
     def test_consistency_skips_hashing_when_local_material_roots_are_absent(self):
@@ -341,6 +401,25 @@ class GalleryAssetTests(unittest.TestCase):
                 "frames: materials/frame-extracts absent",
             ],
         )
+
+    def test_consistency_rejects_truncated_manifest_without_local_materials(self):
+        """Validate tracked inventory metadata in an asset-free checkout."""
+        main, gallery, door = self._consistency_fixture()
+        payload = {
+            "version": 2,
+            "migration_status": "complete",
+            "videos": [{
+                "source_relative": "source/door.mp4",
+                "destination": "1-1/c05/door.mp4",
+                "bytes": 5,
+                "sha256": hashlib.sha256(b"video").hexdigest(),
+            }],
+        }
+        (main / "docs/gallery-video-manifest.json").write_text(json.dumps(payload), encoding="utf-8")
+
+        with patch("scripts.gallery_assets.parse_classifications", return_value=[door]):
+            with self.assertRaisesRegex(AssetError, "expected 318 videos"):
+                gallery_assets.gallery_consistency(main, gallery, expected_count=1)
 
     def test_consistency_rejects_truncated_video_manifest(self):
         """Require the complete 318-video inventory when local videos exist."""
