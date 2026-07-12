@@ -46,26 +46,29 @@ Existing door-code prefixes determine the destination directory. Human-readable 
 
 ## Deduplication And Manifest
 
-Migration computes SHA-256 for every source MP4 and writes a local-only manifest under `source-videos/manifest.json`. The manifest records source-relative path, destination-relative path, byte size, and SHA-256.
+The canonical source is exactly `materials/1 開門動畫轉場製作`; its mirror is exactly `materials/Organized/1 開門動畫轉場製作`. Migration computes SHA-256 for every MP4 in the canonical source and writes a tracked inventory to `docs/gallery-video-manifest.json`. The inventory records the ASCII destination-relative path, byte size, and SHA-256 without embedding local absolute paths. A local copy may also be written under the ignored `source-videos/` directory for operational convenience.
 
 Files with the same SHA-256 use one canonical destination. Additional logical references point to that destination in the manifest instead of creating another copy. The current canonical source contains 318 files with no equal file sizes, so the expected result is 318 unique destination files.
 
-The `materials/Organized/1 開門動畫轉場製作` tree is treated as a mirror. Before deletion, every file in both source trees must match by relative path, byte size, and SHA-256.
+The `materials/Organized/1 開門動畫轉場製作` tree is treated as a mirror. Before removal, every MP4 in both source trees must match by relative path, byte size, and SHA-256.
+
+Both source trees also contain 12,332 PNG frame extracts and `.DS_Store` files. Those non-video files are outside this migration and must remain untouched. The migration removes only the 318 verified MP4 files from each tree, never either complete directory tree.
 
 ## Migration Safety
 
 Migration is staged and verified in this order:
 
-1. Create the ignored destination and ASCII directory structure.
-2. Copy the canonical 318 source videos while computing the manifest.
-3. Verify source and destination counts, byte sizes, and SHA-256 values.
-4. Verify there are no duplicate destination hashes.
-5. Verify the `Organized` mirror matches the canonical source by relative path and SHA-256.
-6. Verify neither repository tracks video files and the gallery ignore rule covers the destination.
-7. Remove both main-project source trees only after every check passes.
-8. Remove the ignored `docs/door-gallery/` duplicate after confirming the tracked gallery has 113 stills, 113 GIFs, valid JSON, and matching evaluation data.
+1. Inventory both exact source paths and fail if either contains symlinks or non-regular MP4 entries.
+2. Create destination files with exclusive, collision-safe creation under the ignored ASCII directory structure.
+3. Copy the canonical 318 source videos while computing the tracked manifest.
+4. Verify source and destination counts, byte sizes, and SHA-256 values.
+5. Verify there are no duplicate destination hashes or destination-path collisions.
+6. Verify the `Organized` mirror MP4s match the canonical source MP4s by relative path and SHA-256.
+7. Verify neither repository tracks video files and the gallery ignore rule covers the destination.
+8. Remove only the 318 verified MP4 files from each main-project source tree after every check passes; leave all PNG frames, `.DS_Store` files, and directories untouched.
+9. Remove the ignored `docs/door-gallery/` duplicate after confirming the tracked gallery has 113 stills, 113 GIFs, valid JSON, and matching evaluation data.
 
-If any check fails, no source directory is removed. The copied destination can remain for inspection or be retried safely because manifest hashes make the operation idempotent.
+If any check fails, no source MP4 is removed. The copied destination can remain for inspection or be retried safely because manifest hashes make the operation idempotent.
 
 ## Tooling Changes
 
@@ -94,7 +97,8 @@ Completion requires fresh evidence for:
 
 - 318 unique destination MP4 files;
 - source-to-destination SHA-256 equality;
-- canonical-to-`Organized` SHA-256 equality before source removal;
+- canonical-to-`Organized` MP4 SHA-256 equality before source removal;
+- all 24,664 PNG frame files across the two source trees remain present after MP4 removal;
 - no tracked video files in either repository;
 - 113 matching door records, 113 stills, and 113 GIFs;
 - clean JSON parsing and gallery consistency checks;
