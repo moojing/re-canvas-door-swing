@@ -85,6 +85,8 @@ A tracked consistency checker in the main project will verify:
 
 The check should report a clear skip for local-only video validation when the sibling repository or source videos are absent, while still linking to the canonical GitHub repository.
 
+The migration must also write `docs/gallery-migration-verification.md` as a tracked completion record. It will include the execution date, exact source and destination paths, pre- and post-migration MP4 counts, preserved PNG counts, manifest entry and unique-hash counts, source/mirror/destination SHA-256 verification results, gallery still/GIF/record counts, Git tracked-video checks for both repositories, and `git diff --stat` confirmation that no video binaries were added. The report records command results and exit status summaries, not transient absolute paths beyond the documented repository roots.
+
 ## Documentation
 
 The main README will include a short "Evaluation gallery" section with the GitHub URL, local sibling convention, source/output ownership, and check command. `AGENTS.md` and `CLAUDE.md` will point agents to the same workflow and state that evaluation edits are incomplete until the gallery consistency check passes.
@@ -103,3 +105,5 @@ Completion requires fresh evidence for:
 - 113 matching door records, 113 stills, and 113 GIFs;
 - clean JSON parsing and gallery consistency checks;
 - Git diffs containing no binary video additions.
+
+All completion evidence above must be recorded in the tracked `docs/gallery-migration-verification.md`; the migration is not complete if the report is absent or contains a failed check.
