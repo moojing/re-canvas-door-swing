@@ -1,7 +1,7 @@
 import { useLoader } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { getHandleProfile } from "../handles/profiles";
 import { HandleProfileId } from "../types";
 
