@@ -66,7 +66,7 @@ Migration is staged and verified in this order:
 6. Verify the `Organized` mirror MP4s match the canonical source MP4s by relative path and SHA-256.
 7. Verify neither repository tracks video files and the gallery ignore rule covers the destination.
 8. Remove only the 318 verified MP4 files from each main-project source tree after every check passes; leave all PNG frames, `.DS_Store` files, and directories untouched.
-9. Remove the ignored `docs/door-gallery/` duplicate after confirming the tracked gallery has 113 stills, 113 GIFs, valid JSON, and matching evaluation data.
+9. Inventory every file under the ignored `docs/door-gallery/`, map `door-gallery.html` to the gallery's `index.html`, and compare content hashes against the tracked gallery. Remove the local tree only when every file has a counterpart and is either byte-identical or an explicitly documented stale generated file whose gallery counterpart matches the current source evaluation documents. Any missing, unique, or unexplained mismatch stops deletion.
 
 If any check fails, no source MP4 is removed. The copied destination can remain for inspection or be retried safely because manifest hashes make the operation idempotent.
 
@@ -85,7 +85,7 @@ A tracked consistency checker in the main project will verify:
 
 The check should report a clear skip for local-only video validation when the sibling repository or source videos are absent, while still linking to the canonical GitHub repository.
 
-The migration must also write `docs/gallery-migration-verification.md` as a tracked completion record. It will include the execution date, exact source and destination paths, pre- and post-migration MP4 counts, preserved PNG counts, manifest entry and unique-hash counts, source/mirror/destination SHA-256 verification results, gallery still/GIF/record counts, Git tracked-video checks for both repositories, and `git diff --stat` confirmation that no video binaries were added. The report records command results and exit status summaries, not transient absolute paths beyond the documented repository roots.
+The migration must also write `docs/gallery-migration-verification.md` as a tracked completion record. It will include the execution date, exact source and destination paths, pre- and post-migration MP4 counts, preserved PNG counts, manifest entry and unique-hash counts, source/mirror/destination SHA-256 verification results, the full `docs/door-gallery/` inventory comparison and any explained stale-output mismatch, gallery still/GIF/record counts, Git tracked-video checks for both repositories, and `git diff --stat` confirmation that no video binaries were added. The report records command results and exit status summaries, not transient absolute paths beyond the documented repository roots.
 
 ## Documentation
 
