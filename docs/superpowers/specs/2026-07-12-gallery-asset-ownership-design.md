@@ -19,7 +19,7 @@ The sibling `re-door-gallery` repository is the published snapshot:
 - `doors.json`
 - `docs/` copies of the evaluation documents
 - `stills/` and `gifs/`
-- local-only source videos under `source-videos/`
+- local-only source videos under `materials/`
 
 The main README and agent instruction files will link to `https://github.com/moojing/re-door-gallery`, document the conventional local sibling path, and require a gallery consistency check whenever evaluation records change.
 
@@ -29,7 +29,7 @@ The gallery stores one local-only copy using ASCII directory names:
 
 ```text
 re-door-gallery/
-  source-videos/
+  materials/
     door-transitions/
       1-1/
         a01/
@@ -42,11 +42,11 @@ re-door-gallery/
 
 Existing door-code prefixes determine the destination directory. Human-readable Chinese names remain in the evaluation data rather than directory names. Original video filenames may be retained because the ASCII-only requirement applies to directories.
 
-`re-door-gallery/.gitignore` will ignore `/source-videos/`. A consistency check will also fail if Git tracks any common video extension, providing protection in addition to ignore rules. The main repository continues to ignore `/materials/`.
+`re-door-gallery/.gitignore` will ignore `/materials/`. A consistency check will also fail if Git tracks any common video extension, providing protection in addition to ignore rules. The main repository continues to ignore `/materials/`.
 
 ## Deduplication And Manifest
 
-The canonical source is exactly `materials/1 開門動畫轉場製作`; its mirror is exactly `materials/Organized/1 開門動畫轉場製作`. Migration computes SHA-256 for every MP4 in the canonical source and writes a tracked inventory to `docs/gallery-video-manifest.json`. The inventory records the ASCII destination-relative path, byte size, and SHA-256 without embedding local absolute paths. A local copy may also be written under the ignored `source-videos/` directory for operational convenience.
+The canonical source is exactly `materials/1 開門動畫轉場製作`; its mirror is exactly `materials/Organized/1 開門動畫轉場製作`. Migration computes SHA-256 for every MP4 in the canonical source and writes a tracked inventory to `docs/gallery-video-manifest.json`. The inventory records the ASCII destination-relative path, byte size, and SHA-256 without embedding local absolute paths. A local copy may also be written under the ignored gallery `materials/` directory for operational convenience.
 
 Files with the same SHA-256 use one canonical destination. Additional logical references point to that destination in the manifest instead of creating another copy. The current canonical source contains 318 files with no equal file sizes, so the expected result is 318 unique destination files.
 
@@ -72,7 +72,7 @@ If any check fails, no source MP4 is removed. The copied destination can remain 
 
 ## Tooling Changes
 
-The gallery builder will read videos from the sibling gallery `source-videos/door-transitions` location and write generated outputs directly to the gallery checkout. Paths will be configurable through environment variables with a sibling-repository default, so Codex worktrees and nonstandard checkouts can override them.
+The gallery builder will read videos from the sibling gallery `materials/door-transitions` location and write generated outputs directly to the gallery checkout. Paths will be configurable through environment variables with a sibling-repository default, so Codex worktrees and nonstandard checkouts can override them.
 
 A tracked consistency checker in the main project will verify:
 
