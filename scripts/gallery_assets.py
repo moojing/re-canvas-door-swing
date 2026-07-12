@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Migrate and verify local-only assets shared with the door gallery repository."""
+
 import argparse
 import hashlib
 import json
@@ -13,6 +15,8 @@ from pathlib import Path
 
 
 class AssetError(RuntimeError):
+    """Raised when an asset operation cannot complete without risking data loss."""
+
     pass
 
 
@@ -24,6 +28,7 @@ FIELDS = (
 
 
 def sha256_file(path):
+    """Return the SHA-256 digest for a file using bounded-memory reads."""
     digest = hashlib.sha256()
     with Path(path).open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
@@ -32,6 +37,7 @@ def sha256_file(path):
 
 
 def validate_no_symlinks(root):
+    """Reject missing roots and any symlink found below the supplied root."""
     root = Path(root)
     if root.is_symlink():
         raise AssetError(f"symlink is not allowed: {root}")
@@ -46,6 +52,7 @@ def validate_no_symlinks(root):
 
 
 def discover_mp4(root):
+    """Return sorted regular MP4 files after validating the complete tree."""
     root = Path(root)
     validate_no_symlinks(root)
     files = []
@@ -60,6 +67,7 @@ def discover_mp4(root):
 
 
 def destination_relative(source_root, source_file):
+    """Map a legacy video path to its ASCII game/code destination path."""
     source_root = Path(source_root)
     source_file = Path(source_file)
     try:
@@ -78,11 +86,13 @@ def destination_relative(source_root, source_file):
 
 
 def _relative_map(root):
+    """Index validated MP4 files by source-relative path."""
     root = Path(root)
     return {path.relative_to(root): path for path in discover_mp4(root)}
 
 
 def build_inventory(source_root, mirror_root):
+    """Build a collision-free video inventory after mirror hash validation."""
     source_root = Path(source_root)
     mirror_root = Path(mirror_root)
     source_files = _relative_map(source_root)
@@ -118,6 +128,7 @@ def build_inventory(source_root, mirror_root):
 
 
 def _discover_png(root):
+    """Return sorted regular PNG files after validating the complete tree."""
     root = Path(root)
     validate_no_symlinks(root)
     return sorted(
@@ -127,6 +138,7 @@ def _discover_png(root):
 
 
 def build_frame_inventory(source_root, mirror_root):
+    """Build an ASCII frame inventory while preserving logical repeated frames."""
     source_root = Path(source_root)
     mirror_root = Path(mirror_root)
     source_files = {path.relative_to(source_root): path for path in _discover_png(source_root)}
@@ -177,6 +189,7 @@ def build_frame_inventory(source_root, mirror_root):
 
 
 def _validate_destination_path(root, path=None):
+    """Ensure a destination is contained by a regular, symlink-free root."""
     raw_root = Path(root).absolute()
     raw_path = Path(path or raw_root).absolute()
     if raw_root.is_symlink() or raw_path.is_symlink():
@@ -192,6 +205,7 @@ def _validate_destination_path(root, path=None):
 
 
 def _ensure_destination_parent(root, destination):
+    """Create regular destination parents without following symlinks."""
     root = Path(root).absolute()
     destination = Path(destination).absolute()
     _validate_destination_path(root, destination)
@@ -207,6 +221,7 @@ def _ensure_destination_parent(root, destination):
 
 
 def _copy_exclusive(source, destination, expected_hash, destination_root):
+    """Atomically create or verify a destination without overwriting content."""
     destination = Path(destination)
     _ensure_destination_parent(destination_root, destination)
     if destination.exists() or destination.is_symlink():
@@ -227,14 +242,15 @@ def _copy_exclusive(source, destination, expected_hash, destination_root):
             raise AssetError(f"copied file hash mismatch: {destination}")
         try:
             os.link(temp_path, destination)
-        except FileExistsError:
+        except FileExistsError as exc:
             if destination.is_symlink() or not destination.is_file() or sha256_file(destination) != expected_hash:
-                raise AssetError(f"destination changed during copy: {destination}")
+                raise AssetError(f"destination changed during copy: {destination}") from exc
     finally:
         temp_path.unlink(missing_ok=True)
 
 
 def _write_atomic(path, content):
+    """Atomically replace a UTF-8 text file after flushing it to disk."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and not path.is_file():
@@ -253,6 +269,7 @@ def _write_atomic(path, content):
 
 
 def _report_text(status, entries, source_root, mirror_root, destination_root):
+    """Render the video migration evidence recorded before and after deletion."""
     source_mp4 = len(list(Path(source_root).rglob("*.mp4")))
     mirror_mp4 = len(list(Path(mirror_root).rglob("*.mp4")))
     source_png = len(list(Path(source_root).rglob("*.png")))
@@ -268,6 +285,8 @@ def _report_text(status, entries, source_root, mirror_root, destination_root):
         f"- destination: `{destination_root}`",
         f"- manifest entries: {len(entries)}",
         f"- unique SHA-256 values: {len({entry['sha256'] for entry in entries})}",
+        f"- canonical/mirror SHA-256 verification: passed ({len(entries)} files)",
+        f"- canonical/destination SHA-256 verification: passed ({len(entries)} files)",
         f"- canonical MP4 count: {source_mp4}",
         f"- mirror MP4 count: {mirror_mp4}",
         f"- destination MP4 count: {destination_mp4}",
@@ -278,6 +297,7 @@ def _report_text(status, entries, source_root, mirror_root, destination_root):
 
 
 def _verified_unlink(path, expected_hash):
+    """Unlink only when identity metadata and a fresh digest still match."""
     path = Path(path)
     if path.is_symlink() or not path.is_file():
         raise AssetError(f"source changed before unlink: {path}")
@@ -295,6 +315,7 @@ def _verified_unlink(path, expected_hash):
 
 
 def migrate_videos(source_root, mirror_root, destination_root, manifest_path, report_path):
+    """Copy, verify, inventory, and then remove duplicated source videos."""
     source_root = Path(source_root)
     mirror_root = Path(mirror_root)
     destination_root = Path(destination_root)
@@ -329,6 +350,7 @@ def migrate_videos(source_root, mirror_root, destination_root, manifest_path, re
 
 
 def migrate_frames(source_root, mirror_root, destination_root, manifest_path, report_path):
+    """Copy and verify all logical frames before removing both source copies."""
     source_root = Path(source_root)
     mirror_root = Path(mirror_root)
     destination_root = Path(destination_root)
@@ -357,6 +379,8 @@ def migrate_frames(source_root, mirror_root, destination_root, manifest_path, re
         "", "## Frame Migration", "", "- status: ready-to-delete",
         f"- manifest entries: {len(entries)}", f"- unique SHA-256 values: {unique_hashes}",
         f"- duplicate logical frames preserved: {len(entries) - unique_hashes}", "",
+        f"- canonical/mirror SHA-256 verification: passed ({len(entries)} files)",
+        f"- canonical/destination SHA-256 verification: passed ({len(entries)} files)", "",
     ])
     _write_atomic(report_path, report.rstrip() + "\n" + pre_section)
 
@@ -378,6 +402,7 @@ def migrate_frames(source_root, mirror_root, destination_root, manifest_path, re
 
 
 def parse_classifications(path):
+    """Parse classification Markdown rows into normalized gallery records."""
     rows = []
     game = None
     for line in Path(path).read_text(encoding="utf-8").splitlines():
@@ -400,6 +425,7 @@ def parse_classifications(path):
 
 
 def _tracked_videos(repo):
+    """List video files currently tracked by a Git repository."""
     result = subprocess.run(
         ["git", "ls-files"], cwd=repo, capture_output=True, text=True, check=True,
     )
@@ -407,6 +433,7 @@ def _tracked_videos(repo):
 
 
 def gallery_consistency(main_root, gallery_root, expected_count=113):
+    """Validate published records, assets, manifests, and Git boundaries."""
     main_root = Path(main_root)
     gallery_root = Path(gallery_root)
     if not gallery_root.is_dir():
@@ -415,7 +442,7 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
     doors = json.loads((gallery_root / "doors.json").read_text(encoding="utf-8"))
     if len(rows) != expected_count or len(doors) != expected_count:
         raise AssetError(f"door count mismatch: docs={len(rows)}, gallery={len(doors)}")
-    for index, (expected, actual) in enumerate(zip(rows, doors)):
+    for index, (expected, actual) in enumerate(zip(rows, doors, strict=True)):
         for field in FIELDS:
             if expected[field] != actual.get(field):
                 raise AssetError(f"door mismatch at {index} {field}: {expected[field]!r} != {actual.get(field)!r}")
@@ -477,6 +504,7 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
 
 
 def clean_local_gallery(main_root, gallery_root, report_path):
+    """Remove only locally generated files with validated gallery counterparts."""
     main_root = Path(main_root)
     gallery_root = Path(gallery_root)
     local_root = main_root / "docs/door-gallery"
@@ -506,9 +534,12 @@ def clean_local_gallery(main_root, gallery_root, report_path):
     existing_report = Path(report_path).read_text(encoding="utf-8") if Path(report_path).exists() else "# Gallery Migration Verification\n"
     cleanup_evidence = "\n".join([
         "", "## Local Gallery Cleanup", "",
-        f"- status: ready-to-delete", f"- inventoried files: {len(files)}",
+        "- status: ready-to-delete", f"- inventoried files: {len(files)}",
         f"- byte-identical counterparts: {identical}",
         f"- explained stale files: {', '.join(stale) if stale else 'none'}", "",
+        "- counterpart validation: passed (every local file mapped and hashed)",
+        "- gallery source-record validation: passed (113 records x 11 fields)",
+        "- stale doors.json justification: gallery copy matches all current source records", "",
     ])
     _write_atomic(report_path, existing_report.rstrip() + "\n" + cleanup_evidence)
 
@@ -538,6 +569,7 @@ def clean_local_gallery(main_root, gallery_root, report_path):
 
 
 def _default_paths(main_root):
+    """Resolve conventional main and sibling-gallery paths with overrides."""
     main_root = Path(main_root).absolute()
     gallery_root = Path(os.environ.get("DOOR_GALLERY_ROOT", main_root.parent / "re-door-gallery")).absolute()
     return {
@@ -554,6 +586,7 @@ def _default_paths(main_root):
 
 
 def main(argv=None):
+    """Run a migration, consistency check, or local cleanup command."""
     parser = argparse.ArgumentParser(description="Migrate and verify door gallery assets")
     parser.add_argument("command", choices=("migrate", "migrate-frames", "check", "clean-local-gallery"))
     parser.add_argument("--main-root", default=Path(__file__).resolve().parents[1])

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import tempfile
@@ -180,8 +181,8 @@ class GalleryAssetTests(unittest.TestCase):
         self.assertEqual(len(list(destination.rglob("*.png"))), 1)
         self.assertEqual(len(list(self.source.rglob("*.png"))), 0)
         self.assertEqual(len(list(self.mirror.rglob("*.png"))), 0)
-        self.assertEqual(json.loads(manifest.read_text())["frames"][0]["sha256"],
-                         json.loads(manifest.read_text())["frames"][0]["sha256"])
+        expected_sha = hashlib.sha256(b"png-frame").hexdigest()
+        self.assertEqual(json.loads(manifest.read_text())["frames"][0]["sha256"], expected_sha)
 
 
 if __name__ == "__main__":

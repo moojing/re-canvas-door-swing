@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Move the 318 unique door-transition MP4s into the ignored sibling gallery `materials/door-transitions` tree, remove verified duplicate MP4s and local gallery outputs from the main checkout, and make cross-repository ownership discoverable and testable.
+**Goal:** Move 318 unique door-transition MP4s and 12,332 logical PNG frames into the ignored sibling gallery `materials/` tree, remove verified duplicate source copies and local gallery outputs from the main checkout, and make cross-repository ownership discoverable and testable.
 
-**Architecture:** A focused Python tool owns path mapping, SHA-256 inventory generation, migration safety gates, and consistency checks. The main repository remains the evaluation source of truth; the sibling gallery remains the published snapshot and local-only video owner. Migration copies first, verifies all three copies, then deletes only verified source MP4s.
+**Architecture:** A focused Python tool owns path mapping, SHA-256 inventory generation, migration safety gates, and consistency checks. The main repository remains the evaluation source of truth; the sibling gallery remains the published snapshot and single local material owner. Migration copies first, verifies source, mirror, and destination, then deletes only revalidated source files.
 
 **Tech Stack:** Python 3 standard library, Node/npm script entry point, Markdown documentation, Git ignore rules.
 
 ---
 
-### Task 1: Gallery Asset Tool Tests
+## Task 1: Gallery Asset Tool Tests
 
 **Files:**
 - Create: `scripts/tests/test_gallery_assets.py`
@@ -62,7 +62,7 @@ Run: `python3 -m unittest scripts.tests.test_gallery_assets -v`
 
 Expected: all tests PASS.
 
-### Task 2: Gallery Consistency Checks
+## Task 2: Gallery Consistency Checks
 
 **Files:**
 - Modify: `scripts/tests/test_gallery_assets.py`
@@ -93,15 +93,15 @@ Run: `python3 -m unittest scripts.tests.test_gallery_assets -v`
 
 Expected: all tests PASS.
 
-### Task 3: Builder And Documentation Ownership
+## Task 3: Builder And Documentation Ownership
 
 **Files:**
 - Modify: `.claude/skills/check-door/scripts/build_gallery.py`
 - Modify: `README.md`
 - Modify: `AGENTS.md`
 - Modify: `CLAUDE.md`
-- Modify: `/Users/mujingtsai/Case/BioHazard/re-door-gallery/README.md`
-- Create: `/Users/mujingtsai/Case/BioHazard/re-door-gallery/.gitignore`
+- Modify: `../re-door-gallery/README.md`
+- Create: `../re-door-gallery/.gitignore`
 
 - [ ] **Step 1: Update builder path configuration**
 
@@ -117,16 +117,16 @@ Create gallery `.gitignore` with `/materials/`. Document `materials/door-transit
 
 - [ ] **Step 4: Verify documentation and path references**
 
-Run: `rg -n "re-door-gallery|gallery:check|materials/door-transitions" README.md AGENTS.md CLAUDE.md .claude/skills/check-door/scripts/build_gallery.py /Users/mujingtsai/Case/BioHazard/re-door-gallery/README.md`
+Run: `rg -n "re-door-gallery|gallery:check|materials/door-transitions" README.md AGENTS.md CLAUDE.md .claude/skills/check-door/scripts/build_gallery.py ../re-door-gallery/README.md`
 
 Expected: each agent entry point and builder references the canonical gallery workflow.
 
-### Task 4: Real Video Migration
+## Task 4: Real Video Migration
 
 **Files:**
 - Create: `docs/gallery-video-manifest.json`
 - Create: `docs/gallery-migration-verification.md`
-- Create ignored: `/Users/mujingtsai/Case/BioHazard/re-door-gallery/materials/door-transitions/**`
+- Create ignored: `../re-door-gallery/materials/door-transitions/**`
 - Remove ignored MP4 only: `materials/1 開門動畫轉場製作/**/*.mp4`
 - Remove ignored MP4 only: `materials/Organized/1 開門動畫轉場製作/**/*.mp4`
 
@@ -150,7 +150,35 @@ Run: `python3 scripts/gallery_assets.py check`
 
 Expected: 318 destination MP4s, zero source/mirror MP4s, 12,332 PNGs per source tree, unique manifest hashes, no tracked videos, and a regenerated valid final report containing the actual post-deletion counts.
 
-### Task 5: Duplicate Local Gallery Cleanup
+## Task 5: Real Frame Migration
+
+**Files:**
+- Create: `docs/gallery-frame-manifest.json`
+- Create ignored: `../re-door-gallery/materials/frame-extracts/**`
+- Remove ignored PNG only: `materials/1 開門動畫轉場製作/**/*.png`
+- Remove ignored PNG only: `materials/Organized/1 開門動畫轉場製作/**/*.png`
+
+- [ ] **Step 1: Capture and compare frame inventories**
+
+Require 12,332 source and 12,332 mirror PNG paths with matching byte sizes and SHA-256 values. Assign collision-free ASCII destinations as `<game>/<door-code>/set-NNN/frame_NNNN.png`.
+
+- [ ] **Step 2: Copy and verify all logical frame paths**
+
+Run: `python3 scripts/gallery_assets.py migrate-frames`
+
+Expected before deletion: 12,332 destination files, 10,982 unique hashes, 1,350 repeated logical frames preserved, and source/mirror/destination hash equality.
+
+- [ ] **Step 3: Remove only revalidated source frames**
+
+Re-hash each source and mirror PNG immediately before unlinking. Leave any changed or newly added file untouched and fail the migration.
+
+- [ ] **Step 4: Verify post-migration state**
+
+Run: `npm run gallery:check`
+
+Expected: 12,332 destination frames, zero canonical/mirror PNGs, an exact manifest match, ASCII-only destination directories, and no tracked files under gallery `materials/`.
+
+## Task 6: Duplicate Local Gallery Cleanup
 
 **Files:**
 - Remove ignored: `docs/door-gallery/`

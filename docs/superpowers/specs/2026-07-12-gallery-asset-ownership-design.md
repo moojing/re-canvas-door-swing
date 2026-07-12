@@ -50,25 +50,26 @@ The canonical source is exactly `materials/1 開門動畫轉場製作`; its mirr
 
 Files with the same SHA-256 use one canonical destination. Additional logical references point to that destination in the manifest instead of creating another copy. The current canonical source contains 318 files with no equal file sizes, so the expected result is 318 unique destination files.
 
-The `materials/Organized/1 開門動畫轉場製作` tree is treated as a mirror. Before removal, every MP4 in both source trees must match by relative path, byte size, and SHA-256.
+The `materials/Organized/1 開門動畫轉場製作` tree is treated as a mirror. Before removal, every MP4 and PNG in both source trees must match by relative path, byte size, and SHA-256.
 
-Both source trees also contain 12,332 PNG frame extracts and `.DS_Store` files. Those non-video files are outside this migration and must remain untouched. The migration removes only the 318 verified MP4 files from each tree, never either complete directory tree.
+Each source tree also contains 12,332 PNG frame extracts. Frame migration preserves all 12,332 logical paths under the gallery's ignored `materials/frame-extracts/` tree, including 1,350 repeated animation holds, while recording 10,982 unique hashes. After source/mirror/destination verification, the migration removes only the individually revalidated MP4 and PNG files; `.DS_Store` files and directories remain untouched.
 
 ## Migration Safety
 
 Migration is staged and verified in this order:
 
-1. Inventory both exact source paths and fail if either contains symlinks or non-regular MP4 entries.
+1. Inventory both exact source paths and fail if either contains symlinks or non-regular MP4/PNG entries.
 2. Create destination files with exclusive, collision-safe creation under the ignored ASCII directory structure.
 3. Copy the canonical 318 source videos while computing the tracked manifest.
 4. Verify source and destination counts, byte sizes, and SHA-256 values.
 5. Verify there are no duplicate destination hashes or destination-path collisions.
 6. Verify the `Organized` mirror MP4s match the canonical source MP4s by relative path and SHA-256.
-7. Verify neither repository tracks video files and the gallery ignore rule covers the destination.
-8. Remove only the 318 verified MP4 files from each main-project source tree after every check passes; leave all PNG frames, `.DS_Store` files, and directories untouched.
-9. Inventory every file under the ignored `docs/door-gallery/`, map `door-gallery.html` to the gallery's `index.html`, and compare content hashes against the tracked gallery. Remove the local tree only when every file has a counterpart and is either byte-identical or an explicitly documented stale generated file whose gallery counterpart matches the current source evaluation documents. Any missing, unique, or unexplained mismatch stops deletion.
+7. Copy all 12,332 logical PNG paths to collision-free ASCII `frame-extracts/<game>/<door-code>/set-NNN/` destinations and verify source/mirror/destination hashes.
+8. Verify neither repository tracks material files and the gallery ignore rule covers both destinations.
+9. Remove only the individually revalidated 318 MP4 and 12,332 PNG files from each main-project source tree; leave `.DS_Store` files and directories untouched.
+10. Inventory every file under the ignored `docs/door-gallery/`, map `door-gallery.html` to the gallery's `index.html`, and compare content hashes against the tracked gallery. Remove the local tree only when every file has a counterpart and is either byte-identical or an explicitly documented stale generated file whose gallery counterpart matches the current source evaluation documents. Any missing, unique, or unexplained mismatch stops deletion.
 
-If any check fails, no source MP4 is removed. The copied destination can remain for inspection or be retried safely because manifest hashes make the operation idempotent.
+If any check fails, no unverified source asset is removed. The copied destination can remain for inspection or be retried safely because manifest hashes make the operation idempotent.
 
 ## Tooling Changes
 
@@ -80,12 +81,12 @@ A tracked consistency checker in the main project will verify:
 - all current notes appear in `re-door-gallery/index.html`;
 - the three published evaluation documents match the main source files;
 - still and GIF counts are 113 each;
-- no video files are tracked by either repository;
-- local source videos, when present, contain no duplicate SHA-256 values and match their manifest.
+- no material files are tracked by either repository;
+- local videos and frame extracts match their tracked manifests when present.
 
-The check should report a clear skip for local-only video validation when the sibling repository or source videos are absent, while still linking to the canonical GitHub repository.
+The check should report a clear skip for local-only asset validation when the sibling repository or materials are absent, while still linking to the canonical GitHub repository.
 
-The migration must also write `docs/gallery-migration-verification.md` as a tracked completion record. It will include the execution date, exact source and destination paths, pre- and post-migration MP4 counts, preserved PNG counts, manifest entry and unique-hash counts, source/mirror/destination SHA-256 verification results, the full `docs/door-gallery/` inventory comparison and any explained stale-output mismatch, gallery still/GIF/record counts, Git tracked-video checks for both repositories, and `git diff --stat` confirmation that no video binaries were added. The report records command results and exit status summaries, not transient absolute paths beyond the documented repository roots.
+The migration must also write `docs/gallery-migration-verification.md` as a tracked completion record. It will include the execution date, repository-relative source and destination paths, pre- and post-migration MP4/PNG counts, both manifest entry and unique-hash counts, source/mirror/destination SHA-256 verification results, the full `docs/door-gallery/` inventory comparison and any explained stale-output mismatch, gallery record/still/GIF/video/frame counts, Git tracked-material checks for both repositories, and `git diff --stat` confirmation that no material binaries were added. The report records command results and exit status summaries without transient absolute paths.
 
 ## Documentation
 
@@ -100,10 +101,11 @@ Completion requires fresh evidence for:
 - 318 unique destination MP4 files;
 - source-to-destination SHA-256 equality;
 - canonical-to-`Organized` MP4 SHA-256 equality before source removal;
-- all 24,664 PNG frame files across the two source trees remain present after MP4 removal;
-- no tracked video files in either repository;
-- 113 matching door records, 113 stills, and 113 GIFs;
+- 12,332 destination PNG frame paths and zero source/mirror PNG files after verified frame migration;
+- 10,982 unique frame hashes with 1,350 repeated logical frames preserved;
+- no tracked material files in either repository;
+- 113 matching door records, 113 stills, 113 GIFs, 318 videos, and 12,332 frames;
 - clean JSON parsing and gallery consistency checks;
-- Git diffs containing no binary video additions.
+- Git diffs containing no material binary additions.
 
 All completion evidence above must be recorded in the tracked `docs/gallery-migration-verification.md`; the migration is not complete if the report is absent or contains a failed check.
