@@ -6,9 +6,10 @@
  * 原作是上下顎式閘門:閉合時上下閘板齒形互鎖成一整片門板,
  * 開門時上閘板上升、下閘板等速下沉(影格逐格量測確認)。門上有拉桿盒,黑背景特寫。
  *
- * ⚠️ 貼圖是遊戲畫面截圖(placeholder,gitignored,不進發佈包)。
- *    執行 scripts/poc/extract-b10-textures.sh 產生。
- *    正式版需以自製 / CC0 材質替換。
+ * 貼圖為 AI 文生圖 + 程式繪製(scripts/poc/build-b10-textures.py),
+ * 未使用任何遊戲畫面像素,無版權疑慮,可進版控與發佈。
+ * (對照用的遊戲截圖版仍可由 scripts/poc/extract-b10-textures.sh 產生於
+ *  textures/poc-b10/,該目錄維持 gitignored。)
  *
  * 動畫沿用 door-entrance 的 direct-entry 時間軸(doorAngle 改驅動「上升量」),不動 lib。
  */
@@ -17,23 +18,25 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { getDoorAnimationConfig, easeInOutCubic } from "door-entrance";
 
-const TEX_BASE = "/textures/poc-b10";
+const TEX_BASE = "/textures/b10";
 
 // ---- 來源影格量測值(px,亮度剖面量得)。與 extract-b10-textures.sh 的 crop 參數同步 ----
 // 上閘板 bbox x 345–905、y 0–440(t=3.6s 關門特寫);齒根 y=403、齒尖 y=440。
 const GATE_PX = { w: 560, h: 440 };
+// 齒寬取「上下齒半寬和(rootHalf+tipHalf=71)> 半齒距(66)」→ 閉合時咬合帶
+// 任一高度都有材料重疊,不留透縫(貼圖已改為素面生成鏽板,齒形不再受原像素綁定)
 const TEETH = {
   centers: [75, 212, 344, 476], // 齒中心(閘門左緣起算),兩側邊緣是缺口
-  rootHalf: 34, // 齒根半寬
-  tipHalf: 26, // 齒尖半寬(梯形,往下收窄)
+  rootHalf: 38, // 齒根半寬
+  tipHalf: 33, // 齒尖半寬(梯形,往下收窄)
   rootY: 403, // 齒根(px,影格 y 向下)
   tipY: 440, // 齒尖
 };
-const LOWER_PX = { w: 560, h: 315 }; // lower.png 裁切區(t=5.2s,y 485 起)
-// 下閘板齒心在上閘板齒的半距偏移處;齒尖在 crop 第 2 列
-const LOWER = { centers: [34, 148, 278, 407, 510], tipRow: 2, rootRow: 39 };
-// 閉合時下閘板齒尖的影格絕對 y:互鎖到上閘板齒根(403)下緣,留 2px 縫
-const LOWER_TIP_CLOSED_Y = 405;
+const LOWER_PX = { w: 560, h: 315 }; // lower.png 裁切區
+// 下閘板齒心對正上閘板缺口中點(含兩側半缺口)
+const LOWER = { centers: [20, 143, 278, 410, 535], tipRow: 2, rootRow: 39 };
+// 閉合時下閘板齒尖的影格絕對 y:貼平上閘板齒根線,靠 z 位差呈現細縫
+const LOWER_TIP_CLOSED_Y = 403;
 const LEVER_SIGN = { w: 70, h: 30, x: 388, y: 194 }; // 影格絕對座標
 const LEVER_BOX = { w: 110, h: 88, x: 382, y: 226 };
 const GATE_X0 = 345; // 閘門左緣在影格上的 x
@@ -75,22 +78,23 @@ const buildGateShape = () => {
   return shape;
 };
 
-/** 下閘板:板身 + 頂緣五個朝上的梯形齒(在上閘板齒的半距偏移處,座標對齊 lower.png) */
+/** 下閘板:板身 + 頂緣五個朝上的梯形齒(對正上閘板缺口中點,邊緣齒夾在板寬內切平) */
 const buildLowerShape = () => {
   const L = -LOWER_PX.w / 2;
   const R = LOWER_PX.w / 2;
   const base = -LOWER_PX.h / 2;
   const rootLine = LOWER_PX.h / 2 - LOWER.rootRow;
   const tip = LOWER_PX.h / 2 - LOWER.tipRow;
+  const cl = (x: number) => Math.min(Math.max(x, L), R);
   const shape = new THREE.Shape();
   shape.moveTo(L, base);
   shape.lineTo(L, rootLine);
   for (const c of LOWER.centers) {
     const cx = c - LOWER_PX.w / 2;
-    shape.lineTo(cx - TEETH.rootHalf, rootLine);
-    shape.lineTo(cx - TEETH.tipHalf, tip);
-    shape.lineTo(cx + TEETH.tipHalf, tip);
-    shape.lineTo(cx + TEETH.rootHalf, rootLine);
+    shape.lineTo(cl(cx - TEETH.rootHalf), rootLine);
+    shape.lineTo(cl(cx - TEETH.tipHalf), tip);
+    shape.lineTo(cl(cx + TEETH.tipHalf), tip);
+    shape.lineTo(cl(cx + TEETH.rootHalf), rootLine);
   }
   shape.lineTo(R, rootLine);
   shape.lineTo(R, base);
@@ -270,8 +274,8 @@ const B10Gate = ({ doorAngle }: { doorAngle: number }) => {
           <FlatReliefPart rect={LEVER_BOX} depth={14} file="lever-box.png" sideColor="#3c3a2c" />
         </group>
 
-        {/* 下閘板(下沉),稍微後移避免互鎖區 z-fighting */}
-        <group ref={lowerRef} position={[0, lowerClosedY, -3]}>
+        {/* 下閘板(下沉),微幅後移避免互鎖區 z-fighting;位差越小閉合越像一體 */}
+        <group ref={lowerRef} position={[0, lowerClosedY, -1.5]}>
           <ToothedPlate
             shape={lowerShape}
             texture={lowerTex}
@@ -344,7 +348,7 @@ const SewerGateB10 = () => {
         <p className="text-sm text-white/60">
           驗證「齒緣閘門可用 ExtrudeGeometry 自組,齒有厚度、內側面可見,不需外找模型」。
           閉合時上下閘板齒形互鎖成一整片門板,開門時上升/下沉對拉(同原作)。
-          貼圖為遊戲截圖 placeholder(gitignored),正式版需替換為自製 / CC0 材質。
+          貼圖為 AI 文生圖 + 程式繪製(無遊戲畫面像素,無版權疑慮)。
         </p>
 
         <div className="h-[520px] w-full overflow-hidden rounded-xl border border-white/10 bg-black">
