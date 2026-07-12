@@ -42,21 +42,33 @@ rust_src = Image.open(os.path.join(SRC, "rust.png")).convert("RGB")
 # 與元件端(SewerGateB10.tsx)一致的貼圖規格:
 # door 560x440(齒根 y=403、齒尖 y=440)、lower 560x315、box 110x88、sign 70x30
 
+
+def crop_to_aspect(src, tw, th, anchor="center"):
+    """先把過長的軸置中(或頂端)裁到目標比例,再等比縮到目標尺寸。
+    永不越界、永不非等比壓縮(修正 Pillow 越界裁切填黑的隱患)。"""
+    w, h = src.size
+    tr = tw / th
+    if w / h > tr:  # 來源過寬:裁左右
+        new_w = int(h * tr)
+        left = (w - new_w) // 2
+        box = (left, 0, left + new_w, h)
+    else:  # 來源過高:裁上下(door 用 top 錨定保住面板+鉚釘構圖)
+        new_h = int(w / tr)
+        top = 0 if anchor == "top" else (h - new_h) // 2
+        box = (0, top, w, top + new_h)
+    return src.crop(box).resize((tw, th), Image.LANCZOS)
+
+
 # ---- door.png(上閘板)----
-# 方圖裁掉下緣素面區(保住面板+鉚釘的相對位置),壓到目標尺寸再壓暗
-w, h = gate_src.size
-crop_h = int(w * 440 / 560)
-door = gate_src.crop((0, 0, w, min(crop_h, h))).resize((560, 440), Image.LANCZOS)
+# 頂端錨定:裁掉下緣素面區,保住面板+鉚釘的相對位置
+door = crop_to_aspect(gate_src, 560, 440, anchor="top")
 door = ImageEnhance.Brightness(door).enhance(0.82)
 door = ImageEnhance.Color(door).enhance(0.85)
 door.save(f"{OUT}/door.png")
 
 # ---- lower.png(下閘板)----
-# 一次生成的整合圖(光影一體、無拼貼縫),裁到 560:315 比例後套相同亮度/飽和
-lw, lh = lower_src.size
-crop_h = int(lw * 315 / 560)
-top = max((lh - crop_h) // 2, 0)
-lower = lower_src.crop((0, top, lw, top + crop_h)).resize((560, 315), Image.LANCZOS)
+# 一次生成的整合圖(光影一體、無拼貼縫),置中裁到比例後套相同亮度/飽和
+lower = crop_to_aspect(lower_src, 560, 315)
 lower = ImageEnhance.Brightness(lower).enhance(0.82)
 lower = ImageEnhance.Color(lower).enhance(0.85)
 lower.save(f"{OUT}/lower.png")
