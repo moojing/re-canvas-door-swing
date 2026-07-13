@@ -18,6 +18,18 @@ Useful scripts:
 - `npm run dev:sample` (Vite dev server for the sample app)
 - `npm run build` (build lib then sample)
 - `npm run lint` (sample app lint)
+- `npm run gallery:check` (verify the published evaluation gallery matches this repository)
+
+## Evaluation gallery
+
+The ongoing door-video evaluation is published separately at
+[moojing/re-door-gallery](https://github.com/moojing/re-door-gallery). The conventional
+local checkout is the sibling directory `../re-door-gallery`.
+
+This repository owns the source evaluation documents under `docs/`; the gallery owns
+the published `index.html`, `doors.json`, stills, GIFs, and ignored local source assets under
+`materials/door-transitions/` and `materials/frame-extracts/`. After changing evaluation records, update the gallery and
+run `npm run gallery:check`. Evaluation work is not complete while that check is stale.
 
 ## Using the library
 

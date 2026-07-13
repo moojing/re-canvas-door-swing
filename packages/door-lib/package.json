@@ -24,7 +24,8 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
-    "dev": "npm run build -- --watch"
+    "dev": "npm run build -- --watch",
+    "lint": "tsc --noEmit"
   },
   "peerDependencies": {
     "@react-three/fiber": "^8.0.0",
