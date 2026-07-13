@@ -32,7 +32,10 @@ crop() {
 
 # w:h:x:y,來源 1280x800。元件幾何比例依這些裁切區域調整。
 crop "$CLOSE" "48:192:1080:300" rust.png
-crop "$CLOSE" "512:256:330:390" grid.png
+# 網面暗部轉 alpha,讓斜視角能驗證真正的鏤空效果而非黑色底圖。
+ffmpeg -y -loglevel error -i "$CLOSE" \
+  -vf "crop=512:256:330:390,colorkey=black:0.18:0.08,format=rgba" \
+  "$OUT/grid.png"
 crop "$CLOSE" "260:180:350:100" plate-left.png
 crop "$CLOSE" "360:170:625:180" plate-right.png
 crop "$OVERVIEW" "96:144:440:40" controller.png
