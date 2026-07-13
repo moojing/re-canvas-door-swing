@@ -29,7 +29,7 @@
 
 - [ ] **Step 1: Write the failing motion tests**
 
-Cover progress clamping, matching start/end far distances, a closer midpoint, and finite camera/target values. Use `node:test` and `node:assert/strict`; import `getC03MotionState` from `./c03Motion.ts`.
+Cover progress clamping, matching start/end far distances, a closer midpoint, and finite camera/target values. Use `node:test` and `node:assert/strict`; import `getC03MotionState` from `./c03Motion.ts`. Add the exact root script `"test:c03": "node --test packages/sample/src/poc/c03Motion.test.ts"`.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
@@ -51,7 +51,7 @@ const keyframes = [
 ];
 ```
 
-Return `cameraPosition`, `cameraTarget`, and a subtle `platformYaw` interpolation so the object and camera together reproduce the source's changing screen angle.
+Return only `cameraPosition` and `cameraTarget`. Keep the platform group static; the camera path alone must reproduce the source's changing screen angle.
 
 - [ ] **Step 4: Run the focused test**
 
@@ -85,7 +85,15 @@ GALLERY_ROOT="${DOOR_GALLERY_ROOT:-$ROOT/../re-door-gallery}"
 VIDEO="${C03_VIDEO:-$GALLERY_ROOT/materials/door-transitions/1-1/c03/c03-s1升降梯.mp4}"
 ```
 
-Extract a brightness-corrected `close.png` at 22s and `overview.png` at 27s. Crop `rust.png`, `grid.png`, `plate-left.png`, `plate-right.png`, and `controller.png`; record every crop coordinate in comments next to matching geometry dimensions. The controller crop comes from the 27s frame around `90:135:440:45`; surface crops come from the 22s frame and are adjusted only if ffmpeg rejects bounds.
+Extract brightness-corrected 1280x800 temporary frames at 22s and 27s inside `mktemp -d`; do not copy those full frames into the output directory. Produce exactly five output files with these initial crop rectangles:
+
+- `rust.png` from the 22s frame: `256:128:110:560`;
+- `grid.png` from the 22s frame: `512:256:330:390`;
+- `plate-left.png` from the 22s frame: `260:180:350:100`;
+- `plate-right.png` from the 22s frame: `360:170:625:180`;
+- `controller.png` from the 27s frame: `96:144:440:40`.
+
+Record the same dimensions in comments next to matching geometry. If visual tuning changes a crop, update both the script comment and component source comment together.
 
 - [ ] **Step 3: Run the extractor against the actual gallery checkout**
 
@@ -129,18 +137,18 @@ Create focused components for textured boxes, railing segments, controller, plat
 - four shallow frame boxes around a `5.4 x 4.1` floor;
 - a double-sided floor plane with the grid texture, alpha test, and dark fallback;
 - two raised plate boxes across the rear edge;
-- box or cylinder railing segments at approximately `1.8` world units above the floor;
+- box or cylinder railing segments at approximately `1.8` world units above the floor, including the controller-side bent silhouette as multiple angled segments rather than one straight bar;
 - a narrow controller box with three circular lamp/button faces.
 
-Load each optional texture with a hook that keeps a colored fallback until `TextureLoader` succeeds and disposes it on unmount. Set `SRGBColorSpace`, nearest-neighbor filtering for the PSX look, and repeat/wrap only where needed.
+Load each optional texture with a hook that keeps a colored fallback until `TextureLoader` succeeds and disposes it on unmount. The sample uses Three.js r133, so set `texture.encoding = THREE.sRGBEncoding` rather than the newer `SRGBColorSpace` API. Use nearest-neighbor filtering for the PSX look and repeat/wrap only where needed.
 
 - [ ] **Step 4: Add animation and controls**
 
-Drive `getC03MotionState(progress)` from a requestAnimationFrame loop. Add play, reset, and range input controls matching the existing POC pages. The `CameraRig` applies both camera position and target each frame; the platform group applies `platformYaw`. Render against pure black with restrained warm/cool lighting.
+Drive `getC03MotionState(progress)` from a requestAnimationFrame loop. Add play, reset, and range input controls matching the existing POC pages. The `CameraRig` applies both camera position and target each frame while the platform stays static. Render against pure black with restrained warm/cool lighting.
 
 - [ ] **Step 5: Verify fallback and textured builds**
 
-Run `npm run lint` and `npm run build` before and after generating the local textures.
+Run `npm run lint` and `npm run build` before and after generating the local textures. Before extraction, open `/poc/c03` in the browser to verify colored fallbacks render without errors. After extraction, inspect the textured route, then temporarily move `packages/sample/public/textures/poc-c03/` to `/tmp` and reload the route to verify the runtime fallback before restoring the directory.
 
 Expected: both commands pass in both states; the production build removes all `dist/textures/poc-*` directories.
 
@@ -165,7 +173,7 @@ Open: `http://127.0.0.1:8080/poc/c03` or the port reported by Vite.
 
 - [ ] **Step 2: Capture comparison frames**
 
-Capture the POC at far, close, and exit positions. Compare them in the browser companion against source frames at 22s and 27s.
+Capture the POC at far, close, and exit positions at both desktop and mobile viewport widths. Compare the desktop frames in the browser companion against source frames at 22s and 27s; confirm the mobile layout keeps the canvas and controls usable.
 
 - [ ] **Step 3: Tune only decision-relevant differences**
 
