@@ -11,7 +11,8 @@
     "build:lib": "npm run build --workspace door-entrance",
     "build:sample": "npm run build --workspace door-entrance-sample",
     "lint": "npm run lint --workspace door-entrance && npm run lint --workspace door-entrance-sample",
-    "gallery:check": "python3 scripts/gallery_assets.py check"
+    "gallery:check": "python3 scripts/gallery_assets.py check",
+    "test:c03": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/c03Motion.test.ts"
   },
   "devDependencies": {
     "@types/three": "^0.160.0"
