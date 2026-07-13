@@ -1,0 +1,182 @@
+# C03 Lift Platform POC Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a visual-similarity-first Three.js POC for the `1-1 c03` lift platform so the original "model creation cost too high" assessment can be tested in the browser.
+
+**Architecture:** Keep the experiment inside the sample app as `/poc/c03`; do not change the public `door-entrance` API. A pure motion module owns the far-close-far camera timeline, while a focused React Three Fiber page builds the platform from primitives and optionally loads local screenshot-derived texture crops. A shell extractor reads the ignored sibling gallery video and writes only to a gitignored sample texture directory.
+
+**Tech Stack:** React 18, TypeScript, React Three Fiber, Three.js, Node test runner, ffmpeg, Vite, Tailwind CSS.
+
+---
+
+## File Map
+
+- Create `packages/sample/src/poc/c03Motion.ts`: pure clamped camera timeline and duration.
+- Create `packages/sample/src/poc/c03Motion.test.ts`: Node tests for timeline bounds and far-close-far behavior.
+- Create `packages/sample/src/poc/LiftPlatformC03.tsx`: POC geometry, local texture fallback, playback controls, and camera rig.
+- Create `scripts/poc/extract-c03-textures.sh`: extract local evidence textures from source-video timestamps 22s and 27s.
+- Modify `packages/sample/src/App.tsx`: register `/poc/c03`.
+- Modify `.gitignore`: exclude `packages/sample/public/textures/poc-c03/`.
+- Modify root `package.json`: add the focused `test:c03` command.
+
+### Task 1: Camera Timeline
+
+**Files:**
+- Create: `packages/sample/src/poc/c03Motion.test.ts`
+- Create: `packages/sample/src/poc/c03Motion.ts`
+- Modify: `package.json`
+
+- [ ] **Step 1: Write the failing motion tests**
+
+Cover progress clamping, matching start/end far distances, a closer midpoint, and finite camera/target values. Use `node:test` and `node:assert/strict`; import `getC03MotionState` from `./c03Motion.ts`.
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `node --test packages/sample/src/poc/c03Motion.test.ts`
+
+Expected: FAIL because `c03Motion.ts` does not exist.
+
+- [ ] **Step 3: Implement the minimal timeline**
+
+Export `C03_DURATION_MS = 6500` and `getC03MotionState(progress)`. Clamp progress to `[0, 1]`, ease each segment with cubic smoothstep, and interpolate these measured-equivalent keyframes:
+
+```ts
+const keyframes = [
+  { progress: 0, position: [-5.8, 6.8, 10.5], target: [0, 0, 0] },
+  { progress: 0.22, position: [-3.4, 5.1, 7.2], target: [0, 0, 0] },
+  { progress: 0.5, position: [-1.5, 4.4, 4.3], target: [0.1, 0, 0] },
+  { progress: 0.78, position: [2.8, 5.4, 7.8], target: [0, 0, 0] },
+  { progress: 1, position: [5.8, 6.8, 10.5], target: [0, 0, 0] },
+];
+```
+
+Return `cameraPosition`, `cameraTarget`, and a subtle `platformYaw` interpolation so the object and camera together reproduce the source's changing screen angle.
+
+- [ ] **Step 4: Run the focused test**
+
+Run: `npm run test:c03`
+
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add package.json packages/sample/src/poc/c03Motion.ts packages/sample/src/poc/c03Motion.test.ts
+git commit -m "test: define c03 platform motion"
+```
+
+### Task 2: Local Evidence Texture Pipeline
+
+**Files:**
+- Create: `scripts/poc/extract-c03-textures.sh`
+- Modify: `.gitignore`
+
+- [ ] **Step 1: Add the ignored output path**
+
+Ignore `packages/sample/public/textures/poc-c03/` beside the existing A11 and B10 POC entries.
+
+- [ ] **Step 2: Add the extractor**
+
+Resolve the source as:
+
+```sh
+GALLERY_ROOT="${DOOR_GALLERY_ROOT:-$ROOT/../re-door-gallery}"
+VIDEO="${C03_VIDEO:-$GALLERY_ROOT/materials/door-transitions/1-1/c03/c03-s1升降梯.mp4}"
+```
+
+Extract a brightness-corrected `close.png` at 22s and `overview.png` at 27s. Crop `rust.png`, `grid.png`, `plate-left.png`, `plate-right.png`, and `controller.png`; record every crop coordinate in comments next to matching geometry dimensions. The controller crop comes from the 27s frame around `90:135:440:45`; surface crops come from the 22s frame and are adjusted only if ffmpeg rejects bounds.
+
+- [ ] **Step 3: Run the extractor against the actual gallery checkout**
+
+Run: `DOOR_GALLERY_ROOT=/Users/mujingtsai/Case/BioHazard/re-door-gallery scripts/poc/extract-c03-textures.sh`
+
+Expected: five PNG files under `packages/sample/public/textures/poc-c03/`.
+
+- [ ] **Step 4: Verify asset isolation**
+
+Run: `git check-ignore packages/sample/public/textures/poc-c03/*.png`
+
+Expected: every generated texture path is printed; `git status --short` shows only the script and `.gitignore`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add .gitignore scripts/poc/extract-c03-textures.sh
+git commit -m "chore: add c03 poc texture extractor"
+```
+
+### Task 3: Hybrid 3D Platform Page
+
+**Files:**
+- Create: `packages/sample/src/poc/LiftPlatformC03.tsx`
+- Modify: `packages/sample/src/App.tsx`
+
+- [ ] **Step 1: Add the route before implementation**
+
+Import `LiftPlatformC03` and register `<Route path="/poc/c03" element={<LiftPlatformC03 />} />` above the catch-all route.
+
+- [ ] **Step 2: Confirm the route fails to build**
+
+Run: `npm run build:sample`
+
+Expected: FAIL because `LiftPlatformC03.tsx` does not exist.
+
+- [ ] **Step 3: Build the platform silhouette**
+
+Create focused components for textured boxes, railing segments, controller, platform assembly, and camera rig. Use primitives only:
+
+- four shallow frame boxes around a `5.4 x 4.1` floor;
+- a double-sided floor plane with the grid texture, alpha test, and dark fallback;
+- two raised plate boxes across the rear edge;
+- box or cylinder railing segments at approximately `1.8` world units above the floor;
+- a narrow controller box with three circular lamp/button faces.
+
+Load each optional texture with a hook that keeps a colored fallback until `TextureLoader` succeeds and disposes it on unmount. Set `SRGBColorSpace`, nearest-neighbor filtering for the PSX look, and repeat/wrap only where needed.
+
+- [ ] **Step 4: Add animation and controls**
+
+Drive `getC03MotionState(progress)` from a requestAnimationFrame loop. Add play, reset, and range input controls matching the existing POC pages. The `CameraRig` applies both camera position and target each frame; the platform group applies `platformYaw`. Render against pure black with restrained warm/cool lighting.
+
+- [ ] **Step 5: Verify fallback and textured builds**
+
+Run `npm run lint` and `npm run build` before and after generating the local textures.
+
+Expected: both commands pass in both states; the production build removes all `dist/textures/poc-*` directories.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add packages/sample/src/App.tsx packages/sample/src/poc/LiftPlatformC03.tsx
+git commit -m "feat: add c03 lift platform poc"
+```
+
+### Task 4: Browser Visual Review
+
+**Files:**
+- Modify if tuning is required: `packages/sample/src/poc/c03Motion.ts`
+- Modify if tuning is required: `packages/sample/src/poc/LiftPlatformC03.tsx`
+
+- [ ] **Step 1: Start the sample app**
+
+Run: `npm run dev`
+
+Open: `http://127.0.0.1:8080/poc/c03` or the port reported by Vite.
+
+- [ ] **Step 2: Capture comparison frames**
+
+Capture the POC at far, close, and exit positions. Compare them in the browser companion against source frames at 22s and 27s.
+
+- [ ] **Step 3: Tune only decision-relevant differences**
+
+Adjust silhouette proportions, camera keyframes, alpha threshold, or controller placement. Do not add environment, characters, audio, a reusable library preset, or distributable final textures.
+
+- [ ] **Step 4: Run final verification**
+
+Run: `npm run test:c03`, `npm run lint`, `npm run build`, `git diff --check`, and `git status --short`.
+
+Expected: tests, lint, and build pass; no generated texture or source-video path is tracked.
+
+- [ ] **Step 5: Record the measured outcome**
+
+Report whether the POC supports the original `cannot do` assessment, a conditional feasibility verdict, or a production estimate. Do not edit the gallery evaluation until the visual result has been reviewed.
