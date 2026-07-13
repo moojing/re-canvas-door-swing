@@ -33,7 +33,7 @@ Cover progress clamping, matching start/end far distances, a closer midpoint, an
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `node --test packages/sample/src/poc/c03Motion.test.ts`
+Run: `node --experimental-strip-types --test packages/sample/src/poc/c03Motion.test.ts`
 
 Expected: FAIL because `c03Motion.ts` does not exist.
 
