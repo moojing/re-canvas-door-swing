@@ -93,6 +93,7 @@ test("guarantees visible contrast across supported seeds and dimensions", () => 
 test("varies scratch phase and orientation without a fixed horizontal lattice", () => {
   const width = 128;
   const height = 128;
+  const scratchRegionSize = 16;
   const pixels = createAgedIronPixels(width, height, 51);
   const brightPixels = new Set<string>();
 
@@ -117,11 +118,71 @@ test("varies scratch phase and orientation without a fixed horizontal lattice", 
     ([x, y]) =>
       brightPixels.has(`${x + 1},${y + 1}`) || brightPixels.has(`${x + 1},${y - 1}`),
   );
+  const remaining = new Set(brightPixels);
+  const components: Array<Array<[number, number]>> = [];
+
+  while (remaining.size > 0) {
+    const start = remaining.values().next().value as string;
+    const queue = [start];
+    const component: Array<[number, number]> = [];
+    remaining.delete(start);
+
+    while (queue.length > 0) {
+      const coordinate = queue.pop() as string;
+      const [x, y] = coordinate.split(",").map(Number);
+      component.push([x, y]);
+
+      for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+        for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+          if (offsetX === 0 && offsetY === 0) continue;
+
+          const neighbor = `${x + offsetX},${y + offsetY}`;
+          if (remaining.delete(neighbor)) queue.push(neighbor);
+        }
+      }
+    }
+
+    components.push(component);
+  }
+
+  const scratches = components.filter((component) => component.length >= 3);
+  const localCenters = new Set<string>();
+  const unclippedScratchLengths = new Set<number>();
+
+  for (const scratch of scratches) {
+    const xValues = scratch.map(([x]) => x);
+    const yValues = scratch.map(([, y]) => y);
+    const minX = Math.min(...xValues);
+    const maxX = Math.max(...xValues);
+    const minY = Math.min(...yValues);
+    const maxY = Math.max(...yValues);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const scratchWidth = maxX - minX + 1;
+    const scratchHeight = maxY - minY + 1;
+    const isUnclippedX =
+      scratchWidth === 1 ||
+      (minX % scratchRegionSize !== 0 && maxX % scratchRegionSize !== scratchRegionSize - 1);
+    const isUnclippedY =
+      scratchHeight === 1 ||
+      (minY % scratchRegionSize !== 0 && maxY % scratchRegionSize !== scratchRegionSize - 1);
+
+    localCenters.add(`${centerX % scratchRegionSize},${centerY % scratchRegionSize}`);
+    if (isUnclippedX && isUnclippedY) {
+      unclippedScratchLengths.add(Math.max(scratchWidth, scratchHeight));
+    }
+  }
 
   assert.ok(hasHorizontalRun);
   assert.ok(hasVerticalRun);
   assert.ok(hasDiagonalRun);
   assert.ok(coordinates.some(([x]) => x % 13 < 2 || x % 13 > 10));
+  assert.ok(scratches.length >= 8, `found only ${scratches.length} scratches`);
+  assert.ok(localCenters.size >= 6, `found only ${localCenters.size} local centers`);
+  assert.ok(
+    unclippedScratchLengths.size >= 2,
+    `found only ${unclippedScratchLengths.size} unclipped scratch lengths`,
+  );
 });
 
 test("rejects dimensions that cannot produce a well-formed buffer", () => {
