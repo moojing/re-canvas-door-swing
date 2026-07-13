@@ -29,7 +29,7 @@
 
 - [ ] **Step 1: Write the failing motion tests**
 
-Cover progress clamping, matching start/end far distances, a closer midpoint, and finite camera/target values. Use `node:test` and `node:assert/strict`; import `getC03MotionState` from `./c03Motion.ts`. Add the exact root script `"test:c03": "node --test packages/sample/src/poc/c03Motion.test.ts"`.
+Cover progress clamping, matching start/end far distances, a closer midpoint, and finite camera/target values. Use `node:test` and `node:assert/strict`; import `getC03MotionState` from `./c03Motion.ts`. Add the exact root script `"test:c03": "node --experimental-strip-types --test packages/sample/src/poc/c03Motion.test.ts"` for the repository's Node 22 runtime.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
@@ -85,7 +85,7 @@ GALLERY_ROOT="${DOOR_GALLERY_ROOT:-$ROOT/../re-door-gallery}"
 VIDEO="${C03_VIDEO:-$GALLERY_ROOT/materials/door-transitions/1-1/c03/c03-s1升降梯.mp4}"
 ```
 
-Extract brightness-corrected 1280x800 temporary frames at 22s and 27s inside `mktemp -d`; do not copy those full frames into the output directory. Produce exactly five output files with these initial crop rectangles:
+Extract brightness-corrected 1280x800 temporary frames at 22s and 27s inside `mktemp -d` using `eq=brightness=0.09:contrast=1.15:gamma=1.5`; do not copy those full frames into the output directory. Produce exactly five output files with these initial crop rectangles:
 
 - `rust.png` from the 22s frame: `256:128:110:560`;
 - `grid.png` from the 22s frame: `512:256:330:390`;
@@ -173,7 +173,7 @@ Open: `http://127.0.0.1:8080/poc/c03` or the port reported by Vite.
 
 - [ ] **Step 2: Capture comparison frames**
 
-Capture the POC at far, close, and exit positions at both desktop and mobile viewport widths. Compare the desktop frames in the browser companion against source frames at 22s and 27s; confirm the mobile layout keeps the canvas and controls usable.
+Capture the POC at far, close, and exit positions at both desktop and mobile viewport widths. Compare the desktop frames in the browser companion against source frames at 22s and 27s; confirm the mobile layout keeps the canvas and controls usable. Then drag the scrubber continuously from 0% to 100% and back to catch intermediate clipping, alpha, and camera-path defects that the three captures may miss.
 
 - [ ] **Step 3: Tune only decision-relevant differences**
 
