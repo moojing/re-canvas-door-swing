@@ -18,8 +18,13 @@ const OPEN_END = 0.66;
 const CAMERA_END = 0.92;
 const CAMERA_END_Z = -2.5;
 
-const clamp = (value: number, minimum = 0, maximum = 1) =>
-  Math.min(Math.max(value, minimum), maximum);
+const clamp = (value: number, minimum = 0, maximum = 1) => {
+  if (Number.isNaN(value)) {
+    return minimum;
+  }
+
+  return Math.min(Math.max(value, minimum), maximum);
+};
 
 const smoothstep = (value: number) => value * value * (3 - 2 * value);
 

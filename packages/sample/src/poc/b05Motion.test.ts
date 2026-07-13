@@ -21,6 +21,12 @@ test("clamps progress to the animation bounds", () => {
   assert.equal(getB05MotionState(2).progress, 1);
 });
 
+test("normalizes non-finite progress to safe timeline bounds", () => {
+  assert.deepEqual(getB05MotionState(Number.NaN), getB05MotionState(0));
+  assert.deepEqual(getB05MotionState(Number.NEGATIVE_INFINITY), getB05MotionState(0));
+  assert.deepEqual(getB05MotionState(Number.POSITIVE_INFINITY), getB05MotionState(1));
+});
+
 test("holds both leaves closed at the start", () => {
   const closed = getB05MotionState(0);
   const holdEnd = getB05MotionState(0.16);
