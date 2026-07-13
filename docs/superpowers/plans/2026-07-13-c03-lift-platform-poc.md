@@ -6,6 +6,12 @@
 
 **Architecture:** Keep the experiment inside the sample app as `/poc/c03`; do not change the public `door-entrance` API. A pure motion module owns the far-close-far camera timeline, while a focused React Three Fiber page builds the platform from primitives and optionally loads local screenshot-derived texture crops. A shell extractor reads the ignored sibling gallery video and writes only to a gitignored sample texture directory.
 
+> **Material revision (2026-07-13):** The screenshot-crop workflow described in
+> Tasks 2, 4, and 5 was removed after the initial POC. The final implementation
+> uses deterministic RGBA generators from `c03ProceduralMaterials.ts`; it does
+> not load source-video pixels or external texture files. The design spec is the
+> current source of truth for the material architecture.
+
 **Tech Stack:** React 18, TypeScript, React Three Fiber, Three.js, Node test runner, ffmpeg, Vite, Tailwind CSS.
 
 ---

@@ -22,37 +22,32 @@ The POC models these visible parts:
 - segmented perimeter railing, including the bent controller-side section;
 - controller housing and three indicator/button faces.
 
-The game environment, characters, production audio, reusable library preset,
-and final distributable textures are out of scope.
+The game environment, characters, production audio, and reusable library preset
+are out of scope.
 
 ## Rendering Approach
 
 Use a hybrid 3D construction. Primitive geometry establishes silhouette,
-depth, parallax, and oblique-view behavior. Crops from the source video provide
-temporary rust, grid, plate, and controller textures for visual comparison.
-The screenshot-derived textures are evidence-only placeholders and may not be
-committed or included in a release build.
+depth, parallax, and oblique-view behavior. Deterministic pixel generators
+create the rust, transparent diamond grid, and plate textures at runtime. The
+controller face and buttons use ordinary Three.js geometry and colors. No
+source-video frame or external image is loaded by the POC.
 
 The platform remains one static group. A dedicated camera rig interpolates
 position and look target across a small set of measured keyframes. This avoids
 adding platform-specific fields to the shared `DoorAnimationState` and keeps
 the experiment independent from the public library API.
 
-## Asset Workflow
+## Material Workflow
 
-Add `scripts/poc/extract-c03-textures.sh`. It reads the source video from the
-sibling gallery's ignored materials tree by default:
+Keep the RGBA generators in `c03ProceduralMaterials.ts` so their output is pure,
+testable, and independent of the browser. `LiftPlatformC03.tsx` converts those
+pixels into `CanvasTexture` instances and disposes them when the scene unmounts.
+Fixed seeds make the rendered texture reproducible between sessions.
 
-`../re-door-gallery/materials/door-transitions/1-1/c03/`
-
-An environment variable may override the gallery root for worktree layouts.
-The script writes crops to:
-
-`packages/sample/public/textures/poc-c03/`
-
-That output directory must be gitignored. The component must degrade to simple
-rust-colored materials when the local crops are absent, so lint and production
-builds do not depend on copyrighted source pixels.
+The route must not load files from `public/textures/poc-c03`, the sibling gallery,
+or any network location. This keeps the implementation self-contained and
+prevents source-video pixels from entering the build output.
 
 ## Visual Validation
 
@@ -67,15 +62,15 @@ frames in the browser companion. The POC passes when:
   the close pass;
 - the far-to-close-to-far camera rhythm matches the source transition closely
   enough to judge production feasibility;
-- no source video, extracted frame, or screenshot-derived texture is tracked by
-  Git.
+- no source video, extracted frame, screenshot-derived texture, or external
+  texture request is present in the implementation or build.
 
 ## Verification
 
-Run the extraction script, `npm run lint`, and `npm run build`. Confirm the local
-texture output with `git check-ignore`, inspect `/poc/c03` at desktop and mobile
-widths, scrub the full timeline, and verify that the route still renders with
-the local texture directory removed or unavailable.
+Run `npm run test:c03`, `npm run lint`, and `npm run build`. The focused test
+checks deterministic material output, valid RGBA buffers, and real transparency
+in the grid. Inspect `/poc/c03` at desktop and mobile widths and scrub the full
+timeline to confirm that the generated materials remain legible.
 
 ## Decision Output
 

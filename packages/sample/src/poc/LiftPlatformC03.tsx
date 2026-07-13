@@ -2,42 +2,52 @@
  * PoC: 1-1 c03 升降平台 (Biohazard)
  *
  * 驗證目標: 不依賴現成模型，以 primitive 建出平台、欄杆、網面與控制盒，
- * 再用本機遊戲影格裁切貼圖比對視覺相似度。貼圖目錄已 gitignore，正式版不可沿用。
+ * 所有表面材質皆由程式化像素生成，不引用原始遊戲影格或外部圖片。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 import { C03_DURATION_MS, getC03MotionState } from "./c03Motion";
+import {
+  createGridPixels,
+  createPlatePixels,
+  createRustPixels,
+} from "./c03ProceduralMaterials";
 
-const TEX_BASE = `${import.meta.env.BASE_URL}textures/poc-c03`;
-const RUST = "#3a0d09";
 const RUST_DARK = "#180605";
 
-const useOptionalTexture = (file: string) => {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+const createCanvasTexture = (
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  repeat: [number, number]
+) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d")?.putImageData(new ImageData(pixels, width, height), 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.encoding = THREE.sRGBEncoding;
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(...repeat);
+  return texture;
+};
+
+const useProceduralTexture = (
+  createPixels: () => Uint8ClampedArray,
+  size: [number, number],
+  repeat: [number, number]
+) => {
+  const [texture] = useState(() => createCanvasTexture(createPixels(), size[0], size[1], repeat));
 
   useEffect(() => {
-    let active = true;
-    const loaded = new THREE.TextureLoader().load(
-      `${TEX_BASE}/${file}?v=20260713`,
-      () => {
-        if (!active) return;
-        loaded.encoding = THREE.sRGBEncoding;
-        loaded.magFilter = THREE.NearestFilter;
-        loaded.minFilter = THREE.NearestFilter;
-        loaded.needsUpdate = true;
-        setTexture(loaded);
-      },
-      undefined,
-      () => loaded.dispose()
-    );
-
-    return () => {
-      active = false;
-      loaded.dispose();
-    };
-  }, [file]);
+    return () => texture.dispose();
+  }, [texture]);
 
   return texture;
 };
@@ -48,16 +58,16 @@ const TexturedBox = ({
   size,
   position,
   texture,
-  color = RUST,
+  color = "#ffffff",
 }: {
   size: Position;
   position: Position;
-  texture: THREE.Texture | null;
+  texture: THREE.Texture;
   color?: string;
 }) => (
   <mesh position={position}>
     <boxGeometry args={size} />
-    <meshLambertMaterial map={texture ?? undefined} color={texture ? "#ffffff" : color} />
+    <meshLambertMaterial map={texture} color={color} />
   </mesh>
 );
 
@@ -68,7 +78,7 @@ const TexturedTopBox = ({
 }: {
   size: Position;
   position: Position;
-  texture: THREE.Texture | null;
+  texture: THREE.Texture;
 }) => (
   <group position={position}>
     <mesh>
@@ -77,7 +87,7 @@ const TexturedTopBox = ({
     </mesh>
     <mesh position={[0, size[1] / 2 + 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry args={[size[0], size[2]]} />
-      <meshLambertMaterial map={texture ?? undefined} color={texture ? "#ffffff" : RUST} />
+      <meshLambertMaterial map={texture} color="#ffffff" />
     </mesh>
   </group>
 );
@@ -89,7 +99,7 @@ const RailingBeam = ({
 }: {
   from: Position;
   to: Position;
-  texture: THREE.Texture | null;
+  texture: THREE.Texture;
 }) => {
   const dx = to[0] - from[0];
   const dz = to[2] - from[2];
@@ -103,16 +113,16 @@ const RailingBeam = ({
   return (
     <mesh position={midpoint} rotation={[0, -Math.atan2(dz, dx), 0]}>
       <boxGeometry args={[length, 0.17, 0.17]} />
-      <meshLambertMaterial map={texture ?? undefined} color={texture ? "#ffffff" : RUST} />
+      <meshLambertMaterial map={texture} color="#ffffff" />
     </mesh>
   );
 };
 
-const RailingPost = ({ position, texture }: { position: Position; texture: THREE.Texture | null }) => (
+const RailingPost = ({ position, texture }: { position: Position; texture: THREE.Texture }) => (
   <TexturedBox size={[0.18, 1.85, 0.18]} position={position} texture={texture} />
 );
 
-const Controller = ({ texture }: { texture: THREE.Texture | null }) => (
+const Controller = () => (
   <group position={[-3.02, 2.02, -0.48]} rotation={[0, 0.18, -0.08]}>
     <mesh>
       <boxGeometry args={[0.62, 1.05, 0.2]} />
@@ -120,7 +130,7 @@ const Controller = ({ texture }: { texture: THREE.Texture | null }) => (
     </mesh>
     <mesh position={[0, 0, 0.106]}>
       <planeGeometry args={[0.58, 0.98]} />
-      <meshBasicMaterial map={texture ?? undefined} color={texture ? "#ffffff" : "#a78336"} />
+      <meshBasicMaterial color="#a78336" />
     </mesh>
     {[
       { id: "up", y: 0.33, color: "#64d85c", segments: 3, rotation: 0 },
@@ -141,11 +151,18 @@ const Controller = ({ texture }: { texture: THREE.Texture | null }) => (
 );
 
 const LiftPlatform = () => {
-  const rust = useOptionalTexture("rust.png");
-  const grid = useOptionalTexture("grid.png");
-  const plateLeft = useOptionalTexture("plate-left.png");
-  const plateRight = useOptionalTexture("plate-right.png");
-  const controller = useOptionalTexture("controller.png");
+  const rust = useProceduralTexture(() => createRustPixels(128, 128), [128, 128], [3, 3]);
+  const grid = useProceduralTexture(() => createGridPixels(128, 128), [128, 128], [3, 3]);
+  const plateLeft = useProceduralTexture(
+    () => createPlatePixels(128, 128, 17),
+    [128, 128],
+    [2, 2]
+  );
+  const plateRight = useProceduralTexture(
+    () => createPlatePixels(128, 128, 53),
+    [128, 128],
+    [3, 2]
+  );
 
   const railY = 1.72;
   const railPoints: Position[] = [
@@ -170,15 +187,14 @@ const LiftPlatform = () => {
       <mesh position={[0, 0.16, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[5.35, 4.0]} />
         <meshLambertMaterial
-          map={grid ?? undefined}
-          color={grid ? "#ffffff" : "#26312f"}
-          transparent={Boolean(grid)}
-          alphaTest={grid ? 0.2 : 0}
+          map={grid}
+          color="#ffffff"
+          transparent
+          alphaTest={0.2}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* 22s close frame crops: left 260:180:350:100, right 360:170:625:180. */}
       <TexturedTopBox size={[1.45, 0.22, 1.15]} position={[-1.72, 0.28, -1.3]} texture={plateLeft} />
       <TexturedTopBox size={[2.45, 0.22, 1.08]} position={[0.72, 0.28, -1.34]} texture={plateRight} />
 
@@ -197,7 +213,7 @@ const LiftPlatform = () => {
       <RailingPost position={[2.68, 0.86, -1.92]} texture={rust} />
       <RailingPost position={[2.68, 0.86, 1.5]} texture={rust} />
       <RailingPost position={[-2.98, 0.86, -0.3]} texture={rust} />
-      <Controller texture={controller} />
+      <Controller />
     </group>
   );
 };
@@ -247,10 +263,10 @@ const LiftPlatformC03 = () => {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/80">
             Feasibility POC · Biohazard 1-1 c03
           </p>
-          <h1 className="text-xl font-bold sm:text-2xl">升降平台：primitive 幾何 + 本機參考貼圖</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">升降平台：primitive 幾何 + 程式化材質</h1>
           <p className="max-w-3xl text-sm leading-relaxed text-white/60">
             驗證平台厚框、alpha 網面、踏板、彎折欄杆與控制盒能否在黑背景中成立。
-            遊戲影格裁切只存在本機 gitignored 目錄；缺少貼圖時會顯示純色 fallback。
+            所有鏽蝕、菱格網與踏板紋理均由固定 seed 產生，不含原始遊戲影格像素。
           </p>
         </div>
 
@@ -259,10 +275,10 @@ const LiftPlatformC03 = () => {
             camera={{ position: [-5.8, 6.8, 10.5], fov: 48, near: 0.1, far: 100 }}
             onCreated={({ gl }) => gl.setClearColor("#000000")}
           >
-            <ambientLight intensity={0.08} />
-            <directionalLight position={[2, 7, 5]} intensity={0.24} color="#ffb07c" />
-            <directionalLight position={[-5, 4, -3]} intensity={0.12} color="#62859c" />
-            <pointLight position={[-2.5, 3, 1]} intensity={0.12} color="#c8381f" />
+            <ambientLight intensity={0.28} />
+            <directionalLight position={[2, 7, 5]} intensity={0.85} color="#ffb07c" />
+            <directionalLight position={[-5, 4, -3]} intensity={0.4} color="#7fa5bc" />
+            <pointLight position={[-2.5, 3, 1]} intensity={0.55} color="#e34a2a" />
             <LiftPlatform />
             <CameraRig progress={progress} />
           </Canvas>
@@ -283,6 +299,15 @@ const LiftPlatformC03 = () => {
             className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/10"
           >
             重置
+          </button>
+          <button
+            onClick={() => {
+              stopPlayback();
+              setProgress(0.5);
+            }}
+            className="rounded-lg border border-amber-300/50 px-4 py-2 text-sm text-amber-200 hover:bg-amber-300/10"
+          >
+            近景
           </button>
           <input
             aria-label="動畫進度"

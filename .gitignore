@@ -29,7 +29,6 @@ materials/
 docs/door-gallery/
 packages/sample/public/textures/poc-a11/
 packages/sample/public/textures/poc-b10/
-packages/sample/public/textures/poc-c03/
 
 # Claude Code local (personal) settings — keep out of version control
 .claude/settings.local.json
