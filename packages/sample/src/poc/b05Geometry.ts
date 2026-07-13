@@ -52,10 +52,14 @@ export interface B05GateGeometry {
 }
 
 export const archYAtX = (x: number): number => {
+  if (!Number.isFinite(x) || x < 0 || x > B05_LEAF_WIDTH) {
+    throw new RangeError(`Arch x must be within 0..${B05_LEAF_WIDTH}`);
+  }
+
   const localArchX = x - B05_ARCH_CENTER_X;
   const heightSquared = B05_ARCH_RADIUS ** 2 - localArchX ** 2;
 
-  return B05_ARCH_CENTER_Y + Math.sqrt(Math.max(0, heightSquared));
+  return B05_ARCH_CENTER_Y + Math.sqrt(heightSquared);
 };
 
 const createBars = (): B05VerticalBar[] => {
@@ -81,8 +85,19 @@ const createBars = (): B05VerticalBar[] => {
 
 const createArchPath = (): B05Vector3[] =>
   Array.from({ length: B05_ARCH_SEGMENTS + 1 }, (_, index) => {
-    const x = (index / B05_ARCH_SEGMENTS) * B05_LEAF_WIDTH;
-    return [x, archYAtX(x), 0];
+    if (index === 0) {
+      return [0, B05_ARCH_CENTER_Y, 0];
+    }
+    if (index === B05_ARCH_SEGMENTS) {
+      return [B05_LEAF_WIDTH, B05_TOTAL_HEIGHT, 0];
+    }
+
+    const angle = Math.PI - (index / B05_ARCH_SEGMENTS) * (Math.PI / 2);
+    return [
+      B05_ARCH_CENTER_X + B05_ARCH_RADIUS * Math.cos(angle),
+      B05_ARCH_CENTER_Y + B05_ARCH_RADIUS * Math.sin(angle),
+      0,
+    ];
   });
 
 export const createB05LeafGeometry = (): B05LeafGeometry => ({

@@ -15,6 +15,10 @@ import {
 
 const EPSILON = 1e-9;
 
+const expectedArchYAtX = (x: number): number =>
+  B05_ARCH_CENTER_Y +
+  Math.sqrt(B05_ARCH_RADIUS ** 2 - (x - B05_ARCH_CENTER_X) ** 2);
+
 test("uses a canonical leaf with its hinge at x=0", () => {
   const leaf = createB05LeafGeometry();
 
@@ -63,7 +67,39 @@ test("vertical bars terminate inside the semicircular arch", () => {
   const leaf = createB05LeafGeometry();
 
   for (const bar of leaf.bars) {
-    assert.ok(bar.topY <= archYAtX(bar.x) - B05_BAR_RADIUS + EPSILON);
+    assert.ok(bar.topY <= expectedArchYAtX(bar.x) - B05_BAR_RADIUS + EPSILON);
+  }
+});
+
+test("calculates arch endpoints, monotonic height, and the circle equation", () => {
+  assert.equal(archYAtX(0), B05_ARCH_CENTER_Y);
+  assert.equal(archYAtX(B05_LEAF_WIDTH), B05_TOTAL_HEIGHT);
+
+  const sampleXs = [0, B05_LEAF_WIDTH / 4, B05_LEAF_WIDTH / 2, B05_LEAF_WIDTH];
+  const sampleYs = sampleXs.map(archYAtX);
+
+  for (let index = 1; index < sampleYs.length; index += 1) {
+    assert.ok(sampleYs[index] > sampleYs[index - 1]);
+  }
+
+  for (const [index, x] of sampleXs.entries()) {
+    const localX = x - B05_ARCH_CENTER_X;
+    const localY = sampleYs[index] - B05_ARCH_CENTER_Y;
+    assert.ok(
+      Math.abs(localX ** 2 + localY ** 2 - B05_ARCH_RADIUS ** 2) <= EPSILON,
+    );
+  }
+});
+
+test("rejects x outside the canonical leaf domain", () => {
+  for (const x of [
+    -EPSILON,
+    B05_LEAF_WIDTH + EPSILON,
+    Number.NaN,
+    Number.NEGATIVE_INFINITY,
+    Number.POSITIVE_INFINITY,
+  ]) {
+    assert.throws(() => archYAtX(x), RangeError);
   }
 });
 
@@ -89,16 +125,27 @@ test("samples the arch equation from the outer hinge to the center seam", () => 
   const leaf = createB05LeafGeometry();
 
   assert.ok(leaf.archPath.length >= 8);
-  assert.deepEqual(leaf.archPath[0], [0, archYAtX(0), 0]);
-  assert.deepEqual(leaf.archPath.at(-1), [
-    B05_LEAF_WIDTH,
-    archYAtX(B05_LEAF_WIDTH),
-    0,
-  ]);
+  assert.deepEqual(leaf.archPath[0], [0, B05_ARCH_CENTER_Y, 0]);
+  assert.deepEqual(leaf.archPath.at(-1), [B05_LEAF_WIDTH, B05_TOTAL_HEIGHT, 0]);
 
   for (const [x, y, z] of leaf.archPath) {
     assert.ok(x >= leaf.bounds.minX && x <= leaf.bounds.maxX);
-    assert.ok(Math.abs(y - archYAtX(x)) <= EPSILON);
+    const localX = x - B05_ARCH_CENTER_X;
+    const localY = y - B05_ARCH_CENTER_Y;
+    assert.ok(
+      Math.abs(localX ** 2 + localY ** 2 - B05_ARCH_RADIUS ** 2) <= EPSILON,
+    );
     assert.equal(z, 0);
+  }
+});
+
+test("samples the arch at uniform angular intervals", () => {
+  const angles = createB05LeafGeometry().archPath.map(([x, y]) =>
+    Math.atan2(y - B05_ARCH_CENTER_Y, x - B05_ARCH_CENTER_X),
+  );
+  const expectedStep = -(Math.PI / 2) / (angles.length - 1);
+
+  for (let index = 1; index < angles.length; index += 1) {
+    assert.ok(Math.abs(angles[index] - angles[index - 1] - expectedStep) <= EPSILON);
   }
 });
