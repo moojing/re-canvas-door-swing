@@ -245,13 +245,10 @@ const ArchedGateB05 = () => {
             <ambientLight intensity={0.24} />
             <hemisphereLight args={["#77899b", "#170a04", 0.34]} />
             <directionalLight position={[3.5, 7, 5]} intensity={1.05} color="#ffc18d" />
+            <directionalLight position={[0, 3, 6]} intensity={0.22} color="#d8d3cc" />
             <directionalLight position={[-4, 3, -3]} intensity={0.58} color="#678ca8" />
             <pointLight position={[0, 1.8, 2.5]} intensity={0.48} color="#d95c28" />
             <ArchedGate progress={progress} />
-            <mesh position={[0, -0.25, -4]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[22, 24]} />
-              <meshStandardMaterial color="#080706" roughness={1} metalness={0.08} />
-            </mesh>
             <CameraRig progress={progress} />
             <FadePlane opacity={motion.fadeOut} />
           </Canvas>
