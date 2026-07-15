@@ -13,7 +13,7 @@
     "lint": "npm run lint --workspace door-entrance && npm run lint --workspace door-entrance-sample",
     "gallery:check": "python3 scripts/gallery_assets.py check",
     "test:c03": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/c03Motion.test.ts packages/sample/src/poc/c03ProceduralMaterials.test.ts",
-    "test:b05": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/b05Motion.test.ts packages/sample/src/poc/b05Geometry.test.ts packages/sample/src/poc/b05ProceduralMaterials.test.ts"
+    "test:b05": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/b05Motion.test.ts packages/sample/src/poc/b05Geometry.test.ts packages/sample/src/poc/b05ProceduralMaterials.test.ts packages/sample/src/poc/b05TextureMapping.test.ts"
   },
   "devDependencies": {
     "@types/three": "^0.160.0"

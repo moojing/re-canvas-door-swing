@@ -8,14 +8,13 @@ import {
   createB05LeafGeometry,
   type B05BoxMember,
   type B05Collar,
-  type B05Vector3,
 } from "./b05Geometry";
 import { B05_CAMERA_START_Z, B05_DURATION_MS, getB05MotionState } from "./b05Motion";
 import {
   B05_OFFICIAL_APPEARANCE_CONFIG,
   createAgedIronMaterialPixels,
 } from "./b05ProceduralMaterials";
-import { projectB05TextureUv } from "./b05TextureMapping";
+import { applyB05WorldScaleUv } from "./b05TextureMapping";
 
 const LEAF_GEOMETRY = createB05LeafGeometry();
 const GATE_GEOMETRY = createB05GateGeometry();
@@ -76,23 +75,6 @@ const createAgedIronResources = () => {
   return { colorTexture, roughnessTexture, material };
 };
 
-const applyWorldScaleUv = (
-  geometry: THREE.BufferGeometry,
-  objectPosition: B05Vector3,
-) => {
-  const positions = geometry.getAttribute("position");
-  const uvs = geometry.getAttribute("uv");
-
-  for (let index = 0; index < positions.count; index += 1) {
-    const [u, v] = projectB05TextureUv(
-      [positions.getX(index), positions.getY(index), positions.getZ(index)],
-      objectPosition,
-    );
-    uvs.setXY(index, u, v);
-  }
-  uvs.needsUpdate = true;
-};
-
 const IronBox = ({ member, material }: {
   member: B05BoxMember;
   material: THREE.MeshStandardMaterial;
@@ -104,7 +86,9 @@ const IronBox = ({ member, material }: {
   >
     <boxGeometry
       args={[...member.size]}
-      onUpdate={(geometry) => applyWorldScaleUv(geometry, member.position)}
+      onUpdate={(geometry) =>
+        applyB05WorldScaleUv(geometry, member.position, member.rotation?.[2])
+      }
     />
   </mesh>
 );
@@ -116,7 +100,7 @@ const IronCollar = ({ collar, material }: {
   <mesh position={[...collar.position]} material={material}>
     <cylinderGeometry
       args={[collar.radius, collar.radius, collar.height, 12]}
-      onUpdate={(geometry) => applyWorldScaleUv(geometry, collar.position)}
+      onUpdate={(geometry) => applyB05WorldScaleUv(geometry, collar.position)}
     />
   </mesh>
 );
@@ -137,7 +121,7 @@ const CanonicalArchedLeaf = ({ material }: { material: THREE.MeshStandardMateria
     <mesh material={material}>
       <tubeGeometry
         args={[ARCH_CURVE, 64, B05_BAR_RADIUS * 1.35, 8, false]}
-        onUpdate={(geometry) => applyWorldScaleUv(geometry, [0, 0, 0])}
+        onUpdate={(geometry) => applyB05WorldScaleUv(geometry, [0, 0, 0])}
       />
     </mesh>
 
