@@ -2,9 +2,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
+import { resolveB05FrontUrl } from "./b05FrontImage";
+import { startB05FrontLoad } from "./b05FrontLoader";
+import {
+  buildB05FrontResourcesFromImage,
+  type B05FrontResources,
+} from "./b05FrontResources";
+import {
+  createB05FrontSceneDescriptor,
+  type B05FrontPlaneDescriptor,
+} from "./b05FrontScene";
 import {
   B05_BAR_RADIUS,
-  createB05GateGeometry,
   createB05LeafGeometry,
   type B05BoxMember,
   type B05Collar,
@@ -17,7 +26,6 @@ import {
 import { applyB05WorldScaleUv } from "./b05TextureMapping";
 
 const LEAF_GEOMETRY = createB05LeafGeometry();
-const GATE_GEOMETRY = createB05GateGeometry();
 const ARCH_CURVE = new THREE.CatmullRomCurve3(
   LEAF_GEOMETRY.archPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)),
 );
@@ -105,7 +113,23 @@ const IronCollar = ({ collar, material }: {
   </mesh>
 );
 
-const CanonicalArchedLeaf = ({ material }: { material: THREE.MeshStandardMaterial }) => (
+const GeneratedFront = ({
+  front,
+}: {
+  front: B05FrontPlaneDescriptor<THREE.MeshBasicMaterial>;
+}) => (
+  <mesh position={[...front.position]} material={front.material}>
+    <planeGeometry args={[...front.size]} />
+  </mesh>
+);
+
+const CanonicalArchedLeaf = ({
+  material,
+  frontMaterial,
+}: {
+  material: THREE.MeshStandardMaterial;
+  frontMaterial?: B05FrontPlaneDescriptor<THREE.MeshBasicMaterial>;
+}) => (
   <group>
     <IronBox member={LEAF_GEOMETRY.lowerPanel} material={material} />
     <IronBox member={LEAF_GEOMETRY.panelInset} material={material} />
@@ -136,11 +160,15 @@ const CanonicalArchedLeaf = ({ material }: { material: THREE.MeshStandardMateria
     {LEAF_GEOMETRY.plaqueTrim.map((member, index) => (
       <IronBox key={`plaque-trim-${index}`} member={member} material={material} />
     ))}
+
+    {frontMaterial && <GeneratedFront front={frontMaterial} />}
   </group>
 );
 
 const ArchedGate = ({ progress }: { progress: number }) => {
   const [resources, setResources] = useState<AgedIronResources | null>(null);
+  const [frontResources, setFrontResources] = useState<B05FrontResources | null>(null);
+  const frontLoadGenerationRef = useRef(0);
   const leftHingeRef = useRef<THREE.Group>(null);
   const rightHingeRef = useRef<THREE.Group>(null);
   const motion = getB05MotionState(progress);
@@ -156,6 +184,32 @@ const ArchedGate = ({ progress }: { progress: number }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const generation = frontLoadGenerationRef.current + 1;
+    frontLoadGenerationRef.current = generation;
+    let publishedResources: B05FrontResources | null = null;
+    const cleanup = startB05FrontLoad({
+      url: resolveB05FrontUrl(import.meta.env.BASE_URL),
+      createImage: () => new Image(),
+      createResources: buildB05FrontResourcesFromImage,
+      publish: (loadedResources) => {
+        if (frontLoadGenerationRef.current !== generation) return;
+        publishedResources = loadedResources;
+        setFrontResources(loadedResources);
+      },
+    });
+
+    return () => {
+      if (frontLoadGenerationRef.current === generation) {
+        frontLoadGenerationRef.current += 1;
+      }
+      cleanup();
+      setFrontResources((current) =>
+        current === publishedResources ? null : current,
+      );
+    };
+  }, []);
+
   useFrame(() => {
     if (leftHingeRef.current) leftHingeRef.current.rotation.y = motion.leftAngle;
     if (rightHingeRef.current) rightHingeRef.current.rotation.y = motion.rightAngle;
@@ -163,18 +217,24 @@ const ArchedGate = ({ progress }: { progress: number }) => {
 
   if (!resources) return null;
 
+  const scene = createB05FrontSceneDescriptor(frontResources);
+
   return (
     <group>
-      <group ref={leftHingeRef} position={[GATE_GEOMETRY.left.hingeX, 0, 0]}>
-        <group scale={[GATE_GEOMETRY.left.mirrorX ? -1 : 1, 1, 1]}>
-          <CanonicalArchedLeaf material={resources.material} />
+      {scene.leaves.map((leaf) => (
+        <group
+          key={leaf.side}
+          ref={leaf.side === "left" ? leftHingeRef : rightHingeRef}
+          position={[leaf.hingeX, 0, 0]}
+        >
+          <group scale={[leaf.mirrorX ? -1 : 1, 1, 1]}>
+            <CanonicalArchedLeaf
+              material={resources.material}
+              frontMaterial={leaf.front ?? undefined}
+            />
+          </group>
         </group>
-      </group>
-      <group ref={rightHingeRef} position={[GATE_GEOMETRY.right.hingeX, 0, 0]}>
-        <group scale={[GATE_GEOMETRY.right.mirrorX ? -1 : 1, 1, 1]}>
-          <CanonicalArchedLeaf material={resources.material} />
-        </group>
-      </group>
+      ))}
     </group>
   );
 };
@@ -257,9 +317,9 @@ const ArchedGateB05 = () => {
             Procedural inward-opening arched gate
           </h1>
           <p className="max-w-3xl text-sm leading-relaxed text-stone-400">
-            The paired leaves use real-depth primitive geometry and a fixed-seed aged-iron
-            texture. All visual material is generated locally; this page contains no game
-            pixels or external images.
+            The paired leaves combine real-depth primitive geometry, fixed-seed aged iron,
+            and independently generated front artwork. This page contains no game pixels or
+            external images.
           </p>
         </header>
 

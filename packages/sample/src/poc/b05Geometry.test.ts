@@ -15,6 +15,7 @@ import {
   createB05GateGeometry,
   createB05LeafGeometry,
 } from "./b05Geometry.ts";
+import { B05_FRONT_PLANE } from "./b05FrontImage.ts";
 import {
   B05_WORLD_UNITS_PER_TEXTURE_REPEAT,
   projectB05TextureUv,
@@ -38,6 +39,12 @@ test("uses a canonical leaf with its hinge at x=0", () => {
   assert.equal(B05_ARCH_CENTER_X, B05_LEAF_WIDTH);
   assert.equal(B05_ARCH_RADIUS, B05_LEAF_WIDTH);
   assert.equal(B05_TOTAL_HEIGHT, B05_ARCH_CENTER_Y + B05_ARCH_RADIUS);
+  assert.deepEqual(B05_FRONT_PLANE.size, [B05_LEAF_WIDTH, B05_TOTAL_HEIGHT]);
+  assert.deepEqual(B05_FRONT_PLANE.position, [
+    B05_LEAF_WIDTH / 2,
+    B05_TOTAL_HEIGHT / 2,
+    0.22,
+  ]);
 });
 
 test("returns exact mirrored gate transforms around the outer hinges", () => {
