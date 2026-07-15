@@ -11,7 +11,7 @@
     "build:lib": "npm run build --workspace door-entrance",
     "build:sample": "npm run build --workspace door-entrance-sample",
     "lint": "npm run lint --workspace door-entrance && npm run lint --workspace door-entrance-sample",
-    "gallery:check": "python3 scripts/gallery_assets.py check"
+    "gallery:check": "if command -v python3.12 >/dev/null 2>&1; then exec python3.12 scripts/gallery_assets.py check; elif command -v python3.11 >/dev/null 2>&1; then exec python3.11 scripts/gallery_assets.py check; else exec python3 scripts/gallery_assets.py check; fi"
   },
   "devDependencies": {
     "@types/three": "^0.160.0"

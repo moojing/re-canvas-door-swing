@@ -511,8 +511,7 @@ document.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{
 });
 </script>"""
 
-body = f"""{style}
-<div class="wrap" translate="no">
+body = f"""<div class="wrap" translate="no">
 <h1>🚪 開門動畫 — 分類圖庫 & 可行性分析</h1>
 <div class="lead">113 門型逐支影片檢查(2026-07-05~07)。<b>圖庫</b>逐門瀏覽(點圖看開門 GIF + 放大特寫);<b>分析</b>是決策視角(可救回/無法製作/分類階層/100h 預算),每項都可點圖。</div>
 <div class="tabs">
@@ -548,5 +547,20 @@ body = f"""{style}
 </div>
 {script}"""
 
-open(OUT,"w",encoding="utf-8").write(body)
+doc = f"""<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>開門動畫 — 分類圖庫 & 可行性分析</title>
+{style}
+</head>
+<body>
+{body}
+</body>
+</html>
+"""
+
+open(OUT,"w",encoding="utf-8").write(doc)
 print("寫出:", OUT, f"({os.path.getsize(OUT)//1024} KB)")

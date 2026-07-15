@@ -17,6 +17,7 @@ import {
   getDoorAnimationConfig,
   easeInOutCubic,
 } from "door-entrance";
+import { setTextureColorSpace } from "./textureColorSpace";
 
 const TEX_BASE = "/textures/poc-a11";
 
@@ -57,7 +58,7 @@ const useDoorTexture = (file: string) => {
         console.warn(`[poc-a11] 貼圖載入失敗:${TEX_BASE}/${file}(先執行 scripts/poc/extract-a11-textures.sh?)`);
       }
     );
-    tex.colorSpace = THREE.SRGBColorSpace;
+    setTextureColorSpace(tex);
     return () => {
       alive = false;
       setTexture(null);

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { getDoorAnimationConfig, easeInOutCubic } from "door-entrance";
+import { setTextureColorSpace } from "./textureColorSpace";
 
 const TEX_BASE = "/textures/b10";
 
@@ -122,7 +123,7 @@ const useCropTexture = (file: string, wPx: number, hPx: number) => {
         );
       }
     );
-    tex.colorSpace = THREE.SRGBColorSpace;
+    setTextureColorSpace(tex);
     tex.repeat.set(1 / wPx, 1 / hPx);
     tex.offset.set(0.5, 0.5);
     return () => {
@@ -195,7 +196,7 @@ const useFlatTexture = (file: string) => {
         console.warn(`[poc-b10] 貼圖載入失敗:${TEX_BASE}/${file}`);
       }
     );
-    tex.colorSpace = THREE.SRGBColorSpace;
+    setTextureColorSpace(tex);
     return () => {
       alive = false;
       setTexture(null);
