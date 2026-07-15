@@ -52,25 +52,31 @@ export type B05FrontMaterialResource = B05Disposable & {
   toneMapped: boolean;
 };
 
-export type B05FrontResources<
-  Texture extends B05FrontTextureResource = B05FrontTextureResource,
-  Material extends B05FrontMaterialResource = B05FrontMaterialResource,
-> = Readonly<{
+const disposeB05FrontResourcesSymbol = Symbol("disposeB05FrontResources");
+
+type B05FrontResourceSlots<
+  Texture extends B05FrontTextureResource,
+  Material extends B05FrontMaterialResource,
+> = {
   leftTexture: Texture;
   rightTexture: Texture;
   leftMaterial: Material;
   rightMaterial: Material;
-}>;
+};
+
+export type B05FrontResources<
+  Texture extends B05FrontTextureResource = B05FrontTextureResource,
+  Material extends B05FrontMaterialResource = B05FrontMaterialResource,
+> = Readonly<
+  B05FrontResourceSlots<Texture, Material> & {
+    [disposeB05FrontResourcesSymbol](): void;
+  }
+>;
 
 type PartialB05FrontResources<
   Texture extends B05FrontTextureResource,
   Material extends B05FrontMaterialResource,
-> = {
-  -readonly [Key in keyof B05FrontResources<Texture, Material>]?: B05FrontResources<
-    Texture,
-    Material
-  >[Key];
-};
+> = Partial<B05FrontResourceSlots<Texture, Material>>;
 
 export type B05FrontFactories<
   Texture extends B05FrontTextureResource,
@@ -102,23 +108,48 @@ type B05ThreeLike<
   MeshBasicMaterial: new (parameters: { map: Texture }) => Material;
 }>;
 
-const disposedResources = new WeakSet<B05Disposable>();
+const createB05FrontDisposer = <
+  Texture extends B05FrontTextureResource,
+  Material extends B05FrontMaterialResource,
+>(resources: PartialB05FrontResources<Texture, Material>): (() => void) => {
+  let disposed = false;
 
-const disposeOnce = (resource: B05Disposable | undefined): void => {
-  if (!resource || disposedResources.has(resource)) return;
-  disposedResources.add(resource);
-  resource.dispose();
+  return () => {
+    if (disposed) return;
+    disposed = true;
+
+    const attempted = new Set<B05Disposable>();
+    let firstError: unknown;
+    let cleanupFailed = false;
+
+    for (const resource of [
+      resources.leftMaterial,
+      resources.rightMaterial,
+      resources.leftTexture,
+      resources.rightTexture,
+    ]) {
+      if (!resource || attempted.has(resource)) continue;
+      attempted.add(resource);
+
+      try {
+        resource.dispose();
+      } catch (error) {
+        if (!cleanupFailed) {
+          firstError = error;
+          cleanupFailed = true;
+        }
+      }
+    }
+
+    if (cleanupFailed) throw firstError;
+  };
 };
 
 export const disposeB05FrontResources = <
   Texture extends B05FrontTextureResource,
   Material extends B05FrontMaterialResource,
->(resources: PartialB05FrontResources<Texture, Material>): void => {
-  disposeOnce(resources.leftMaterial);
-  disposeOnce(resources.rightMaterial);
-  disposeOnce(resources.leftTexture);
-  disposeOnce(resources.rightTexture);
-};
+>(resources: B05FrontResources<Texture, Material>): void =>
+  resources[disposeB05FrontResourcesSymbol]();
 
 const configureTexture = <Texture extends B05FrontTextureResource>(
   texture: Texture,
@@ -154,6 +185,7 @@ export const buildB05FrontResources = <
   factories: B05FrontFactories<Texture, Material>,
 ): B05FrontResources<Texture, Material> => {
   const partial: PartialB05FrontResources<Texture, Material> = {};
+  const disposePartial = createB05FrontDisposer(partial);
 
   try {
     const processedPixels = removeB05NearBlackBackground(sourcePixels);
@@ -190,9 +222,19 @@ export const buildB05FrontResources = <
     partial.rightMaterial = factories.createMaterial(partial.rightTexture);
     configureMaterial(partial.rightMaterial, factories.materialValues.side);
 
-    return partial as B05FrontResources<Texture, Material>;
+    return {
+      leftTexture: partial.leftTexture,
+      rightTexture: partial.rightTexture,
+      leftMaterial: partial.leftMaterial,
+      rightMaterial: partial.rightMaterial,
+      [disposeB05FrontResourcesSymbol]: disposePartial,
+    };
   } catch (error) {
-    disposeB05FrontResources(partial);
+    try {
+      disposePartial();
+    } catch {
+      // The build error is the actionable failure; cleanup remains best-effort.
+    }
     throw error;
   }
 };
@@ -240,6 +282,8 @@ export const createB05FrontResourceController = <
 
   return {
     accept(resources) {
+      if (acceptedResources === resources) return false;
+
       if (cancelled || acceptedResources) {
         disposeB05FrontResources(resources);
         return false;
@@ -251,8 +295,9 @@ export const createB05FrontResourceController = <
     cancel() {
       if (cancelled) return;
       cancelled = true;
-      disposeB05FrontResources(acceptedResources ?? {});
+      const resources = acceptedResources;
       acceptedResources = undefined;
+      if (resources) disposeB05FrontResources(resources);
     },
   };
 };

@@ -108,6 +108,18 @@ const createFakeFactories = () => {
   return { canvases, factories };
 };
 
+const getDisposeCounts = (resources: {
+  leftTexture: FakeTexture;
+  rightTexture: FakeTexture;
+  leftMaterial: FakeMaterial;
+  rightMaterial: FakeMaterial;
+}) => ({
+  leftTexture: resources.leftTexture.disposeCount,
+  rightTexture: resources.rightTexture.disposeCount,
+  leftMaterial: resources.leftMaterial.disposeCount,
+  rightMaterial: resources.rightMaterial.disposeCount,
+});
+
 test("exports the immutable generated-front rendering contract", () => {
   assert.deepEqual(B05_FRONT_RENDERING, {
     wrap: "clamp-to-edge",
@@ -231,6 +243,53 @@ test("disposes textures and a partial material exactly once when material creati
   assert.deepEqual(materials.map((material) => material.disposeCount), [1]);
 });
 
+test("preserves the build error while attempting every partial cleanup when dispose throws", () => {
+  const textures: FakeTexture[] = [];
+  const materials: FakeMaterial[] = [];
+  let materialCalls = 0;
+  const buildError = new Error("second material failed");
+  const cleanupError = new Error("left material disposal failed");
+  const { factories } = createFakeFactories();
+  let caught: unknown;
+
+  try {
+    buildB05FrontResources(createSourcePixels(), {
+      ...factories,
+      createTexture: (input) => {
+        const texture = factories.createTexture(input);
+        textures.push(texture);
+        return texture;
+      },
+      createMaterial: (texture) => {
+        materialCalls += 1;
+        if (materialCalls === 2) throw buildError;
+        const material = factories.createMaterial(texture);
+        material.dispose = () => {
+          material.disposeCount += 1;
+          throw cleanupError;
+        };
+        materials.push(material);
+        return material;
+      },
+    });
+  } catch (error) {
+    caught = error;
+  }
+
+  assert.deepEqual(
+    {
+      rethrewBuildError: caught === buildError,
+      textureCounts: textures.map((texture) => texture.disposeCount),
+      materialCounts: materials.map((material) => material.disposeCount),
+    },
+    {
+      rethrewBuildError: true,
+      textureCounts: [1, 1],
+      materialCounts: [1],
+    },
+  );
+});
+
 test("complete resource disposal is idempotent", () => {
   const { factories } = createFakeFactories();
   const resources = buildB05FrontResources(createSourcePixels(), factories);
@@ -259,6 +318,39 @@ test("accepts resources before cancellation and disposes them on repeated cancel
   assert.equal(resources.rightMaterial.disposeCount, 1);
 });
 
+test("controller cancellation attempts every resource once before throwing cleanup error", () => {
+  const { factories } = createFakeFactories();
+  const resources = buildB05FrontResources(createSourcePixels(), factories);
+  const cleanupError = new Error("left material disposal failed");
+  resources.leftMaterial.dispose = () => {
+    resources.leftMaterial.disposeCount += 1;
+    throw cleanupError;
+  };
+  const controller = createB05FrontResourceController();
+  let caught: unknown;
+
+  controller.accept(resources);
+  try {
+    controller.cancel();
+  } catch (error) {
+    caught = error;
+  }
+  controller.cancel();
+
+  assert.deepEqual(
+    { caughtCleanupError: caught === cleanupError, counts: getDisposeCounts(resources) },
+    {
+      caughtCleanupError: true,
+      counts: {
+        leftTexture: 1,
+        rightTexture: 1,
+        leftMaterial: 1,
+        rightMaterial: 1,
+      },
+    },
+  );
+});
+
 test("disposes late resources immediately after cancellation and rejects them", () => {
   const { factories } = createFakeFactories();
   const resources = buildB05FrontResources(createSourcePixels(), factories);
@@ -274,7 +366,32 @@ test("disposes late resources immediately after cancellation and rejects them", 
   assert.equal(resources.rightMaterial.disposeCount, 1);
 });
 
-test("rejects a duplicate acceptance without duplicating disposal", () => {
+test("rejects the same accepted bundle without disposing the owned resources", () => {
+  const resources = buildB05FrontResources(
+    createSourcePixels(),
+    createFakeFactories().factories,
+  );
+  const controller = createB05FrontResourceController();
+
+  assert.equal(controller.accept(resources), true);
+  assert.equal(controller.accept(resources), false);
+  assert.deepEqual(getDisposeCounts(resources), {
+    leftTexture: 0,
+    rightTexture: 0,
+    leftMaterial: 0,
+    rightMaterial: 0,
+  });
+
+  controller.cancel();
+  assert.deepEqual(getDisposeCounts(resources), {
+    leftTexture: 1,
+    rightTexture: 1,
+    leftMaterial: 1,
+    rightMaterial: 1,
+  });
+});
+
+test("rejects and disposes a distinct duplicate bundle", () => {
   const first = buildB05FrontResources(createSourcePixels(), createFakeFactories().factories);
   const duplicate = buildB05FrontResources(
     createSourcePixels(),
@@ -284,6 +401,18 @@ test("rejects a duplicate acceptance without duplicating disposal", () => {
 
   assert.equal(controller.accept(first), true);
   assert.equal(controller.accept(duplicate), false);
+  assert.deepEqual(getDisposeCounts(first), {
+    leftTexture: 0,
+    rightTexture: 0,
+    leftMaterial: 0,
+    rightMaterial: 0,
+  });
+  assert.deepEqual(getDisposeCounts(duplicate), {
+    leftTexture: 1,
+    rightTexture: 1,
+    leftMaterial: 1,
+    rightMaterial: 1,
+  });
   controller.cancel();
   controller.cancel();
 
@@ -299,6 +428,44 @@ test("rejects a duplicate acceptance without duplicating disposal", () => {
   ]) {
     assert.equal(resource.disposeCount, 1);
   }
+});
+
+test("fresh ownership disposes reused resource identities again", () => {
+  const { factories } = createFakeFactories();
+  const textures = [
+    factories.createTexture({ pixels: new Uint8ClampedArray(), width: 0, height: 0 }),
+    factories.createTexture({ pixels: new Uint8ClampedArray(), width: 0, height: 0 }),
+  ];
+  const materials = [
+    factories.createMaterial(textures[0]),
+    factories.createMaterial(textures[1]),
+  ];
+  let textureCalls = 0;
+  const sharedFactories = {
+    ...factories,
+    createTexture: () => textures[textureCalls++ % textures.length],
+    createMaterial: (texture: FakeTexture) =>
+      texture === textures[0] ? materials[0] : materials[1],
+  };
+  const firstOwnership = buildB05FrontResources(createSourcePixels(), sharedFactories);
+  const secondOwnership = buildB05FrontResources(createSourcePixels(), sharedFactories);
+
+  assert.notEqual(firstOwnership, secondOwnership);
+  assert.equal(firstOwnership.leftTexture, secondOwnership.leftTexture);
+  assert.equal(firstOwnership.rightTexture, secondOwnership.rightTexture);
+  assert.equal(firstOwnership.leftMaterial, secondOwnership.leftMaterial);
+  assert.equal(firstOwnership.rightMaterial, secondOwnership.rightMaterial);
+
+  disposeB05FrontResources(firstOwnership);
+  disposeB05FrontResources(secondOwnership);
+
+  assert.deepEqual(
+    {
+      textureCounts: textures.map((texture) => texture.disposeCount),
+      materialCounts: materials.map((material) => material.disposeCount),
+    },
+    { textureCounts: [2, 2], materialCounts: [2, 2] },
+  );
 });
 
 test("cancellation with no resources is an idempotent no-op", () => {
