@@ -13,6 +13,12 @@ Use the user-approved generated B05 static mockup as the front-face artwork for 
 - Treat near-black background pixels as transparent at runtime. Do not manually paint, trace, or incorporate pixels from the original game reference.
 - Preserve this single source image in the repository so the POC does not depend on a temporary file, local gallery checkout, network request, or Codex conversation state.
 
+### Visual Baseline
+
+![Approved generated B05 gate reference](../../../packages/sample/public/textures/b05/generated-gate-front.png)
+
+This embedded image is the authoritative closed-gate visual baseline. Future work must compare the actual B05 render against this exact repository asset, not against memory, a temporary screenshot, or the original game image.
+
 ## Visual Direction
 
 - Use the approved generated static mockup directly on the front faces of the two moving leaves.
@@ -69,15 +75,13 @@ Use the user-approved generated B05 static mockup as the front-face artwork for 
 - Boundary tests cover minimum and maximum accepted pixel counts plus invalid non-integer, unsafe, zero, negative, one-pixel, oversized, and invalid-seed inputs, confirming both buffers are rejected before allocation.
 - Roughness values include a meaningful matte-to-worn range without producing fully glossy metal.
 - At progress `0`, only the paired gate leaves are visible renderable geometry and the gate shows the approved dark red-brown, ochre, and muted green aging.
-- Compare the actual closed-gate render with the approved generated mockup: match its paired arched leaves, center stiles, four-bar spacing, split grille, framed lower panels, horizontal hexagonal trim, material family, patch scale, and neutral-warm lighting while retaining the POC's darker transition-scene exposure.
-- At progress `0.3`, the entire rebuilt leaf structure and its front plane must rotate inward together with no stationary frame, trim, plaque, or image plane left behind.
 - At progress `0.5`, both leaves still open inward and the generated fronts remain attached while procedural side depth is visible.
 - A source/static-asset check confirms the approved generated image is the only B05 bitmap dependency and that no game frame, gallery asset, encoded duplicate, side post, bottom threshold, floor, wall, or external request appears in the implementation.
 - An automated asset test reads the committed PNG directly, verifies PNG signature, IHDR dimensions `758 x 636`, RGBA color type `6`, and exact SHA-256 `f00e7e6f0844077dc2a930027db3d8dd40b34341d56320b197cd1855ad4cb77b`.
 - Pure image-processing tests verify `max(R,G,B) <= 8` produces alpha `0`, every other pixel preserves all four bytes, the two crop rectangles are exact, and the right crop is reversed exactly once before the mirrored leaf transform.
 - Export immutable front texture/material configuration and verify its filters, wrapping, encoding, alpha test, depth behavior, side, and tone-mapping values without requiring WebGL.
 - Resource-lifecycle tests verify exactly-once disposal for normal success, load failure, processing exception, and unmount-before-load while the procedural fallback remains renderable.
-- At progress `0`, the processed left and right front planes align at world `x = 0` within `0.01` world units and reproduce the approved generated image without visible black rectangles outside the gate silhouette.
-- At progress `0.3`, both image planes remain attached to their respective leaves while procedural side depth becomes visible from the fixed start camera.
 - Simulate a front-image load failure and verify the procedural gate remains usable without an uncaught error.
+- Mandatory visual completion gate: capture the actual gate-only render at progress `0` and place it side by side with the embedded baseline above. Confirm the image planes meet at world `x = 0` within `0.01` world units, no black rectangles appear outside the silhouette, and the outer arch, center seam, two horizontal rails, four bars per leaf, collar placement, lower inset panels, hexagonal ornaments, rust distribution, and absence of surrounding geometry match the baseline. Then capture progress `0.3` and confirm both fronts rotate with their complete leaves, procedural side thickness is visible, and no plane or trim remains at the closed position. A passing test suite without both visual captures is insufficient.
+- Keep temporary comparison captures under `/private/tmp/b05-visual-comparison/`; do not commit duplicate baseline or render images.
 - B05 tests, lint, production build, and `git diff --check` pass with no new errors.
