@@ -59,6 +59,14 @@ test("starts forward camera travel only after the leaves reach full clearance", 
   assert.ok(passing.cameraPosition[2] < B05_CAMERA_START_Z);
 });
 
+test("frames the approved gate closely and around its vertical center", () => {
+  const closed = getB05MotionState(0);
+
+  assert.ok(B05_CAMERA_START_Z >= 5.5 && B05_CAMERA_START_Z <= 6.5);
+  assert.ok(closed.cameraPosition[1] >= 2.4 && closed.cameraPosition[1] <= 2.8);
+  assert.ok(closed.cameraTarget[1] >= 2.4 && closed.cameraTarget[1] <= 2.8);
+});
+
 test("returns finite camera positions and targets throughout the timeline", () => {
   for (let step = 0; step <= 100; step += 1) {
     const state = getB05MotionState(step / 100);

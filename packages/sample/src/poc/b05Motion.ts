@@ -1,5 +1,5 @@
 export const B05_DURATION_MS = 6500;
-export const B05_CAMERA_START_Z = 8;
+export const B05_CAMERA_START_Z = 6.2;
 export const B05_MAX_SWING_RADIANS = (85 * Math.PI) / 180;
 
 type Vector3 = readonly [number, number, number];
@@ -44,8 +44,8 @@ export const getB05MotionState = (rawProgress: number): B05MotionState => {
     progress,
     leftAngle,
     rightAngle: leftAngle === 0 ? 0 : -leftAngle,
-    cameraPosition: [0, 1.7, cameraZ],
-    cameraTarget: [0, 1.5, -3],
+    cameraPosition: [0, 2.65, cameraZ],
+    cameraTarget: [0, 2.55, -3],
     fadeOut,
   };
 };

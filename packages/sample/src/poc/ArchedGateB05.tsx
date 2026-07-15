@@ -7,12 +7,16 @@ import {
   createB05GateGeometry,
   createB05LeafGeometry,
   type B05BoxMember,
+  type B05Collar,
+  type B05Vector3,
 } from "./b05Geometry";
-import { B05_DURATION_MS, getB05MotionState } from "./b05Motion";
-import { createAgedIronMaterialPixels } from "./b05ProceduralMaterials";
+import { B05_CAMERA_START_Z, B05_DURATION_MS, getB05MotionState } from "./b05Motion";
+import {
+  B05_OFFICIAL_APPEARANCE_CONFIG,
+  createAgedIronMaterialPixels,
+} from "./b05ProceduralMaterials";
+import { projectB05TextureUv } from "./b05TextureMapping";
 
-const TEXTURE_SIZE = 128;
-const TEXTURE_SEED = 51;
 const LEAF_GEOMETRY = createB05LeafGeometry();
 const GATE_GEOMETRY = createB05GateGeometry();
 const ARCH_CURVE = new THREE.CatmullRomCurve3(
@@ -27,22 +31,26 @@ type AgedIronResources = {
 
 const createTexture = (pixels: Uint8ClampedArray, encoding: THREE.TextureEncoding) => {
   const canvas = document.createElement("canvas");
-  canvas.width = TEXTURE_SIZE;
-  canvas.height = TEXTURE_SIZE;
+  canvas.width = B05_OFFICIAL_APPEARANCE_CONFIG.textureSize;
+  canvas.height = B05_OFFICIAL_APPEARANCE_CONFIG.textureSize;
 
   const context = canvas.getContext("2d");
   if (!context) {
     throw new Error("Unable to create the B05 procedural texture canvas");
   }
 
-  const imageData = new ImageData(pixels, TEXTURE_SIZE, TEXTURE_SIZE);
+  const imageData = new ImageData(
+    pixels,
+    B05_OFFICIAL_APPEARANCE_CONFIG.textureSize,
+    B05_OFFICIAL_APPEARANCE_CONFIG.textureSize,
+  );
   context.putImageData(imageData, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.encoding = encoding;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(3, 4);
+  texture.repeat.set(...B05_OFFICIAL_APPEARANCE_CONFIG.textureRepeat);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   texture.needsUpdate = true;
@@ -51,9 +59,9 @@ const createTexture = (pixels: Uint8ClampedArray, encoding: THREE.TextureEncodin
 
 const createAgedIronResources = () => {
   const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(
-    TEXTURE_SIZE,
-    TEXTURE_SIZE,
-    TEXTURE_SEED,
+    B05_OFFICIAL_APPEARANCE_CONFIG.textureSize,
+    B05_OFFICIAL_APPEARANCE_CONFIG.textureSize,
+    B05_OFFICIAL_APPEARANCE_CONFIG.seed,
   );
   const colorTexture = createTexture(colorPixels, THREE.sRGBEncoding);
   const roughnessTexture = createTexture(roughnessPixels, THREE.LinearEncoding);
@@ -68,30 +76,81 @@ const createAgedIronResources = () => {
   return { colorTexture, roughnessTexture, material };
 };
 
+const applyWorldScaleUv = (
+  geometry: THREE.BufferGeometry,
+  objectPosition: B05Vector3,
+) => {
+  const positions = geometry.getAttribute("position");
+  const uvs = geometry.getAttribute("uv");
+
+  for (let index = 0; index < positions.count; index += 1) {
+    const [u, v] = projectB05TextureUv(
+      [positions.getX(index), positions.getY(index), positions.getZ(index)],
+      objectPosition,
+    );
+    uvs.setXY(index, u, v);
+  }
+  uvs.needsUpdate = true;
+};
+
 const IronBox = ({ member, material }: {
   member: B05BoxMember;
   material: THREE.MeshStandardMaterial;
 }) => (
-  <mesh position={[...member.position]} material={material}>
-    <boxGeometry args={[...member.size]} />
+  <mesh
+    position={[...member.position]}
+    rotation={member.rotation ? [...member.rotation] : undefined}
+    material={material}
+  >
+    <boxGeometry
+      args={[...member.size]}
+      onUpdate={(geometry) => applyWorldScaleUv(geometry, member.position)}
+    />
+  </mesh>
+);
+
+const IronCollar = ({ collar, material }: {
+  collar: B05Collar;
+  material: THREE.MeshStandardMaterial;
+}) => (
+  <mesh position={[...collar.position]} material={material}>
+    <cylinderGeometry
+      args={[collar.radius, collar.radius, collar.height, 12]}
+      onUpdate={(geometry) => applyWorldScaleUv(geometry, collar.position)}
+    />
   </mesh>
 );
 
 const CanonicalArchedLeaf = ({ material }: { material: THREE.MeshStandardMaterial }) => (
   <group>
     <IronBox member={LEAF_GEOMETRY.lowerPanel} material={material} />
-    <IronBox member={LEAF_GEOMETRY.divider} material={material} />
+    <IronBox member={LEAF_GEOMETRY.panelInset} material={material} />
+    <IronBox member={LEAF_GEOMETRY.lowerRail} material={material} />
+    <IronBox member={LEAF_GEOMETRY.middleRail} material={material} />
+    <IronBox member={LEAF_GEOMETRY.outerStile} material={material} />
+    <IronBox member={LEAF_GEOMETRY.centerStile} material={material} />
 
     {LEAF_GEOMETRY.bars.map((bar, index) => (
       <IronBox key={`bar-${index}`} member={bar} material={material} />
     ))}
 
     <mesh material={material}>
-      <tubeGeometry args={[ARCH_CURVE, 64, B05_BAR_RADIUS * 1.35, 8, false]} />
+      <tubeGeometry
+        args={[ARCH_CURVE, 64, B05_BAR_RADIUS * 1.35, 8, false]}
+        onUpdate={(geometry) => applyWorldScaleUv(geometry, [0, 0, 0])}
+      />
     </mesh>
 
-    {LEAF_GEOMETRY.reliefBlocks.map((block, index) => (
-      <IronBox key={`relief-${index}`} member={block} material={material} />
+    {LEAF_GEOMETRY.panelTrim.map((member, index) => (
+      <IronBox key={`panel-trim-${index}`} member={member} material={material} />
+    ))}
+
+    {LEAF_GEOMETRY.barCollars.map((collar, index) => (
+      <IronCollar key={`bar-collar-${index}`} collar={collar} material={material} />
+    ))}
+
+    {LEAF_GEOMETRY.plaqueTrim.map((member, index) => (
+      <IronBox key={`plaque-trim-${index}`} member={member} material={material} />
     ))}
   </group>
 );
@@ -226,17 +285,17 @@ const ArchedGateB05 = () => {
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-black/65 to-transparent" />
           <Canvas
-            camera={{ position: [0, 1.7, 8], fov: 52, near: 0.1, far: 80 }}
+            camera={{ position: [0, 2.65, B05_CAMERA_START_Z], fov: 52, near: 0.1, far: 80 }}
             dpr={[1, 1.75]}
             onCreated={({ gl }) => gl.setClearColor("#000000")}
           >
             <fog attach="fog" args={["#000000", 10, 24]} />
-            <ambientLight intensity={0.24} />
-            <hemisphereLight args={["#77899b", "#170a04", 0.34]} />
-            <directionalLight position={[3.5, 7, 5]} intensity={1.05} color="#ffc18d" />
-            <directionalLight position={[0, 3, 6]} intensity={0.22} color="#d8d3cc" />
-            <directionalLight position={[-4, 3, -3]} intensity={0.58} color="#678ca8" />
-            <pointLight position={[0, 1.8, 2.5]} intensity={0.48} color="#d95c28" />
+            <ambientLight intensity={0.6} />
+            <hemisphereLight args={["#77899b", "#170a04", 0.65]} />
+            <directionalLight position={[3.5, 7, 5]} intensity={1.25} color="#d8c0aa" />
+            <directionalLight position={[0, 3, 6]} intensity={0.9} color="#d8d3cc" />
+            <directionalLight position={[-4, 3, -3]} intensity={0.45} color="#678ca8" />
+            <pointLight position={[0, 1.8, 2.5]} intensity={0.1} color="#bda38c" />
             <ArchedGate progress={progress} />
             <CameraRig progress={progress} />
             <FadePlane opacity={motion.fadeOut} />

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  B05_OFFICIAL_APPEARANCE_CONFIG,
   createAgedIronMaterialPixels,
   createAgedIronPixels,
   validateAgedIronInput,
@@ -15,6 +16,10 @@ type MaterialGenerator = (
 ) => AgedIronMaterialPixels;
 
 type ColorGenerator = (width: number, height: number, seed: number) => Uint8ClampedArray;
+
+const APPEARANCE_WIDTH = B05_OFFICIAL_APPEARANCE_CONFIG.textureSize;
+const APPEARANCE_HEIGHT = B05_OFFICIAL_APPEARANCE_CONFIG.textureSize;
+const APPEARANCE_SEED = B05_OFFICIAL_APPEARANCE_CONFIG.seed;
 
 const checksum = (pixels: Uint8ClampedArray): number =>
   pixels.reduce(
@@ -35,6 +40,31 @@ const luminances = (pixels: Uint8ClampedArray): number[] => {
 
   return values;
 };
+
+const pixelLuminance = (pixels: Uint8ClampedArray, index: number): number =>
+  pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722;
+
+const isPatinaPixel = (pixels: Uint8ClampedArray, index: number): boolean =>
+  pixels[index + 1] >= pixels[index] + 2 && pixels[index + 1] >= pixels[index + 2] + 8;
+
+const isOxidationPixel = (pixels: Uint8ClampedArray, index: number): boolean => {
+  const red = pixels[index];
+  const green = pixels[index + 1];
+  const blue = pixels[index + 2];
+  return red >= 75 && green >= 45 && red - green >= 18 && red - green <= 45 && green - blue >= 8;
+};
+
+const mean = (values: number[]): number =>
+  values.reduce((total, value) => total + value, 0) / values.length;
+
+test("defines the official B05 appearance fixture", () => {
+  assert.deepEqual(B05_OFFICIAL_APPEARANCE_CONFIG, {
+    textureSize: 128,
+    seed: 51,
+    textureRepeat: [1, 1],
+    worldUnitsPerRepeat: 1.1,
+  });
+});
 
 test("returns exact RGBA byte buffers for both material maps", () => {
   const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(16, 8, 51);
@@ -81,7 +111,11 @@ test("keeps createAgedIronPixels as a color-map compatibility wrapper", () => {
 });
 
 test("aligns charcoal pits and worn scratches with their roughness", () => {
-  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(128, 128, 51);
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(
+    APPEARANCE_WIDTH,
+    APPEARANCE_HEIGHT,
+    APPEARANCE_SEED,
+  );
   const pitRoughness: number[] = [];
   const scratchRoughness: number[] = [];
 
@@ -151,7 +185,11 @@ test("aligns forced contrast repair colors with semantic roughness at 1x2", () =
 });
 
 test("provides meaningful roughness variation without fully glossy values", () => {
-  const { roughnessPixels } = createAgedIronMaterialPixels(128, 128, 51);
+  const { roughnessPixels } = createAgedIronMaterialPixels(
+    APPEARANCE_WIDTH,
+    APPEARANCE_HEIGHT,
+    APPEARANCE_SEED,
+  );
   const values: number[] = [];
 
   for (let index = 0; index < roughnessPixels.length; index += 4) {
@@ -165,8 +203,287 @@ test("provides meaningful roughness variation without fully glossy values", () =
   assert.ok(new Set(values).size >= 24, "roughness map has too few distinct values");
 });
 
+test("keeps the overall iron tone dark wine-red brown", () => {
+  const colorPixels = createAgedIronPixels(
+    APPEARANCE_WIDTH,
+    APPEARANCE_HEIGHT,
+    APPEARANCE_SEED,
+  );
+  let totalLuminance = 0;
+  let totalRed = 0;
+  let totalGreen = 0;
+  let totalBlue = 0;
+  const pixelCount = colorPixels.length / 4;
+
+  for (let index = 0; index < colorPixels.length; index += 4) {
+    totalLuminance += pixelLuminance(colorPixels, index);
+    totalRed += colorPixels[index];
+    totalGreen += colorPixels[index + 1];
+    totalBlue += colorPixels[index + 2];
+  }
+
+  const meanLuminance = totalLuminance / pixelCount;
+  const meanRed = totalRed / pixelCount;
+  const meanGreen = totalGreen / pixelCount;
+  const meanBlue = totalBlue / pixelCount;
+
+  assert.ok(meanLuminance <= 56, `mean luminance ${meanLuminance} is too bright`);
+  assert.ok(meanRed >= meanGreen + 12, "material is not predominantly wine-red brown");
+  assert.ok(meanGreen >= meanBlue + 3, "material has lost its warm brown undertone");
+});
+
+test("keeps worn scratches sparse across the material", () => {
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(
+    APPEARANCE_WIDTH,
+    APPEARANCE_HEIGHT,
+    APPEARANCE_SEED,
+  );
+  let scratchPixels = 0;
+  const pixelCount = colorPixels.length / 4;
+
+  for (let index = 0; index < colorPixels.length; index += 4) {
+    const isWornHighlight =
+      pixelLuminance(colorPixels, index) >= 105 &&
+      roughnessPixels[index] >= 140 &&
+      roughnessPixels[index] <= 190;
+    if (isWornHighlight) scratchPixels += 1;
+  }
+
+  const scratchRatio = scratchPixels / pixelCount;
+  assert.ok(scratchPixels > 0, "fixture has no worn scratches");
+  assert.ok(scratchRatio <= 0.005, `scratch ratio ${scratchRatio} is too dense`);
+});
+
+test("forms patina in coherent patches instead of per-pixel salt-and-pepper noise", () => {
+  const width = APPEARANCE_WIDTH;
+  const height = APPEARANCE_HEIGHT;
+  const colorPixels = createAgedIronPixels(width, height, APPEARANCE_SEED);
+  const isPatina = (x: number, y: number): boolean => {
+    const index = (y * width + x) * 4;
+    return isPatinaPixel(colorPixels, index);
+  };
+  let patinaPixels = 0;
+  let isolatedPatinaPixels = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (!isPatina(x, y)) continue;
+      patinaPixels += 1;
+
+      const hasPatinaNeighbor =
+        (x > 0 && isPatina(x - 1, y)) ||
+        (x + 1 < width && isPatina(x + 1, y)) ||
+        (y > 0 && isPatina(x, y - 1)) ||
+        (y + 1 < height && isPatina(x, y + 1));
+      if (!hasPatinaNeighbor) isolatedPatinaPixels += 1;
+    }
+  }
+
+  assert.ok(patinaPixels > 0, "fixture has no visible patina");
+  const coverage = patinaPixels / (width * height);
+  assert.ok(coverage >= 0.005, `patina coverage ${coverage} is below 0.5%`);
+  assert.ok(coverage <= 0.015, `patina coverage ${coverage} is above 1.5%`);
+  const isolatedRatio = isolatedPatinaPixels / patinaPixels;
+  assert.ok(isolatedRatio <= 0.2, `isolated patina ratio ${isolatedRatio} is too high`);
+});
+
+test("keeps low-frequency color and roughness variation continuous across texture seams", () => {
+  const width = APPEARANCE_WIDTH;
+  const height = APPEARANCE_HEIGHT;
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(
+    width,
+    height,
+    APPEARANCE_SEED,
+  );
+  const indexAt = (x: number, y: number): number => (y * width + x) * 4;
+  const difference = (
+    pixels: Uint8ClampedArray,
+    first: number,
+    second: number,
+    channels: number,
+  ): number => {
+    let total = 0;
+    for (let channel = 0; channel < channels; channel += 1) {
+      total += Math.abs(pixels[first + channel] - pixels[second + channel]);
+    }
+    return total;
+  };
+  const seamRatios = (pixels: Uint8ClampedArray, channels: number) => {
+    const seamDifferences: number[] = [];
+    const internalDifferences: number[] = [];
+    const centerDifferences: number[] = [];
+
+    for (let y = 0; y < height; y += 1) {
+      seamDifferences.push(difference(pixels, indexAt(width - 1, y), indexAt(0, y), channels));
+      centerDifferences.push(difference(pixels, indexAt(63, y), indexAt(64, y), channels));
+      for (let x = 0; x < width - 1; x += 1) {
+        internalDifferences.push(difference(pixels, indexAt(x, y), indexAt(x + 1, y), channels));
+      }
+    }
+    for (let x = 0; x < width; x += 1) {
+      seamDifferences.push(difference(pixels, indexAt(x, height - 1), indexAt(x, 0), channels));
+      centerDifferences.push(difference(pixels, indexAt(x, 63), indexAt(x, 64), channels));
+      for (let y = 0; y < height - 1; y += 1) {
+        internalDifferences.push(difference(pixels, indexAt(x, y), indexAt(x, y + 1), channels));
+      }
+    }
+
+    const internalMean = mean(internalDifferences);
+    return {
+      seamRatio: mean(seamDifferences) / internalMean,
+      centerRatio: mean(centerDifferences) / internalMean,
+    };
+  };
+
+  const colorRatios = seamRatios(colorPixels, 3);
+  const roughnessRatios = seamRatios(roughnessPixels, 1);
+  assert.ok(colorRatios.seamRatio <= 1.75, `color seam ratio ${colorRatios.seamRatio} is too high`);
+  assert.ok(
+    roughnessRatios.seamRatio <= 1.75,
+    `roughness seam ratio ${roughnessRatios.seamRatio} is too high`,
+  );
+  assert.ok(colorRatios.centerRatio <= 1.75, "color map has a visible center cross");
+  assert.ok(roughnessRatios.centerRatio <= 1.75, "roughness map has a visible center cross");
+});
+
+test("creates broad connected yellow-brown oxidation regions", () => {
+  const width = APPEARANCE_WIDTH;
+  const height = APPEARANCE_HEIGHT;
+  const colorPixels = createAgedIronPixels(width, height, APPEARANCE_SEED);
+  const remaining = new Set<string>();
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+      if (isOxidationPixel(colorPixels, index)) remaining.add(`${x},${y}`);
+    }
+  }
+
+  const oxidationPixels = remaining.size;
+  let largestRegion = 0;
+  while (remaining.size > 0) {
+    const start = remaining.values().next().value as string;
+    const queue = [start];
+    let regionSize = 0;
+    remaining.delete(start);
+
+    while (queue.length > 0) {
+      const coordinate = queue.pop() as string;
+      const [x, y] = coordinate.split(",").map(Number);
+      regionSize += 1;
+      for (const [offsetX, offsetY] of [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ]) {
+        const neighbor = `${x + offsetX},${y + offsetY}`;
+        if (remaining.delete(neighbor)) queue.push(neighbor);
+      }
+    }
+    largestRegion = Math.max(largestRegion, regionSize);
+  }
+
+  const coverage = oxidationPixels / (width * height);
+  const largestRegionCoverage = largestRegion / (width * height);
+  assert.ok(coverage >= 0.2, `oxidation coverage ${coverage} is below 20%`);
+  assert.ok(coverage <= 0.45, `oxidation coverage ${coverage} is above 45%`);
+  assert.ok(
+    largestRegionCoverage >= 0.12,
+    `largest oxidation region ${largestRegionCoverage} is below 12%`,
+  );
+});
+
+test("maps oxidation and patina color regions to appropriately higher roughness", () => {
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(
+    APPEARANCE_WIDTH,
+    APPEARANCE_HEIGHT,
+    APPEARANCE_SEED,
+  );
+  const baseRoughness: number[] = [];
+  const oxidationRoughness: number[] = [];
+  const patinaRoughness: number[] = [];
+
+  for (let index = 0; index < colorPixels.length; index += 4) {
+    const roughness = roughnessPixels[index];
+    if (roughness <= 190 || colorPixels[index] <= 42) continue;
+    if (isPatinaPixel(colorPixels, index)) patinaRoughness.push(roughness);
+    else if (isOxidationPixel(colorPixels, index)) oxidationRoughness.push(roughness);
+    else baseRoughness.push(roughness);
+  }
+
+  assert.ok(baseRoughness.length > 0, "fixture has no base iron region");
+  assert.ok(oxidationRoughness.length > 0, "fixture has no oxidation region");
+  assert.ok(patinaRoughness.length > 0, "fixture has no patina region");
+  const baseMean = mean(baseRoughness);
+  const oxidationMean = mean(oxidationRoughness);
+  const patinaMean = mean(patinaRoughness);
+  assert.ok(
+    oxidationMean >= baseMean + 12,
+    `oxidation roughness ${oxidationMean} is not sufficiently above base ${baseMean}`,
+  );
+  assert.ok(
+    patinaMean >= baseMean + 18,
+    `patina roughness ${patinaMean} is not sufficiently above base ${baseMean}`,
+  );
+
+  const alignmentScore = (horizontalShift: number): number => {
+    const weatheringLevels: number[] = [];
+    const sampledRoughness: number[] = [];
+
+    for (let y = 0; y < APPEARANCE_HEIGHT; y += 1) {
+      for (let x = 0; x < APPEARANCE_WIDTH; x += 1) {
+        const colorIndex = (y * APPEARANCE_WIDTH + x) * 4;
+        const red = colorPixels[colorIndex];
+        if (red <= 42 || red >= 150) continue;
+
+        const shiftedX = (x + horizontalShift) % APPEARANCE_WIDTH;
+        const roughnessIndex = (y * APPEARANCE_WIDTH + shiftedX) * 4;
+        weatheringLevels.push(
+          isPatinaPixel(colorPixels, colorIndex)
+            ? 2
+            : isOxidationPixel(colorPixels, colorIndex)
+              ? 1
+              : 0,
+        );
+        sampledRoughness.push(roughnessPixels[roughnessIndex]);
+      }
+    }
+
+    const weatheringMean = mean(weatheringLevels);
+    const roughnessMean = mean(sampledRoughness);
+    let covariance = 0;
+    let weatheringVariance = 0;
+    let roughnessVariance = 0;
+
+    for (let index = 0; index < weatheringLevels.length; index += 1) {
+      const weatheringDelta = weatheringLevels[index] - weatheringMean;
+      const roughnessDelta = sampledRoughness[index] - roughnessMean;
+      covariance += weatheringDelta * roughnessDelta;
+      weatheringVariance += weatheringDelta * weatheringDelta;
+      roughnessVariance += roughnessDelta * roughnessDelta;
+    }
+
+    return covariance / Math.sqrt(weatheringVariance * roughnessVariance);
+  };
+  const assertAligned = (score: number): void => {
+    assert.ok(score >= 0.68, `roughness alignment score ${score} is below 0.68`);
+  };
+  const alignedScore = alignmentScore(0);
+  const shiftedControlScore = alignmentScore(8);
+
+  assert.doesNotThrow(() => assertAligned(alignedScore));
+  assert.throws(() => assertAligned(shiftedControlScore), /roughness alignment score/);
+  assert.ok(
+    alignedScore >= shiftedControlScore + 0.1,
+    `aligned score ${alignedScore} is not clearly above shifted control ${shiftedControlScore}`,
+  );
+});
+
 test("keeps dark details visible while providing aged contrast", () => {
-  const values = luminances(createAgedIronPixels(64, 64, 51));
+  const values = luminances(
+    createAgedIronPixels(APPEARANCE_WIDTH, APPEARANCE_HEIGHT, APPEARANCE_SEED),
+  );
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
 
@@ -202,10 +519,10 @@ test("guarantees visible contrast across supported seeds and dimensions", () => 
 });
 
 test("varies scratch phase and orientation without a fixed horizontal lattice", () => {
-  const width = 128;
-  const height = 128;
+  const width = APPEARANCE_WIDTH;
+  const height = APPEARANCE_HEIGHT;
   const scratchRegionSize = 16;
-  const pixels = createAgedIronPixels(width, height, 51);
+  const pixels = createAgedIronPixels(width, height, APPEARANCE_SEED);
   const brightPixels = new Set<string>();
 
   for (let y = 0; y < height; y += 1) {

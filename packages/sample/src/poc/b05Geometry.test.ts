@@ -5,13 +5,20 @@ import {
   B05_ARCH_CENTER_X,
   B05_ARCH_CENTER_Y,
   B05_ARCH_RADIUS,
+  B05_BAR_COUNT,
   B05_BAR_RADIUS,
   B05_LEAF_WIDTH,
+  B05_PANEL_HEIGHT,
+  B05_STILE_WIDTH,
   B05_TOTAL_HEIGHT,
   archYAtX,
   createB05GateGeometry,
   createB05LeafGeometry,
 } from "./b05Geometry.ts";
+import {
+  B05_WORLD_UNITS_PER_TEXTURE_REPEAT,
+  projectB05TextureUv,
+} from "./b05TextureMapping.ts";
 
 const EPSILON = 1e-9;
 
@@ -103,11 +110,42 @@ test("rejects x outside the canonical leaf domain", () => {
   }
 });
 
-test("includes bounded panel, divider, and decorative relief blocks", () => {
+test("matches the approved framed gate leaf structure", () => {
   const leaf = createB05LeafGeometry();
-  const members = [leaf.lowerPanel, leaf.divider, ...leaf.reliefBlocks];
+  const members = [
+    leaf.lowerPanel,
+    leaf.panelInset,
+    leaf.lowerRail,
+    leaf.middleRail,
+    leaf.outerStile,
+    leaf.centerStile,
+    ...leaf.panelTrim,
+  ];
 
-  assert.ok(leaf.reliefBlocks.length >= 2);
+  assert.equal(leaf.bars.length, B05_BAR_COUNT);
+  assert.equal(B05_BAR_COUNT, 4);
+  assert.equal(leaf.panelTrim.length, 4);
+  assert.equal(leaf.barCollars.length, 3);
+  assert.equal(leaf.plaqueTrim.length, 6);
+  assert.ok(B05_PANEL_HEIGHT / B05_TOTAL_HEIGHT >= 0.28);
+  assert.ok(leaf.panelInset.size[0] < leaf.lowerPanel.size[0]);
+  assert.ok(leaf.panelInset.size[1] < leaf.lowerPanel.size[1]);
+  assert.ok(leaf.panelInset.position[2] > leaf.lowerPanel.position[2]);
+  assert.equal(leaf.outerStile.size[0], B05_STILE_WIDTH);
+  assert.equal(leaf.centerStile.size[0], B05_STILE_WIDTH);
+  assert.equal(leaf.centerStile.size[1], B05_TOTAL_HEIGHT);
+  assert.ok(leaf.middleRail.position[1] > leaf.lowerRail.position[1]);
+
+  for (const collar of leaf.barCollars) {
+    const [x, y] = collar.position;
+    assert.ok(collar.radius > B05_BAR_RADIUS);
+    assert.ok(collar.height > 0);
+    assert.ok(x - collar.radius >= leaf.bounds.minX);
+    assert.ok(x + collar.radius <= leaf.bounds.maxX);
+    assert.ok(y - collar.height / 2 >= leaf.bounds.minY);
+    assert.ok(y + collar.height / 2 <= leaf.bounds.maxY);
+  }
+
   for (const member of members) {
     const [x, y] = member.position;
     const [width, height] = member.size;
@@ -118,6 +156,39 @@ test("includes bounded panel, divider, and decorative relief blocks", () => {
     assert.ok(x + width / 2 <= leaf.bounds.maxX + EPSILON);
     assert.ok(y - height / 2 >= leaf.bounds.minY - EPSILON);
     assert.ok(y + height / 2 <= leaf.bounds.maxY + EPSILON);
+  }
+
+  for (const edge of leaf.plaqueTrim) {
+    const [x, y] = edge.position;
+    assert.ok(edge.rotation?.every(Number.isFinite));
+    assert.ok(edge.size.every((value) => value > 0));
+    assert.ok(x >= leaf.bounds.minX && x <= leaf.bounds.maxX);
+    assert.ok(y >= leaf.bounds.minY && y <= B05_PANEL_HEIGHT);
+  }
+});
+
+test("projects different members into one consistent world-scale texture space", () => {
+  const leftMemberUv = projectB05TextureUv([0.5, 1.2, 0], [0, 0, 0]);
+  const offsetMemberUv = projectB05TextureUv([-0.5, 1.2, 0], [1, 0, 0]);
+  const oneRepeatUv = projectB05TextureUv(
+    [B05_WORLD_UNITS_PER_TEXTURE_REPEAT, B05_WORLD_UNITS_PER_TEXTURE_REPEAT, 0],
+    [0, 0, 0],
+  );
+
+  assert.deepEqual(leftMemberUv, offsetMemberUv);
+  assert.deepEqual(oneRepeatUv, [1, 1]);
+  assert.ok(B05_WORLD_UNITS_PER_TEXTURE_REPEAT <= 1.2);
+});
+
+test("extends the grille below the middle rail while keeping it above the solid panel", () => {
+  const leaf = createB05LeafGeometry();
+  const lowerRailTop = leaf.lowerRail.position[1] + leaf.lowerRail.size[1] / 2;
+  const middleRailY = leaf.middleRail.position[1];
+
+  for (const bar of leaf.bars) {
+    assert.ok(Math.abs(bar.bottomY - lowerRailTop) <= EPSILON);
+    assert.ok(bar.bottomY < middleRailY);
+    assert.ok(bar.topY > middleRailY);
   }
 });
 
