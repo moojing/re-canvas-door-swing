@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as THREE from "three";
 
-import { createB05BoxMaterialSlots } from "./b05BoxMaterialSlots.ts";
+import {
+  createB05BoxMaterialSlots,
+  ownB05HiddenFrontMaterial,
+  selectB05BoxMaterialSlots,
+} from "./b05BoxMaterialSlots.ts";
 import {
   B05_ARCH_CENTER_X,
   B05_ARCH_CENTER_Y,
@@ -33,26 +37,80 @@ test("suppresses only the BoxGeometry +Z face when generated fronts are active",
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const agedMaterial = { id: "aged" };
   const hiddenFrontMaterial = { id: "hidden-front" };
-
-  assert.deepEqual(
-    geometry.groups.map(({ materialIndex }) => materialIndex),
-    [0, 1, 2, 3, 4, 5],
-  );
-  assert.deepEqual(
-    createB05BoxMaterialSlots(agedMaterial),
-    Array(6).fill(agedMaterial),
-  );
-
   const generatedFrontSlots = createB05BoxMaterialSlots(
     agedMaterial,
     hiddenFrontMaterial,
   );
-  assert.equal(generatedFrontSlots[4], hiddenFrontMaterial);
-  for (const materialIndex of [0, 1, 2, 3, 5]) {
-    assert.equal(generatedFrontSlots[materialIndex], agedMaterial);
+
+  const normals = geometry.getAttribute("normal");
+  const indices = geometry.getIndex();
+  assert.ok(indices);
+
+  for (const group of geometry.groups) {
+    assert.notEqual(group.materialIndex, undefined);
+    const groupNormals = new Set<string>();
+
+    for (let offset = group.start; offset < group.start + group.count; offset += 1) {
+      const vertexIndex = indices.getX(offset);
+      groupNormals.add([
+        normals.getX(vertexIndex),
+        normals.getY(vertexIndex),
+        normals.getZ(vertexIndex),
+      ].join(","));
+    }
+
+    assert.equal(groupNormals.size, 1);
+    const [normal] = groupNormals;
+    const material = generatedFrontSlots[group.materialIndex];
+
+    if (normal === "0,0,1") {
+      assert.equal(material, hiddenFrontMaterial);
+    } else {
+      assert.equal(material, agedMaterial, `unexpected hidden face normal ${normal}`);
+    }
   }
 
   geometry.dispose();
+});
+
+test("selects fallback slots without hiding any face when front resources are null", () => {
+  const agedMaterial = { id: "aged" };
+  const hiddenFrontMaterial = { id: "hidden-front" };
+  const fallback = createB05BoxMaterialSlots(agedMaterial);
+  const generated = createB05BoxMaterialSlots(agedMaterial, hiddenFrontMaterial);
+  const fallbackSelection = selectB05BoxMaterialSlots(null, {
+    fallback,
+    generated,
+  });
+  const generatedSelection = selectB05BoxMaterialSlots({}, {
+    fallback,
+    generated,
+  });
+
+  assert.ok(fallbackSelection.every((material) => material === agedMaterial));
+  assert.equal(generatedSelection[4], hiddenFrontMaterial);
+  assert.equal(
+    generatedSelection.filter((material) => material === agedMaterial).length,
+    5,
+  );
+});
+
+test("disposes an owned hidden-front material exactly once", () => {
+  const material = new THREE.MeshBasicMaterial({ visible: false });
+  const originalDispose = material.dispose.bind(material);
+  let disposeCount = 0;
+  material.dispose = () => {
+    disposeCount += 1;
+    originalDispose();
+  };
+
+  const owner = ownB05HiddenFrontMaterial(material);
+
+  assert.equal(owner.material, material);
+  owner.dispose();
+  owner.dispose();
+  owner.dispose();
+  assert.equal(disposeCount, 1);
 });
 
 test("uses a canonical leaf with its hinge at x=0", () => {

@@ -6,7 +6,10 @@ import { resolveB05FrontUrl } from "./b05FrontImage";
 import { startB05FrontLoad } from "./b05FrontLoader";
 import {
   createB05BoxMaterialSlots,
+  ownB05HiddenFrontMaterial,
+  selectB05BoxMaterialSlots,
   type B05BoxMaterialSlots,
+  type B05HiddenFrontMaterialOwner,
 } from "./b05BoxMaterialSlots";
 import {
   buildB05FrontResourcesFromImage,
@@ -38,7 +41,7 @@ type AgedIronResources = {
   colorTexture: THREE.CanvasTexture;
   roughnessTexture: THREE.CanvasTexture;
   material: THREE.MeshStandardMaterial;
-  hiddenFrontMaterial: THREE.MeshBasicMaterial;
+  hiddenFrontMaterialOwner: B05HiddenFrontMaterialOwner<THREE.MeshBasicMaterial>;
   fallbackBoxMaterials: B05BoxMaterialSlots<THREE.Material>;
   generatedFrontBoxMaterials: B05BoxMaterialSlots<THREE.Material>;
 };
@@ -91,17 +94,19 @@ const createAgedIronResources = () => {
     metalness: 0.58,
     roughness: 1,
   });
-  const hiddenFrontMaterial = new THREE.MeshBasicMaterial({ visible: false });
+  const hiddenFrontMaterialOwner = ownB05HiddenFrontMaterial(
+    new THREE.MeshBasicMaterial({ visible: false }),
+  );
 
   return {
     colorTexture,
     roughnessTexture,
     material,
-    hiddenFrontMaterial,
+    hiddenFrontMaterialOwner,
     fallbackBoxMaterials: createB05BoxMaterialSlots<THREE.Material>(material),
     generatedFrontBoxMaterials: createB05BoxMaterialSlots<THREE.Material>(
       material,
-      hiddenFrontMaterial,
+      hiddenFrontMaterialOwner.material,
     ),
   };
 };
@@ -204,7 +209,7 @@ const ArchedGate = ({ progress }: { progress: number }) => {
 
     return () => {
       effectResources.material.dispose();
-      effectResources.hiddenFrontMaterial.dispose();
+      effectResources.hiddenFrontMaterialOwner.dispose();
       effectResources.colorTexture.dispose();
       effectResources.roughnessTexture.dispose();
     };
@@ -250,9 +255,10 @@ const ArchedGate = ({ progress }: { progress: number }) => {
   if (!resources) return null;
 
   const scene = createB05FrontSceneDescriptor(frontResources);
-  const boxMaterials = frontResources
-    ? resources.generatedFrontBoxMaterials
-    : resources.fallbackBoxMaterials;
+  const boxMaterials = selectB05BoxMaterialSlots(frontResources, {
+    fallback: resources.fallbackBoxMaterials,
+    generated: resources.generatedFrontBoxMaterials,
+  });
 
   return (
     <group>
