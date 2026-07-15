@@ -100,14 +100,30 @@ export const extractB05FrontCrop = (
   }
 
   const output = new Uint8ClampedArray(crop.width * crop.height * 4);
+  const cropRowByteLength = crop.width * 4;
+
+  if (!crop.flipX) {
+    for (let destinationY = 0; destinationY < crop.height; destinationY += 1) {
+      const sourceRowStart = ((crop.y + destinationY) * sourceWidth + crop.x) * 4;
+      const destinationRowStart = destinationY * cropRowByteLength;
+      output.set(
+        source.subarray(sourceRowStart, sourceRowStart + cropRowByteLength),
+        destinationRowStart,
+      );
+    }
+    return output;
+  }
+
   for (let destinationY = 0; destinationY < crop.height; destinationY += 1) {
+    const sourceRowStart = ((crop.y + destinationY) * sourceWidth + crop.x) * 4;
+    const destinationRowStart = destinationY * cropRowByteLength;
     for (let destinationX = 0; destinationX < crop.width; destinationX += 1) {
-      const sourceX = crop.flipX
-        ? crop.x + crop.width - 1 - destinationX
-        : crop.x + destinationX;
-      const sourceIndex = ((crop.y + destinationY) * sourceWidth + sourceX) * 4;
-      const destinationIndex = (destinationY * crop.width + destinationX) * 4;
-      output.set(source.subarray(sourceIndex, sourceIndex + 4), destinationIndex);
+      const sourceIndex = sourceRowStart + (crop.width - 1 - destinationX) * 4;
+      const destinationIndex = destinationRowStart + destinationX * 4;
+      output[destinationIndex] = source[sourceIndex];
+      output[destinationIndex + 1] = source[sourceIndex + 1];
+      output[destinationIndex + 2] = source[sourceIndex + 2];
+      output[destinationIndex + 3] = source[sourceIndex + 3];
     }
   }
 
