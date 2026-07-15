@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createAgedIronPixels } from "./b05ProceduralMaterials.ts";
+import {
+  createAgedIronMaterialPixels,
+  createAgedIronPixels,
+  validateAgedIronInput,
+  type AgedIronMaterialPixels,
+} from "./b05ProceduralMaterials.ts";
+
+type MaterialGenerator = (
+  width: number,
+  height: number,
+  seed: number,
+) => AgedIronMaterialPixels;
+
+type ColorGenerator = (width: number, height: number, seed: number) => Uint8ClampedArray;
 
 const checksum = (pixels: Uint8ClampedArray): number =>
   pixels.reduce(
@@ -23,35 +36,94 @@ const luminances = (pixels: Uint8ClampedArray): number[] => {
   return values;
 };
 
-test("aged iron is deterministic for a seed and changes across seeds", () => {
-  const first = createAgedIronPixels(64, 64, 51);
-  const second = createAgedIronPixels(64, 64, 51);
-  const alternate = createAgedIronPixels(64, 64, 52);
+test("returns exact RGBA byte buffers for both material maps", () => {
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(16, 8, 51);
 
-  assert.equal(checksum(first), 575_386_821);
-  assert.equal(checksum(first), checksum(second));
-  assert.deepEqual(first, second);
-  assert.notEqual(checksum(first), checksum(alternate));
+  assert.ok(colorPixels instanceof Uint8ClampedArray);
+  assert.ok(roughnessPixels instanceof Uint8ClampedArray);
+  assert.equal(colorPixels.length, 16 * 8 * 4);
+  assert.equal(roughnessPixels.length, 16 * 8 * 4);
 });
 
-test("preserves high bits of safe-integer seeds", () => {
-  const lowSeed = createAgedIronPixels(64, 64, 51);
-  const highSeed = createAgedIronPixels(64, 64, 2 ** 32 + 51);
+test("generates deterministic, seed-sensitive color and roughness maps", () => {
+  const first = createAgedIronMaterialPixels(64, 64, 51);
+  const second = createAgedIronMaterialPixels(64, 64, 51);
+  const alternate = createAgedIronMaterialPixels(64, 64, 52);
+  const highSeed = createAgedIronMaterialPixels(64, 64, 2 ** 32 + 51);
 
-  assert.notEqual(checksum(lowSeed), checksum(highSeed));
-  assert.notDeepEqual(lowSeed, highSeed);
-  assert.deepEqual(highSeed, createAgedIronPixels(64, 64, 2 ** 32 + 51));
+  assert.deepEqual(first.colorPixels, second.colorPixels);
+  assert.deepEqual(first.roughnessPixels, second.roughnessPixels);
+  assert.notEqual(checksum(first.colorPixels), checksum(alternate.colorPixels));
+  assert.notEqual(checksum(first.roughnessPixels), checksum(alternate.roughnessPixels));
+  assert.notEqual(checksum(first.colorPixels), checksum(highSeed.colorPixels));
+  assert.notEqual(checksum(first.roughnessPixels), checksum(highSeed.roughnessPixels));
+  assert.deepEqual(
+    highSeed,
+    createAgedIronMaterialPixels(64, 64, 2 ** 32 + 51),
+  );
 });
 
-test("returns an exact, fully opaque RGBA byte buffer", () => {
-  const pixels = createAgedIronPixels(16, 8, 51);
+test("makes both maps fully opaque and roughness grayscale", () => {
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(16, 8, 51);
 
-  assert.ok(pixels instanceof Uint8ClampedArray);
-  assert.equal(pixels.length, 16 * 8 * 4);
-
-  for (let index = 3; index < pixels.length; index += 4) {
-    assert.equal(pixels[index], 255);
+  for (let index = 0; index < colorPixels.length; index += 4) {
+    assert.equal(colorPixels[index + 3], 255);
+    assert.equal(roughnessPixels[index], roughnessPixels[index + 1]);
+    assert.equal(roughnessPixels[index], roughnessPixels[index + 2]);
+    assert.equal(roughnessPixels[index + 3], 255);
   }
+});
+
+test("keeps createAgedIronPixels as a color-map compatibility wrapper", () => {
+  const paired = createAgedIronMaterialPixels(32, 24, 51);
+
+  assert.deepEqual(createAgedIronPixels(32, 24, 51), paired.colorPixels);
+});
+
+test("aligns charcoal pits and worn scratches with their roughness", () => {
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(128, 128, 51);
+  const pitRoughness: number[] = [];
+  const scratchRoughness: number[] = [];
+
+  for (let index = 0; index < colorPixels.length; index += 4) {
+    const red = colorPixels[index];
+    const green = colorPixels[index + 1];
+    const blue = colorPixels[index + 2];
+    const isCharcoalPit = red <= 42 && green <= 38 && blue <= 34;
+    const isWornScratch = red >= 165 && green >= 140 && blue >= 95 && blue <= 150;
+
+    assert.equal(isCharcoalPit && isWornScratch, false);
+    if (isCharcoalPit) pitRoughness.push(roughnessPixels[index]);
+    if (isWornScratch) scratchRoughness.push(roughnessPixels[index]);
+  }
+
+  assert.ok(pitRoughness.length > 0, "fixture has no charcoal pit");
+  assert.ok(scratchRoughness.length > 0, "fixture has no worn scratch");
+  assert.ok(pitRoughness.every((value) => value >= 225));
+  assert.ok(scratchRoughness.every((value) => value >= 140 && value <= 190));
+
+  const pitMean = pitRoughness.reduce((total, value) => total + value, 0) / pitRoughness.length;
+  const scratchMean =
+    scratchRoughness.reduce((total, value) => total + value, 0) / scratchRoughness.length;
+  assert.ok(
+    pitMean >= scratchMean + 40,
+    `pit mean ${pitMean} is not at least 40 above scratch mean ${scratchMean}`,
+  );
+});
+
+test("provides meaningful roughness variation without fully glossy values", () => {
+  const { roughnessPixels } = createAgedIronMaterialPixels(128, 128, 51);
+  const values: number[] = [];
+
+  for (let index = 0; index < roughnessPixels.length; index += 4) {
+    values.push(roughnessPixels[index]);
+  }
+
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  assert.ok(minimum >= 140, `minimum roughness byte ${minimum} is too glossy`);
+  assert.ok(maximum - minimum >= 50, `roughness spread ${maximum - minimum} is too small`);
+  assert.ok(new Set(values).size >= 24, "roughness map has too few distinct values");
 });
 
 test("keeps dark details visible while providing aged contrast", () => {
@@ -185,7 +257,7 @@ test("varies scratch phase and orientation without a fixed horizontal lattice", 
   );
 });
 
-test("rejects dimensions that cannot produce a well-formed buffer", () => {
+test("both generators reject every invalid dimension and seed with RangeError", () => {
   const invalidDimensions: ReadonlyArray<readonly [number, number]> = [
     [0, 8],
     [8, 0],
@@ -195,11 +267,47 @@ test("rejects dimensions that cannot produce a well-formed buffer", () => {
     [8, 1.5],
     [Number.NaN, 8],
     [8, Number.POSITIVE_INFINITY],
+    [Number.MAX_SAFE_INTEGER + 1, 1],
+    [1, Number.MAX_SAFE_INTEGER + 1],
     [1, 1],
-    [1_000_000, 1_000_000],
+    [16_777_217, 1],
+  ];
+  const invalidSeeds = [
+    Number.NaN,
+    Number.NEGATIVE_INFINITY,
+    Number.POSITIVE_INFINITY,
+    1.5,
+    Number.MIN_SAFE_INTEGER - 1,
+    Number.MAX_SAFE_INTEGER + 1,
+  ];
+  const generators: ReadonlyArray<MaterialGenerator | ColorGenerator> = [
+    createAgedIronMaterialPixels,
+    createAgedIronPixels,
   ];
 
-  for (const [width, height] of invalidDimensions) {
-    assert.throws(() => createAgedIronPixels(width, height, 51), RangeError);
+  for (const generator of generators) {
+    for (const [width, height] of invalidDimensions) {
+      assert.throws(() => generator(width, height, 51), RangeError);
+    }
+    for (const seed of invalidSeeds) {
+      assert.throws(() => generator(8, 8, seed), RangeError);
+    }
   }
+});
+
+test("both generators accept the minimum two-pixel dimensions", () => {
+  for (const [width, height] of [
+    [1, 2],
+    [2, 1],
+  ] as const) {
+    assert.equal(createAgedIronPixels(width, height, 51).length, 8);
+    const paired = createAgedIronMaterialPixels(width, height, 51);
+    assert.equal(paired.colorPixels.length, 8);
+    assert.equal(paired.roughnessPixels.length, 8);
+  }
+});
+
+test("validation accepts the exact pixel limit and rejects the first oversized count", () => {
+  assert.doesNotThrow(() => validateAgedIronInput(16_777_216, 1, 51));
+  assert.throws(() => validateAgedIronInput(16_777_217, 1, 51), RangeError);
 });
