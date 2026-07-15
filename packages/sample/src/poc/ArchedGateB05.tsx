@@ -19,6 +19,12 @@ const ARCH_CURVE = new THREE.CatmullRomCurve3(
   LEAF_GEOMETRY.archPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)),
 );
 
+type AgedIronResources = {
+  colorTexture: THREE.CanvasTexture;
+  roughnessTexture: THREE.CanvasTexture;
+  material: THREE.MeshStandardMaterial;
+};
+
 const createTexture = (pixels: Uint8ClampedArray, encoding: THREE.TextureEncoding) => {
   const canvas = document.createElement("canvas");
   canvas.width = TEXTURE_SIZE;
@@ -91,24 +97,28 @@ const CanonicalArchedLeaf = ({ material }: { material: THREE.MeshStandardMateria
 );
 
 const ArchedGate = ({ progress }: { progress: number }) => {
-  const [resources] = useState(createAgedIronResources);
+  const [resources, setResources] = useState<AgedIronResources | null>(null);
   const leftHingeRef = useRef<THREE.Group>(null);
   const rightHingeRef = useRef<THREE.Group>(null);
   const motion = getB05MotionState(progress);
 
-  useEffect(
-    () => () => {
-      resources.material.dispose();
-      resources.colorTexture.dispose();
-      resources.roughnessTexture.dispose();
-    },
-    [resources],
-  );
+  useEffect(() => {
+    const effectResources = createAgedIronResources();
+    setResources(effectResources);
+
+    return () => {
+      effectResources.material.dispose();
+      effectResources.colorTexture.dispose();
+      effectResources.roughnessTexture.dispose();
+    };
+  }, []);
 
   useFrame(() => {
     if (leftHingeRef.current) leftHingeRef.current.rotation.y = motion.leftAngle;
     if (rightHingeRef.current) rightHingeRef.current.rotation.y = motion.rightAngle;
   });
+
+  if (!resources) return null;
 
   return (
     <group>
