@@ -36,6 +36,11 @@ type AgedIronResources = {
   material: THREE.MeshStandardMaterial;
 };
 
+type FrontResources = B05FrontResources<
+  THREE.CanvasTexture,
+  THREE.MeshBasicMaterial
+>;
+
 const createTexture = (pixels: Uint8ClampedArray, encoding: THREE.TextureEncoding) => {
   const canvas = document.createElement("canvas");
   canvas.width = B05_OFFICIAL_APPEARANCE_CONFIG.textureSize;
@@ -167,7 +172,7 @@ const CanonicalArchedLeaf = ({
 
 const ArchedGate = ({ progress }: { progress: number }) => {
   const [resources, setResources] = useState<AgedIronResources | null>(null);
-  const [frontResources, setFrontResources] = useState<B05FrontResources | null>(null);
+  const [frontResources, setFrontResources] = useState<FrontResources | null>(null);
   const frontLoadGenerationRef = useRef(0);
   const leftHingeRef = useRef<THREE.Group>(null);
   const rightHingeRef = useRef<THREE.Group>(null);
@@ -187,7 +192,7 @@ const ArchedGate = ({ progress }: { progress: number }) => {
   useEffect(() => {
     const generation = frontLoadGenerationRef.current + 1;
     frontLoadGenerationRef.current = generation;
-    let publishedResources: B05FrontResources | null = null;
+    let publishedResources: FrontResources | null = null;
     const cleanup = startB05FrontLoad({
       url: resolveB05FrontUrl(import.meta.env.BASE_URL),
       createImage: () => new Image(),
@@ -196,6 +201,12 @@ const ArchedGate = ({ progress }: { progress: number }) => {
         if (frontLoadGenerationRef.current !== generation) return;
         publishedResources = loadedResources;
         setFrontResources(loadedResources);
+      },
+      onFailure: (error) => {
+        console.warn(
+          "B05 generated front unavailable; procedural fallback is active.",
+          error,
+        );
       },
     });
 

@@ -9,8 +9,8 @@ import {
 import { startB05FrontLoad } from "./b05FrontLoader.ts";
 
 type FakeImage = {
-  onload: (() => void) | null;
-  onerror: (() => void) | null;
+  onload: ((event: Event) => unknown) | null;
+  onerror: ((event: Event | string) => unknown) | null;
   src: string;
 };
 
@@ -125,10 +125,11 @@ test("assigns both handlers before the exact URL and publishes accepted resource
       events.push("publish");
       published.push(loadedResources);
     },
+    onFailure: () => assert.fail("successful loading must not report failure"),
   });
 
   assert.deepEqual(events, ["src:/base/textures/b05/generated-gate-front.png"]);
-  image.onload?.();
+  image.onload?.(new Event("load"));
   assert.deepEqual(events, [
     "src:/base/textures/b05/generated-gate-front.png",
     "resources",
@@ -154,9 +155,10 @@ test("publishes nothing when image loading fails", () => {
     publish: () => {
       publishCount += 1;
     },
+    onFailure: () => {},
   });
 
-  image.onerror?.();
+  image.onerror?.(new Event("error"));
 
   assert.equal(resourceCount, 0);
   assert.equal(publishCount, 0);
@@ -168,6 +170,7 @@ test("publishes nothing when image processing throws", () => {
   const processingError = new Error("processing failed");
   const partialResource = createDisposable();
   let publishCount = 0;
+  const failures: unknown[] = [];
   const cleanup = startB05FrontLoad({
     url: "/processing-error.png",
     createImage: () => image,
@@ -178,17 +181,41 @@ test("publishes nothing when image processing throws", () => {
     publish: () => {
       publishCount += 1;
     },
+    onFailure: (error) => failures.push(error),
   });
 
-  assert.doesNotThrow(() => image.onload?.());
+  assert.doesNotThrow(() => image.onload?.(new Event("load")));
+  image.onload?.(new Event("load"));
   assert.equal(partialResource.disposeCount, 1);
   assert.equal(publishCount, 0);
+  assert.deepEqual(failures, [processingError]);
+  cleanup();
+});
+
+test("reports an image-load failure with asset context exactly once", () => {
+  const image = createFakeImage([]);
+  const failures: unknown[] = [];
+  const cleanup = startB05FrontLoad({
+    url: "/base/textures/b05/generated-gate-front.png",
+    createImage: () => image,
+    createResources,
+    publish: () => assert.fail("failed loading must not publish"),
+    onFailure: (error) => failures.push(error),
+  });
+
+  image.onerror?.(new Event("error"));
+  image.onerror?.(new Event("error"));
+
+  assert.equal(failures.length, 1);
+  assert.ok(failures[0] instanceof Error);
+  assert.match(failures[0].message, /generated front/i);
+  assert.match(failures[0].message, /\/base\/textures\/b05\/generated-gate-front\.png/);
   cleanup();
 });
 
 test("cleanup clears handlers and cancellation disposes a late resource exactly once", () => {
   const image = createFakeImage([]);
-  const lateLoad = () => image.onload?.();
+  const lateLoad = () => image.onload?.(new Event("load"));
   const resources = createResources();
   let publishCount = 0;
   const cleanup = startB05FrontLoad({
@@ -198,8 +225,10 @@ test("cleanup clears handlers and cancellation disposes a late resource exactly 
     publish: () => {
       publishCount += 1;
     },
+    onFailure: (error) => assert.fail(`cancelled loading reported ${String(error)}`),
   });
   const capturedLoad = image.onload;
+  const capturedError = image.onerror;
 
   cleanup();
   cleanup();
@@ -207,7 +236,8 @@ test("cleanup clears handlers and cancellation disposes a late resource exactly 
   assert.equal(image.onload, null);
   assert.equal(image.onerror, null);
   lateLoad();
-  capturedLoad?.();
+  capturedLoad?.(new Event("load"));
+  capturedError?.(new Event("error"));
   assert.equal(publishCount, 0);
   assert.deepEqual(getDisposeCounts(resources), [1, 1, 1, 1]);
 });
@@ -223,10 +253,11 @@ test("does not publish when the owned controller rejects a second resource bundl
     createImage: () => image,
     createResources: () => queue.shift()!,
     publish: (resources) => published.push(resources),
+    onFailure: () => assert.fail("accepted resources must not report failure"),
   });
 
-  image.onload?.();
-  image.onload?.();
+  image.onload?.(new Event("load"));
+  image.onload?.(new Event("load"));
 
   assert.deepEqual(published, [first]);
   assert.deepEqual(getDisposeCounts(first), [0, 0, 0, 0]);

@@ -14,6 +14,56 @@ import { createB05FrontSceneDescriptor } from "./b05FrontScene.ts";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ASSET_DIRECTORY = path.resolve(HERE, "../../public/textures/b05");
 
+const collectLocalTypeScriptDependencies = async (
+  entryPath: string,
+): Promise<Map<string, string>> => {
+  const dependencies = new Map<string, string>();
+
+  const resolveImport = async (
+    importerPath: string,
+    specifier: string,
+  ): Promise<string | null> => {
+    const unresolvedPath = path.resolve(path.dirname(importerPath), specifier);
+    const extension = path.extname(unresolvedPath);
+    if (extension && extension !== ".ts" && extension !== ".tsx") return null;
+
+    const candidates = extension
+      ? [unresolvedPath]
+      : [
+          `${unresolvedPath}.ts`,
+          `${unresolvedPath}.tsx`,
+          path.join(unresolvedPath, "index.ts"),
+          path.join(unresolvedPath, "index.tsx"),
+        ];
+    for (const candidate of candidates) {
+      try {
+        await readFile(candidate, "utf8");
+        return candidate;
+      } catch {
+        // Try the next TypeScript resolution candidate.
+      }
+    }
+    throw new Error(`Unable to resolve ${specifier} imported by ${importerPath}`);
+  };
+
+  const visit = async (filePath: string): Promise<void> => {
+    if (dependencies.has(filePath)) return;
+    const source = await readFile(filePath, "utf8");
+    dependencies.set(filePath, source);
+
+    const importPattern =
+      /\b(?:import|export)\s+(?:type\s+)?(?:[^"'`;]*?\s+from\s+)?["'](\.[^"']+)["']/g;
+    const specifiers = [...source.matchAll(importPattern)].map((match) => match[1]);
+    for (const specifier of specifiers) {
+      const dependencyPath = await resolveImport(filePath, specifier);
+      if (dependencyPath) await visit(dependencyPath);
+    }
+  };
+
+  await visit(entryPath);
+  return dependencies;
+};
+
 test("always describes exactly two procedural leaves with no stationary environment", () => {
   const scene = createB05FrontSceneDescriptor(null);
 
@@ -87,7 +137,7 @@ test("composes crop reversal and leaf mirroring exactly once", () => {
     B05_FRONT_IMAGE.rightCrop.x,
   ];
   const orientInWorld = (endpoints: number[], mirrorX: boolean) =>
-    mirrorX ? endpoints.toReversed() : endpoints;
+    mirrorX ? [...endpoints].reverse() : endpoints;
 
   assert.deepEqual(leftLocalOuterToCenter, [44, 367]);
   assert.deepEqual(rightLocalOuterToCenter, [691, 368]);
@@ -99,21 +149,21 @@ test("the generated B05 asset directory contains only the approved front", async
   assert.deepEqual(await readdir(ASSET_DIRECTORY), ["generated-gate-front.png"]);
 });
 
-test("B05 front dependencies contain no gallery, game-frame, data, or remote paths", async () => {
-  const dependencyNames = [
-    "b05FrontImage.ts",
-    "b05FrontResources.ts",
-    "b05FrontLoader.ts",
-    "b05FrontScene.ts",
-    "b05Geometry.ts",
-    "b05Motion.ts",
-    "b05ProceduralMaterials.ts",
-    "b05TextureMapping.ts",
-    "ArchedGateB05.tsx",
-  ];
-  const dependencySources = await Promise.all(
-    dependencyNames.map((name) => readFile(path.join(HERE, name), "utf8")),
+test("recursively scans every local TypeScript dependency for prohibited provenance", async () => {
+  const dependencies = await collectLocalTypeScriptDependencies(
+    path.join(HERE, "ArchedGateB05.tsx"),
   );
+  const dependencyNames = [...dependencies.keys()].map((filePath) =>
+    path.basename(filePath),
+  );
+  for (const expectedName of [
+    "b05FrontLoader.ts",
+    "b05FrontResources.ts",
+    "b05FrontImage.ts",
+    "b05FrontScene.ts",
+  ]) {
+    assert.ok(dependencyNames.includes(expectedName), `${expectedName} was not traversed`);
+  }
   const forbidden = [
     /gallery/i,
     /game[-_/ ]?frames?/i,
@@ -121,9 +171,9 @@ test("B05 front dependencies contain no gallery, game-frame, data, or remote pat
     /https?:\/\//i,
   ];
 
-  for (const [index, source] of dependencySources.entries()) {
+  for (const [filePath, source] of dependencies) {
     for (const pattern of forbidden) {
-      assert.equal(pattern.test(source), false, `${dependencyNames[index]} matched ${pattern}`);
+      assert.equal(pattern.test(source), false, `${path.basename(filePath)} matched ${pattern}`);
     }
   }
 });
