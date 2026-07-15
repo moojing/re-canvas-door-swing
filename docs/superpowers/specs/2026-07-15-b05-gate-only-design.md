@@ -14,7 +14,8 @@ Render only the two B05 iron gate leaves, without visible surrounding posts or a
 
 ## Verification
 
-- At progress `0`, only the paired gate leaves are visible.
+- At progress `0`, the 3D scene geometry contains only the paired gate leaves; the page header and animation controls remain visible.
 - No vertical post or horizontal threshold appears beside or below the gate.
 - At progress around `0.5`, both leaves still rotate inward around their original outer hinge positions.
+- The aged-iron material, neutral fill light, black background, camera motion, fade, and animation controls remain visually and behaviorally unchanged.
 - B05 tests, lint, production build, and `git diff --check` pass with no new errors.
