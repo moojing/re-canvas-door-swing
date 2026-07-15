@@ -4,13 +4,12 @@ import * as THREE from "three";
 
 import {
   B05_BAR_RADIUS,
-  B05_LEAF_WIDTH,
   createB05GateGeometry,
   createB05LeafGeometry,
   type B05BoxMember,
 } from "./b05Geometry";
 import { B05_DURATION_MS, getB05MotionState } from "./b05Motion";
-import { createAgedIronPixels } from "./b05ProceduralMaterials";
+import { createAgedIronMaterialPixels } from "./b05ProceduralMaterials";
 
 const TEXTURE_SIZE = 128;
 const TEXTURE_SEED = 51;
@@ -20,8 +19,7 @@ const ARCH_CURVE = new THREE.CatmullRomCurve3(
   LEAF_GEOMETRY.archPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)),
 );
 
-const createAgedIronTexture = () => {
-  const pixels = createAgedIronPixels(TEXTURE_SIZE, TEXTURE_SIZE, TEXTURE_SEED);
+const createTexture = (pixels: Uint8ClampedArray, encoding: THREE.TextureEncoding) => {
   const canvas = document.createElement("canvas");
   canvas.width = TEXTURE_SIZE;
   canvas.height = TEXTURE_SIZE;
@@ -35,7 +33,7 @@ const createAgedIronTexture = () => {
   context.putImageData(imageData, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.encoding = THREE.sRGBEncoding;
+  texture.encoding = encoding;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(3, 4);
@@ -45,85 +43,67 @@ const createAgedIronTexture = () => {
   return texture;
 };
 
-const IronBox = ({
-  member,
-  texture,
-  color = "#ffffff",
-}: {
+const createAgedIronResources = () => {
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(
+    TEXTURE_SIZE,
+    TEXTURE_SIZE,
+    TEXTURE_SEED,
+  );
+  const colorTexture = createTexture(colorPixels, THREE.sRGBEncoding);
+  const roughnessTexture = createTexture(roughnessPixels, THREE.LinearEncoding);
+  const material = new THREE.MeshStandardMaterial({
+    map: colorTexture,
+    roughnessMap: roughnessTexture,
+    color: 0xffffff,
+    metalness: 0.58,
+    roughness: 1,
+  });
+
+  return { colorTexture, roughnessTexture, material };
+};
+
+const IronBox = ({ member, material }: {
   member: B05BoxMember;
-  texture: THREE.Texture;
-  color?: string;
+  material: THREE.MeshStandardMaterial;
 }) => (
-  <mesh position={[...member.position]}>
+  <mesh position={[...member.position]} material={material}>
     <boxGeometry args={[...member.size]} />
-    <meshStandardMaterial
-      map={texture}
-      color={color}
-      metalness={0.74}
-      roughness={0.68}
-    />
   </mesh>
 );
 
-const CanonicalArchedLeaf = ({ texture }: { texture: THREE.Texture }) => (
+const CanonicalArchedLeaf = ({ material }: { material: THREE.MeshStandardMaterial }) => (
   <group>
-    <IronBox member={LEAF_GEOMETRY.lowerPanel} texture={texture} color="#a68d78" />
-    <IronBox member={LEAF_GEOMETRY.divider} texture={texture} color="#cab69b" />
+    <IronBox member={LEAF_GEOMETRY.lowerPanel} material={material} />
+    <IronBox member={LEAF_GEOMETRY.divider} material={material} />
 
     {LEAF_GEOMETRY.bars.map((bar, index) => (
-      <IronBox
-        key={`bar-${index}`}
-        member={bar}
-        texture={texture}
-        color={index % 2 === 0 ? "#a9947f" : "#887767"}
-      />
+      <IronBox key={`bar-${index}`} member={bar} material={material} />
     ))}
 
-    <mesh>
+    <mesh material={material}>
       <tubeGeometry args={[ARCH_CURVE, 64, B05_BAR_RADIUS * 1.35, 8, false]} />
-      <meshStandardMaterial
-        map={texture}
-        color="#b49d83"
-        metalness={0.78}
-        roughness={0.62}
-      />
     </mesh>
 
     {LEAF_GEOMETRY.reliefBlocks.map((block, index) => (
-      <IronBox
-        key={`relief-${index}`}
-        member={block}
-        texture={texture}
-        color={["#d0a36f", "#8e735c", "#b9865d"][index]}
-      />
+      <IronBox key={`relief-${index}`} member={block} material={material} />
     ))}
-  </group>
-);
-
-const GateFrame = () => (
-  <group>
-    <mesh position={[-B05_LEAF_WIDTH - 0.18, 2.45, -0.08]}>
-      <boxGeometry args={[0.3, 5.35, 0.42]} />
-      <meshStandardMaterial color="#181411" metalness={0.55} roughness={0.9} />
-    </mesh>
-    <mesh position={[B05_LEAF_WIDTH + 0.18, 2.45, -0.08]}>
-      <boxGeometry args={[0.3, 5.35, 0.42]} />
-      <meshStandardMaterial color="#181411" metalness={0.55} roughness={0.9} />
-    </mesh>
-    <mesh position={[0, -0.12, 0]}>
-      <boxGeometry args={[6.4, 0.24, 0.65]} />
-      <meshStandardMaterial color="#15110f" metalness={0.38} roughness={0.96} />
-    </mesh>
   </group>
 );
 
 const ArchedGate = ({ progress }: { progress: number }) => {
-  const [texture] = useState(createAgedIronTexture);
+  const [resources] = useState(createAgedIronResources);
   const leftHingeRef = useRef<THREE.Group>(null);
   const rightHingeRef = useRef<THREE.Group>(null);
   const motion = getB05MotionState(progress);
 
-  useEffect(() => () => texture.dispose(), [texture]);
+  useEffect(
+    () => () => {
+      resources.material.dispose();
+      resources.colorTexture.dispose();
+      resources.roughnessTexture.dispose();
+    },
+    [resources],
+  );
 
   useFrame(() => {
     if (leftHingeRef.current) leftHingeRef.current.rotation.y = motion.leftAngle;
@@ -132,15 +112,14 @@ const ArchedGate = ({ progress }: { progress: number }) => {
 
   return (
     <group>
-      <GateFrame />
       <group ref={leftHingeRef} position={[GATE_GEOMETRY.left.hingeX, 0, 0]}>
         <group scale={[GATE_GEOMETRY.left.mirrorX ? -1 : 1, 1, 1]}>
-          <CanonicalArchedLeaf texture={texture} />
+          <CanonicalArchedLeaf material={resources.material} />
         </group>
       </group>
       <group ref={rightHingeRef} position={[GATE_GEOMETRY.right.hingeX, 0, 0]}>
         <group scale={[GATE_GEOMETRY.right.mirrorX ? -1 : 1, 1, 1]}>
-          <CanonicalArchedLeaf texture={texture} />
+          <CanonicalArchedLeaf material={resources.material} />
         </group>
       </group>
     </group>
