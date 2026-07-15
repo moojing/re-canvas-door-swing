@@ -111,6 +111,45 @@ test("aligns charcoal pits and worn scratches with their roughness", () => {
   );
 });
 
+test("aligns forced contrast repair colors with semantic roughness at 1x2", () => {
+  const { colorPixels, roughnessPixels } = createAgedIronMaterialPixels(1, 2, 51);
+  const repairedPit = [26, 24, 21];
+  const repairedScratch = [186, 160, 116];
+  const findPixel = ([red, green, blue]: number[]): number => {
+    for (let index = 0; index < colorPixels.length; index += 4) {
+      if (
+        colorPixels[index] === red &&
+        colorPixels[index + 1] === green &&
+        colorPixels[index + 2] === blue
+      ) {
+        return index;
+      }
+    }
+
+    return -1;
+  };
+  const pitIndex = findPixel(repairedPit);
+  const scratchIndex = findPixel(repairedScratch);
+
+  assert.notEqual(pitIndex, -1, "forced repair did not create a charcoal pit");
+  assert.notEqual(scratchIndex, -1, "forced repair did not create a worn scratch");
+
+  const pitRoughness = roughnessPixels[pitIndex];
+  const scratchRoughness = roughnessPixels[scratchIndex];
+  assert.ok(pitRoughness >= 225, `pit roughness ${pitRoughness} is not matte`);
+  assert.ok(
+    scratchRoughness >= 140 && scratchRoughness <= 190,
+    `scratch roughness ${scratchRoughness} is outside the worn range`,
+  );
+  assert.ok(pitRoughness >= scratchRoughness + 40);
+
+  for (const index of [pitIndex, scratchIndex]) {
+    assert.equal(roughnessPixels[index], roughnessPixels[index + 1]);
+    assert.equal(roughnessPixels[index], roughnessPixels[index + 2]);
+    assert.equal(roughnessPixels[index + 3], 255);
+  }
+});
+
 test("provides meaningful roughness variation without fully glossy values", () => {
   const { roughnessPixels } = createAgedIronMaterialPixels(128, 128, 51);
   const values: number[] = [];
