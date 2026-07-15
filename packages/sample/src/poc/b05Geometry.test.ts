@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as THREE from "three";
 
+import { createB05BoxMaterialSlots } from "./b05BoxMaterialSlots.ts";
 import {
   B05_ARCH_CENTER_X,
   B05_ARCH_CENTER_Y,
@@ -26,6 +28,32 @@ const EPSILON = 1e-9;
 const expectedArchYAtX = (x: number): number =>
   B05_ARCH_CENTER_Y +
   Math.sqrt(B05_ARCH_RADIUS ** 2 - (x - B05_ARCH_CENTER_X) ** 2);
+
+test("suppresses only the BoxGeometry +Z face when generated fronts are active", () => {
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const agedMaterial = { id: "aged" };
+  const hiddenFrontMaterial = { id: "hidden-front" };
+
+  assert.deepEqual(
+    geometry.groups.map(({ materialIndex }) => materialIndex),
+    [0, 1, 2, 3, 4, 5],
+  );
+  assert.deepEqual(
+    createB05BoxMaterialSlots(agedMaterial),
+    Array(6).fill(agedMaterial),
+  );
+
+  const generatedFrontSlots = createB05BoxMaterialSlots(
+    agedMaterial,
+    hiddenFrontMaterial,
+  );
+  assert.equal(generatedFrontSlots[4], hiddenFrontMaterial);
+  for (const materialIndex of [0, 1, 2, 3, 5]) {
+    assert.equal(generatedFrontSlots[materialIndex], agedMaterial);
+  }
+
+  geometry.dispose();
+});
 
 test("uses a canonical leaf with its hinge at x=0", () => {
   const leaf = createB05LeafGeometry();

@@ -5,6 +5,10 @@ import * as THREE from "three";
 import { resolveB05FrontUrl } from "./b05FrontImage";
 import { startB05FrontLoad } from "./b05FrontLoader";
 import {
+  createB05BoxMaterialSlots,
+  type B05BoxMaterialSlots,
+} from "./b05BoxMaterialSlots";
+import {
   buildB05FrontResourcesFromImage,
   type B05FrontResources,
 } from "./b05FrontResources";
@@ -34,6 +38,9 @@ type AgedIronResources = {
   colorTexture: THREE.CanvasTexture;
   roughnessTexture: THREE.CanvasTexture;
   material: THREE.MeshStandardMaterial;
+  hiddenFrontMaterial: THREE.MeshBasicMaterial;
+  fallbackBoxMaterials: B05BoxMaterialSlots<THREE.Material>;
+  generatedFrontBoxMaterials: B05BoxMaterialSlots<THREE.Material>;
 };
 
 type FrontResources = B05FrontResources<
@@ -84,13 +91,24 @@ const createAgedIronResources = () => {
     metalness: 0.58,
     roughness: 1,
   });
+  const hiddenFrontMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
-  return { colorTexture, roughnessTexture, material };
+  return {
+    colorTexture,
+    roughnessTexture,
+    material,
+    hiddenFrontMaterial,
+    fallbackBoxMaterials: createB05BoxMaterialSlots<THREE.Material>(material),
+    generatedFrontBoxMaterials: createB05BoxMaterialSlots<THREE.Material>(
+      material,
+      hiddenFrontMaterial,
+    ),
+  };
 };
 
 const IronBox = ({ member, material }: {
   member: B05BoxMember;
-  material: THREE.MeshStandardMaterial;
+  material: B05BoxMaterialSlots<THREE.Material>;
 }) => (
   <mesh
     position={[...member.position]}
@@ -130,21 +148,23 @@ const GeneratedFront = ({
 
 const CanonicalArchedLeaf = ({
   material,
+  boxMaterials,
   frontMaterial,
 }: {
   material: THREE.MeshStandardMaterial;
+  boxMaterials: B05BoxMaterialSlots<THREE.Material>;
   frontMaterial?: B05FrontPlaneDescriptor<THREE.MeshBasicMaterial>;
 }) => (
   <group>
-    <IronBox member={LEAF_GEOMETRY.lowerPanel} material={material} />
-    <IronBox member={LEAF_GEOMETRY.panelInset} material={material} />
-    <IronBox member={LEAF_GEOMETRY.lowerRail} material={material} />
-    <IronBox member={LEAF_GEOMETRY.middleRail} material={material} />
-    <IronBox member={LEAF_GEOMETRY.outerStile} material={material} />
-    <IronBox member={LEAF_GEOMETRY.centerStile} material={material} />
+    <IronBox member={LEAF_GEOMETRY.lowerPanel} material={boxMaterials} />
+    <IronBox member={LEAF_GEOMETRY.panelInset} material={boxMaterials} />
+    <IronBox member={LEAF_GEOMETRY.lowerRail} material={boxMaterials} />
+    <IronBox member={LEAF_GEOMETRY.middleRail} material={boxMaterials} />
+    <IronBox member={LEAF_GEOMETRY.outerStile} material={boxMaterials} />
+    <IronBox member={LEAF_GEOMETRY.centerStile} material={boxMaterials} />
 
     {LEAF_GEOMETRY.bars.map((bar, index) => (
-      <IronBox key={`bar-${index}`} member={bar} material={material} />
+      <IronBox key={`bar-${index}`} member={bar} material={boxMaterials} />
     ))}
 
     <mesh material={material}>
@@ -155,7 +175,7 @@ const CanonicalArchedLeaf = ({
     </mesh>
 
     {LEAF_GEOMETRY.panelTrim.map((member, index) => (
-      <IronBox key={`panel-trim-${index}`} member={member} material={material} />
+      <IronBox key={`panel-trim-${index}`} member={member} material={boxMaterials} />
     ))}
 
     {LEAF_GEOMETRY.barCollars.map((collar, index) => (
@@ -163,7 +183,7 @@ const CanonicalArchedLeaf = ({
     ))}
 
     {LEAF_GEOMETRY.plaqueTrim.map((member, index) => (
-      <IronBox key={`plaque-trim-${index}`} member={member} material={material} />
+      <IronBox key={`plaque-trim-${index}`} member={member} material={boxMaterials} />
     ))}
 
     {frontMaterial && <GeneratedFront front={frontMaterial} />}
@@ -184,6 +204,7 @@ const ArchedGate = ({ progress }: { progress: number }) => {
 
     return () => {
       effectResources.material.dispose();
+      effectResources.hiddenFrontMaterial.dispose();
       effectResources.colorTexture.dispose();
       effectResources.roughnessTexture.dispose();
     };
@@ -229,6 +250,9 @@ const ArchedGate = ({ progress }: { progress: number }) => {
   if (!resources) return null;
 
   const scene = createB05FrontSceneDescriptor(frontResources);
+  const boxMaterials = frontResources
+    ? resources.generatedFrontBoxMaterials
+    : resources.fallbackBoxMaterials;
 
   return (
     <group>
@@ -241,6 +265,7 @@ const ArchedGate = ({ progress }: { progress: number }) => {
           <group scale={[leaf.mirrorX ? -1 : 1, 1, 1]}>
             <CanonicalArchedLeaf
               material={resources.material}
+              boxMaterials={boxMaterials}
               frontMaterial={leaf.front ?? undefined}
             />
           </group>
