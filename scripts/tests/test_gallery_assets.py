@@ -63,15 +63,38 @@ class GalleryAssetTests(unittest.TestCase):
         (gallery / "gifs").mkdir()
         (gallery / "stills/door.jpg").write_bytes(b"still")
         (gallery / "gifs/door.gif").write_bytes(b"gif")
-        door = {field: f"value-{field}" for field in gallery_assets.FIELDS}
+        door = {
+            "game": "1-1",
+            "code": "c05",
+            "name": "value-name",
+            "variants": "value-variants",
+            "form": "value-form",
+            "material": "value-material",
+            "animation": "value-animation",
+            "accessory": "value-accessory",
+            "csv": "value-csv",
+            "verdict": "✅ value-verdict",
+            "note": "value-note",
+        }
         (gallery / "doors.json").write_text(json.dumps([door]), encoding="utf-8")
         (gallery / "index.html").write_text(door["note"], encoding="utf-8")
+        (gallery / "docs/door-classifications.md").write_text(
+            "\n".join([
+                "# 開門動畫檢查紀錄",
+                "",
+                "## 1-1 1996 Biohazard",
+                "",
+                "| 代碼 | 名稱 | 變體數 | 形式 | 材質 | 動畫 | 配件 | CSV | 核對 | 備註 |",
+                "|------|------|--------|------|------|------|------|-----|------|------|",
+                "| c05 | value-name | value-variants | value-form | value-material | value-animation | value-accessory | value-csv | ✅ value-verdict | value-note |",
+                "",
+            ]),
+            encoding="utf-8",
+        )
         for name in (
-            "door-classifications.md",
             "door-classification-report.md",
             "Doors-Difficulity-Estimation.xlsm.csv",
         ):
-            (main / "docs" / name).write_text(name, encoding="utf-8")
             (gallery / "docs" / name).write_text(name, encoding="utf-8")
         return main, gallery, door
 
@@ -391,8 +414,7 @@ class GalleryAssetTests(unittest.TestCase):
     def test_consistency_skips_hashing_when_local_material_roots_are_absent(self):
         """Report explicit skips for absent local-only material roots."""
         main, gallery, door = self._consistency_fixture()
-        with patch("scripts.gallery_assets.parse_classifications", return_value=[door]):
-            result = gallery_assets.gallery_consistency(main, gallery, expected_count=1)
+        result = gallery_assets.gallery_consistency(main, gallery, expected_count=1)
 
         self.assertEqual(
             result["skipped"],
@@ -417,9 +439,8 @@ class GalleryAssetTests(unittest.TestCase):
         }
         (main / "docs/gallery-video-manifest.json").write_text(json.dumps(payload), encoding="utf-8")
 
-        with patch("scripts.gallery_assets.parse_classifications", return_value=[door]):
-            with self.assertRaisesRegex(AssetError, "expected 318 videos"):
-                gallery_assets.gallery_consistency(main, gallery, expected_count=1)
+        with self.assertRaisesRegex(AssetError, "expected 318 videos"):
+            gallery_assets.gallery_consistency(main, gallery, expected_count=1)
 
     def test_consistency_rejects_truncated_video_manifest(self):
         """Require the complete 318-video inventory when local videos exist."""
@@ -440,9 +461,8 @@ class GalleryAssetTests(unittest.TestCase):
         }
         (main / "docs/gallery-video-manifest.json").write_text(json.dumps(payload), encoding="utf-8")
 
-        with patch("scripts.gallery_assets.parse_classifications", return_value=[door]):
-            with self.assertRaisesRegex(AssetError, "expected 318 videos"):
-                gallery_assets.gallery_consistency(main, gallery, expected_count=1)
+        with self.assertRaisesRegex(AssetError, "expected 318 videos"):
+            gallery_assets.gallery_consistency(main, gallery, expected_count=1)
 
     def test_consistency_rejects_invalid_frame_inventory_totals(self):
         """Require the complete frame count and hash distribution."""
@@ -463,9 +483,30 @@ class GalleryAssetTests(unittest.TestCase):
         }
         (main / "docs/gallery-frame-manifest.json").write_text(json.dumps(payload), encoding="utf-8")
 
-        with patch("scripts.gallery_assets.parse_classifications", return_value=[door]):
-            with self.assertRaisesRegex(AssetError, "expected 12332 frames"):
-                gallery_assets.gallery_consistency(main, gallery, expected_count=1)
+        with self.assertRaisesRegex(AssetError, "expected 12332 frames"):
+            gallery_assets.gallery_consistency(main, gallery, expected_count=1)
+
+    def test_consistency_rejects_tracked_main_repo_duplicates_of_canonical_docs(self):
+        """Fail closed when the main repo reintroduces tracked evaluation copies."""
+        main, gallery, _ = self._consistency_fixture()
+        duplicate = main / "docs/door-classifications.md"
+        duplicate.write_text("duplicate", encoding="utf-8")
+        subprocess.run(
+            [self.git, "add", "docs/door-classifications.md"],
+            cwd=main,
+            check=True,
+        )
+
+        with self.assertRaisesRegex(AssetError, "tracked canonical evaluation docs"):
+            gallery_assets.gallery_consistency(main, gallery, expected_count=1)
+
+    def test_consistency_rejects_missing_gallery_canonical_doc(self):
+        """Fail when the gallery checkout is missing a required canonical doc."""
+        main, gallery, _ = self._consistency_fixture()
+        (gallery / "docs/door-classification-report.md").unlink()
+
+        with self.assertRaisesRegex(AssetError, "gallery canonical doc is missing"):
+            gallery_assets.gallery_consistency(main, gallery, expected_count=1)
 
 
 if __name__ == "__main__":

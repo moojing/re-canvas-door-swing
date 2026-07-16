@@ -28,6 +28,11 @@ FIELDS = (
     "game", "code", "name", "variants", "form", "material",
     "animation", "accessory", "csv", "verdict", "note",
 )
+CANONICAL_EVALUATION_DOCS = (
+    "door-classifications.md",
+    "door-classification-report.md",
+    "Doors-Difficulity-Estimation.xlsm.csv",
+)
 
 
 def sha256_file(path):
@@ -316,7 +321,7 @@ def _verified_unlink(path, expected_hash):
         digest = hashlib.sha256()
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
-    after = path.stat(follow_symlinks=False)
+    after = path.lstat()
     identity = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
     current = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
     if identity != current or digest.hexdigest() != expected_hash:
@@ -484,6 +489,21 @@ def _tracked_materials(repo):
     return result.stdout.splitlines()
 
 
+def _tracked_paths(repo, *paths):
+    """List tracked paths exactly matching the supplied repository-relative names."""
+    git = shutil.which("git")
+    if not git:
+        raise AssetError("git executable is required for tracked-path checks")
+    result = subprocess.run(  # noqa: S603 - executable is resolved; arguments are fixed
+        [git, "ls-files", "--", *paths],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return [line for line in result.stdout.splitlines() if line]
+
+
 def _git_repository_root(path):
     """Resolve the Git worktree containing an asset path."""
     git = shutil.which("git")
@@ -533,6 +553,29 @@ def _validate_repository_boundaries(source_root, mirror_root, destination_root):
     _validate_material_boundary(source_repo)
     _validate_material_boundary(gallery_repo)
     return source_repo, gallery_repo
+
+
+def _gallery_docs_root(gallery_root):
+    """Return the canonical gallery docs root for evaluation records."""
+    return Path(gallery_root) / "docs"
+
+
+def _validate_canonical_doc_ownership(main_root, gallery_root):
+    """Fail closed when ownership of evaluation docs is ambiguous or incomplete."""
+    tracked_duplicates = _tracked_paths(
+        main_root, *(f"docs/{name}" for name in CANONICAL_EVALUATION_DOCS)
+    )
+    if tracked_duplicates:
+        raise AssetError(
+            "tracked canonical evaluation docs exist in the main repository: "
+            + ", ".join(tracked_duplicates)
+        )
+    docs_root = _gallery_docs_root(gallery_root)
+    for name in CANONICAL_EVALUATION_DOCS:
+        path = docs_root / name
+        if path.is_symlink() or not path.is_file():
+            raise AssetError(f"gallery canonical doc is missing: {path}")
+    return docs_root
 
 
 def _manifest_relative(value, label):
@@ -669,11 +712,12 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
     gallery_root = Path(gallery_root)
     if not gallery_root.is_dir():
         raise AssetError(f"gallery checkout is missing: {gallery_root}")
-    rows = parse_classifications(main_root / "docs/door-classifications.md")
+    docs_root = _validate_canonical_doc_ownership(main_root, gallery_root)
+    rows = parse_classifications(docs_root / "door-classifications.md")
     doors = json.loads((gallery_root / "doors.json").read_text(encoding="utf-8"))
     if len(rows) != expected_count or len(doors) != expected_count:
         raise AssetError(f"door count mismatch: docs={len(rows)}, gallery={len(doors)}")
-    for index, (expected, actual) in enumerate(zip(rows, doors, strict=True)):
+    for index, (expected, actual) in enumerate(zip(rows, doors)):
         for field in FIELDS:
             if expected[field] != actual.get(field):
                 raise AssetError(f"door mismatch at {index} {field}: {expected[field]!r} != {actual.get(field)!r}")
@@ -682,14 +726,6 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
     missing_notes = [f"{door['game']} {door['code']}" for door in doors if door["note"] not in html_text]
     if missing_notes:
         raise AssetError(f"notes missing from index.html: {', '.join(missing_notes)}")
-
-    docs = (
-        "door-classifications.md", "door-classification-report.md",
-        "Doors-Difficulity-Estimation.xlsm.csv",
-    )
-    for name in docs:
-        if sha256_file(main_root / "docs" / name) != sha256_file(gallery_root / "docs" / name):
-            raise AssetError(f"published document mismatch: {name}")
 
     stills = len(list((gallery_root / "stills").glob("*.jpg")))
     gifs = len(list((gallery_root / "gifs").glob("*.gif")))
@@ -783,7 +819,7 @@ def clean_local_gallery(main_root, gallery_root, report_path):
             stale.append(relative.as_posix())
         else:
             raise AssetError(f"unexplained local gallery mismatch: {relative}")
-        stat = source.stat(follow_symlinks=False)
+        stat = source.lstat()
         snapshots.append((source, source_hash, stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns))
 
     existing_report = Path(report_path).read_text(encoding="utf-8") if Path(report_path).exists() else "# Gallery Migration Verification\n"
@@ -799,7 +835,7 @@ def clean_local_gallery(main_root, gallery_root, report_path):
     _write_atomic(report_path, existing_report.rstrip() + "\n" + cleanup_evidence)
 
     for source, expected_hash, dev, ino, size, mtime_ns in snapshots:
-        stat = source.stat(follow_symlinks=False)
+        stat = source.lstat()
         if source.is_symlink() or (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns) != (dev, ino, size, mtime_ns):
             raise AssetError(f"local gallery changed before unlink: {source}")
         if sha256_file(source) != expected_hash:
