@@ -20,9 +20,13 @@ Copy both verified files into `packages/sample/public/textures/b06/` as durable 
 ## Hybrid Door Structure
 
 - Build exactly two rectangular moving leaves with shallow BoxGeometry thickness. The leaves meet at the world center when closed and hinge at their outer edges.
-- Split each approved front image into left and right door crops after removing only the near-black background around the complete door pair. Each crop becomes the front material for its matching moving leaf; it must remain attached to that leaf while opening.
+- Crop both `1586 x 992` sources with the same opaque rectangles: left `(x: 377, y: 35, width: 410, height: 930)` and right `(x: 797, y: 35, width: 410, height: 930)`. These rectangles omit the generated image's approximately 10-pixel center gap and outer black backdrop without threshold-based background removal. Each crop becomes the front material for its matching moving leaf and remains attached to that leaf while opening.
+- Set leaf height to `6` world units and leaf width to `6 * 410 / 930 = 2.645161...` world units so the source aspect ratio is preserved. Both variants use these exact dimensions.
+- Map each crop without horizontal reversal: source top-left maps to the leaf's outer-top corner and source bottom-right maps to its center-bottom corner. The left leaf extends from its outer hinge toward positive local x; the right leaf extends from its outer hinge toward negative local x. Do not mirror either group with a negative scale.
 - Preserve simple procedural side and rear faces so oblique views do not become flat image cards.
-- Model the left circular valve wheel and right vertical pull handle as separate low-poly 3D parts. They remain children of their corresponding leaf.
+- Model the left circular valve wheel and right vertical pull handle as separate low-poly 3D parts. They remain descendants of their corresponding hinge groups.
+- The generated left crop contains a baked valve wheel. Cover it with an opaque dark-metal circular backing plate centered at left-crop pixel `(200, 505)`, rendered at local `(1.2903, -0.2581)` with radius `0.64` world units. Place the animated 3D wheel in front with radius `0.50`, so no fixed spokes remain visible while it rotates.
+- Align the static 3D pull handle over the baked handle on the right leaf. Because the handle does not animate relative to its leaf, the aligned backing artwork remains concealed rather than producing a second moving state.
 - Do not add walls, floor, doorway surround, stationary side posts, threshold, duplicated full-door planes, or other environmental geometry.
 - Both normal and frozen states share the exact same geometry. Only their front-face texture set changes.
 
@@ -36,17 +40,17 @@ Copy both verified files into `packages/sample/public/textures/b06/` as durable 
 
 ## Asset And Resource Handling
 
-- Keep image metadata, crop bounds, and public paths in a small pure TypeScript descriptor module.
+- Keep image metadata, exact crop bounds, leaf dimensions, hardware-cover measurements, and public paths in a small pure TypeScript descriptor module specialized for B06. Do not introduce a generalized asset pipeline.
 - Load each selected source once, derive two leaf textures, and publish the pair atomically. If loading or processing fails, retain a procedural dark-metal fallback instead of rendering a white model or crashing.
 - Cancel late image callbacks after unmount or material changes. Dispose every created texture and material exactly once.
-- Use sRGB for color textures, clamp wrapping, no atlas-edge bleeding, and front-facing transparent materials only where the removed black background requires alpha.
+- Copy each crop into its own `410 x 930` canvas before creating textures so filtering cannot bleed across the omitted center gap. Use sRGB color textures, clamp wrapping, linear filtering, no mipmaps, opaque front-facing materials, and standard `(0,0)` to `(1,1)` UVs. Set `flipY` explicitly to match CanvasTexture behavior and verify top/bottom orientation in tests.
 
 ## Testing And Verification
 
 - Pure motion tests verify valve-before-door timing, mirrored leaf angles, camera travel, and fade bounds.
-- Pure asset tests verify exact source dimensions and checksums, deterministic crop descriptors, left/right ownership, runtime-local paths, and absence of gallery/game/external dependencies.
+- Pure asset tests verify exact source dimensions and checksums, the two exact `410 x 930` crop descriptors, aspect-preserving leaf dimensions, unmirrored UV orientation, left/right ownership, hardware-cover measurements, runtime-local paths, and absence of gallery/game/external dependencies.
 - Resource tests cover successful load, failed load, processing exception, state switch, unmount-before-load, atomic publication, and exactly-once disposal.
-- Scene tests prove there are exactly two moving leaves, no surrounding geometry, front materials are children of the correct hinges, and both variants reuse identical geometry.
+- Scene tests prove there are exactly two moving leaves, no surrounding geometry, front-face meshes are descendants of the correct hinge groups, the backing plate fully covers the baked wheel footprint, and both variants reuse identical geometry.
 - Browser verification at progress `0`, mid-open, and near-complete compares the actual render with the approved generated references. It must show no duplicate full-door layer, no black image rectangle, no center overlap, and visible side depth while open.
 - Run the B06 tests, existing POC tests, lint, production build, and `git diff --check` before completion.
 
