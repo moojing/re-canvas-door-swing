@@ -1,6 +1,8 @@
 const BYTES_PER_PIXEL = 4;
 const MAX_PIXEL_COUNT = 16_777_216;
 const UINT32_RANGE = 0x1_0000_0000;
+const UINT53_RANGE = 9_007_199_254_740_992;
+const UINT64_MASK = 0xffff_ffff_ffff_ffffn;
 const TAU = Math.PI * 2;
 const WEAR_CELL_SIZE = 24;
 
@@ -13,17 +15,28 @@ const clampUnit = (value: number): number => Math.max(0, Math.min(1, value));
 
 const smoothstep = (value: number): number => value * value * (3 - 2 * value);
 
+const rotateLeft64 = (value: bigint, shift: bigint): bigint =>
+  ((value << shift) | (value >> (64n - shift))) & UINT64_MASK;
+
+const seedBits = (seed: number): bigint => {
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, seed);
+  return (BigInt(view.getUint32(0)) << 32n) | BigInt(view.getUint32(4));
+};
+
 const createSeededRandom = (seed: number): (() => number) => {
-  const low = seed | 0;
-  const high = Math.floor(seed / UINT32_RANGE) | 0;
-  let state = (low ^ Math.imul(high, 0x9e3779b1)) >>> 0;
+  const bits = seedBits(seed);
+  let stateA = bits ^ 0x9e37_79b9_7f4a_7c15n;
+  let stateB = rotateLeft64(bits, 32n) ^ 0xd1b5_4a32_d192_ed03n;
 
   return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let value = state;
-    value = Math.imul(value ^ (value >>> 15), value | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / UINT32_RANGE;
+    const value = (stateA + stateB) & UINT64_MASK;
+    const mixedState = stateB ^ stateA;
+    stateA =
+      (rotateLeft64(stateA, 55n) ^ mixedState ^ (mixedState << 14n)) &
+      UINT64_MASK;
+    stateB = rotateLeft64(mixedState, 36n);
+    return Number(value >> 11n) / UINT53_RANGE;
   };
 };
 

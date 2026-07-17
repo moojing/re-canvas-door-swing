@@ -33,6 +33,17 @@ test("changes both maps when the seed changes", () => {
   assert.notDeepEqual(first.roughnessPixels, second.roughnessPixels);
 });
 
+test("preserves high seed words when generating both maps", () => {
+  const lowWordSeed = createA11MaterialPixels(64, 48, 0);
+
+  for (const seed of [6_949_403_057, 2 ** 64]) {
+    const highWordSeed = createA11MaterialPixels(64, 48, seed);
+
+    assert.notDeepEqual(lowWordSeed.colorPixels, highWordSeed.colorPixels);
+    assert.notDeepEqual(lowWordSeed.roughnessPixels, highWordSeed.roughnessPixels);
+  }
+});
+
 test("returns complete RGBA buffers", () => {
   const { colorPixels, roughnessPixels } = createA11MaterialPixels(17, 9, 1101);
 
@@ -50,14 +61,20 @@ test("keeps the color map fully opaque", () => {
   }
 });
 
-test("keeps roughness grayscale and fully opaque", () => {
+test("keeps roughness grayscale, fully opaque, and visibly varied", () => {
   const { roughnessPixels } = createA11MaterialPixels(32, 24, 1101);
+  const values: number[] = [];
 
   for (let index = 0; index < roughnessPixels.length; index += 4) {
     assert.equal(roughnessPixels[index], roughnessPixels[index + 1]);
     assert.equal(roughnessPixels[index], roughnessPixels[index + 2]);
     assert.equal(roughnessPixels[index + 3], 255);
+    values.push(roughnessPixels[index]);
   }
+
+  const spread = Math.max(...values) - Math.min(...values);
+  assert.ok(spread >= 32, `roughness spread ${spread} is too small`);
+  assert.ok(new Set(values).size >= 16, "roughness map has too few distinct values");
 });
 
 test("produces visible luminance variation", () => {
