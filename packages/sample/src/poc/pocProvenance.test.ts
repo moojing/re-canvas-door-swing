@@ -146,57 +146,211 @@ const stripSourceComments = (
 };
 
 type StaticPrimitive = string | number | boolean | null;
-type StaticBindings = ReadonlyMap<string, ts.Expression | null>;
+type StaticBinding = Readonly<{
+  declaration: ts.Node;
+  initializer: ts.Expression | null;
+}>;
+type StaticScope = {
+  parent: StaticScope | null;
+  bindings: Map<string, StaticBinding | null>;
+};
+type StaticBindingContext = Readonly<{
+  nodeScopes: WeakMap<ts.Node, StaticScope>;
+}>;
 
-const EMPTY_STATIC_BINDINGS: StaticBindings = new Map();
-
-const collectStaticConstBindings = (sourceFile: ts.SourceFile): StaticBindings => {
-  const bindings = new Map<string, ts.Expression | null>();
-
-  const visit = (node: ts.Node): void => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer &&
-      ts.isVariableDeclarationList(node.parent) &&
-      (node.parent.flags & ts.NodeFlags.Const) !== 0
-    ) {
-      const name = node.name.text;
-      bindings.set(name, bindings.has(name) ? null : node.initializer);
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  visit(sourceFile);
-  return bindings;
+const addStaticBinding = (
+  scope: StaticScope,
+  name: string,
+  binding: StaticBinding,
+): void => {
+  scope.bindings.set(name, scope.bindings.has(name) ? null : binding);
 };
 
-const evaluateStaticExpression = (
+const forEachBindingName = (
+  name: ts.BindingName,
+  callback: (identifier: ts.Identifier) => void,
+): void => {
+  if (ts.isIdentifier(name)) {
+    callback(name);
+    return;
+  }
+  for (const element of name.elements) {
+    if (!ts.isOmittedExpression(element)) {
+      forEachBindingName(element.name, callback);
+    }
+  }
+};
+
+const createStaticBindingContext = (
+  sourceFile: ts.SourceFile,
+): StaticBindingContext => {
+  const nodeScopes = new WeakMap<ts.Node, StaticScope>();
+  const rootScope: StaticScope = { parent: null, bindings: new Map() };
+
+  const visit = (node: ts.Node, enclosingScope: StaticScope): void => {
+    if (
+      (ts.isFunctionDeclaration(node) ||
+        ts.isClassDeclaration(node) ||
+        ts.isEnumDeclaration(node)) &&
+      node.name
+    ) {
+      addStaticBinding(enclosingScope, node.name.text, {
+        declaration: node,
+        initializer: null,
+      });
+    }
+
+    const createsScope =
+      node !== sourceFile &&
+      (ts.isFunctionLike(node) ||
+        ts.isBlock(node) ||
+        ts.isModuleBlock(node) ||
+        ts.isCatchClause(node));
+    const scope = createsScope
+      ? { parent: enclosingScope, bindings: new Map<string, StaticBinding | null>() }
+      : enclosingScope;
+    nodeScopes.set(node, scope);
+
+    if (ts.isParameter(node)) {
+      forEachBindingName(node.name, (identifier) =>
+        addStaticBinding(scope, identifier.text, {
+          declaration: node,
+          initializer: null,
+        }),
+      );
+    }
+
+    if (ts.isVariableDeclaration(node)) {
+      const isImmutable =
+        ts.isVariableDeclarationList(node.parent) &&
+        (node.parent.flags & ts.NodeFlags.Const) !== 0;
+      forEachBindingName(node.name, (identifier) =>
+        addStaticBinding(scope, identifier.text, {
+          declaration: node,
+          initializer:
+            isImmutable && ts.isIdentifier(node.name)
+              ? (node.initializer ?? null)
+              : null,
+        }),
+      );
+    }
+
+    if (
+      ts.isImportClause(node) &&
+      node.name
+    ) {
+      addStaticBinding(scope, node.name.text, {
+        declaration: node,
+        initializer: null,
+      });
+    } else if (ts.isImportSpecifier(node) || ts.isNamespaceImport(node)) {
+      addStaticBinding(scope, node.name.text, {
+        declaration: node,
+        initializer: null,
+      });
+    }
+
+    ts.forEachChild(node, (child) => visit(child, scope));
+  };
+
+  visit(sourceFile, rootScope);
+  return { nodeScopes };
+};
+
+const resolveStaticBinding = (
+  identifier: ts.Identifier,
+  context: StaticBindingContext,
+): StaticBinding | null => {
+  let scope = context.nodeScopes.get(identifier) ?? null;
+  while (scope) {
+    if (scope.bindings.has(identifier.text)) {
+      return scope.bindings.get(identifier.text) ?? null;
+    }
+    scope = scope.parent;
+  }
+  return null;
+};
+
+const isStaticExpressionWrapper = (
   expression: ts.Expression,
-  bindings: StaticBindings = EMPTY_STATIC_BINDINGS,
-  resolvingBindings: ReadonlySet<string> = new Set(),
-): StaticPrimitive | undefined => {
-  if (
-    ts.isParenthesizedExpression(expression) ||
-    ts.isAsExpression(expression) ||
-    ts.isTypeAssertionExpression(expression) ||
-    ts.isNonNullExpression(expression) ||
-    ts.isSatisfiesExpression(expression)
-  ) {
-    return evaluateStaticExpression(
+): expression is
+  | ts.ParenthesizedExpression
+  | ts.AsExpression
+  | ts.TypeAssertion
+  | ts.NonNullExpression
+  | ts.SatisfiesExpression =>
+  ts.isParenthesizedExpression(expression) ||
+  ts.isAsExpression(expression) ||
+  ts.isTypeAssertionExpression(expression) ||
+  ts.isNonNullExpression(expression) ||
+  ts.isSatisfiesExpression(expression);
+
+const evaluateStaticArrayExpression = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  resolvingBindings: ReadonlySet<ts.Node>,
+): StaticPrimitive[] | undefined => {
+  if (isStaticExpressionWrapper(expression)) {
+    return evaluateStaticArrayExpression(
       expression.expression,
-      bindings,
+      context,
       resolvingBindings,
     );
   }
 
   if (ts.isIdentifier(expression)) {
-    const binding = bindings.get(expression.text);
-    if (!binding || resolvingBindings.has(expression.text)) return undefined;
+    const binding = resolveStaticBinding(expression, context);
+    if (
+      !binding?.initializer ||
+      resolvingBindings.has(binding.declaration)
+    ) {
+      return undefined;
+    }
+    return evaluateStaticArrayExpression(
+      binding.initializer,
+      context,
+      new Set([...resolvingBindings, binding.declaration]),
+    );
+  }
+
+  if (!ts.isArrayLiteralExpression(expression)) return undefined;
+  const values: StaticPrimitive[] = [];
+  for (const element of expression.elements) {
+    if (ts.isSpreadElement(element) || ts.isOmittedExpression(element)) {
+      return undefined;
+    }
+    const value = evaluateStaticExpression(element, context, resolvingBindings);
+    if (value === undefined) return undefined;
+    values.push(value);
+  }
+  return values;
+};
+
+const evaluateStaticExpression = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  resolvingBindings: ReadonlySet<ts.Node> = new Set(),
+): StaticPrimitive | undefined => {
+  if (isStaticExpressionWrapper(expression)) {
     return evaluateStaticExpression(
-      binding,
-      bindings,
-      new Set([...resolvingBindings, expression.text]),
+      expression.expression,
+      context,
+      resolvingBindings,
+    );
+  }
+
+  if (ts.isIdentifier(expression)) {
+    const binding = resolveStaticBinding(expression, context);
+    if (
+      !binding?.initializer ||
+      resolvingBindings.has(binding.declaration)
+    ) {
+      return undefined;
+    }
+    return evaluateStaticExpression(
+      binding.initializer,
+      context,
+      new Set([...resolvingBindings, binding.declaration]),
     );
   }
 
@@ -211,7 +365,7 @@ const evaluateStaticExpression = (
   if (ts.isPrefixUnaryExpression(expression)) {
     const operand = evaluateStaticExpression(
       expression.operand,
-      bindings,
+      context,
       resolvingBindings,
     );
     if (typeof operand !== "number") return undefined;
@@ -225,7 +379,7 @@ const evaluateStaticExpression = (
     for (const span of expression.templateSpans) {
       const interpolation = evaluateStaticExpression(
         span.expression,
-        bindings,
+        context,
         resolvingBindings,
       );
       if (interpolation === undefined) return undefined;
@@ -240,12 +394,12 @@ const evaluateStaticExpression = (
   ) {
     const left = evaluateStaticExpression(
       expression.left,
-      bindings,
+      context,
       resolvingBindings,
     );
     const right = evaluateStaticExpression(
       expression.right,
-      bindings,
+      context,
       resolvingBindings,
     );
     if (left === undefined || right === undefined) return undefined;
@@ -257,16 +411,36 @@ const evaluateStaticExpression = (
     }
   }
 
+  if (
+    ts.isCallExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    expression.expression.name.text === "join" &&
+    expression.arguments.length <= 1
+  ) {
+    const values = evaluateStaticArrayExpression(
+      expression.expression.expression,
+      context,
+      resolvingBindings,
+    );
+    if (!values) return undefined;
+    const separatorExpression = expression.arguments[0];
+    const separator = separatorExpression
+      ? evaluateStaticExpression(separatorExpression, context, resolvingBindings)
+      : ",";
+    if (separator === undefined) return undefined;
+    return values.map(String).join(String(separator));
+  }
+
   return undefined;
 };
 
 const collectStaticStringValues = (sourceFile: ts.SourceFile): Set<string> => {
   const values = new Set<string>();
-  const bindings = collectStaticConstBindings(sourceFile);
+  const context = createStaticBindingContext(sourceFile);
 
   const visit = (node: ts.Node): void => {
     if (ts.isExpression(node)) {
-      const value = evaluateStaticExpression(node, bindings);
+      const value = evaluateStaticExpression(node, context);
       if (typeof value === "string") values.add(value);
     }
     ts.forEachChild(node, visit);
@@ -278,7 +452,7 @@ const collectStaticStringValues = (sourceFile: ts.SourceFile): Set<string> => {
 
 const collectImportSpecifiers = (sourceFile: ts.SourceFile): Set<string> => {
   const specifiers = new Set<string>();
-  const bindings = collectStaticConstBindings(sourceFile);
+  const context = createStaticBindingContext(sourceFile);
 
   const visit = (node: ts.Node): void => {
     if (
@@ -294,7 +468,7 @@ const collectImportSpecifiers = (sourceFile: ts.SourceFile): Set<string> => {
       node.expression.kind === ts.SyntaxKind.ImportKeyword
     ) {
       const [specifier] = node.arguments;
-      const value = specifier && evaluateStaticExpression(specifier, bindings);
+      const value = specifier && evaluateStaticExpression(specifier, context);
       if (typeof value === "string") specifiers.add(value);
     }
 
@@ -431,11 +605,76 @@ const isTextureLoaderConstruction = (expression: ts.Expression): boolean => {
   );
 };
 
+const getSplitComposedImagePaths = (
+  policy: PocProvenancePolicy,
+): readonly string[] => {
+  if (!policy.allowSplitImageFragments) return [];
+  const normalizedAllowed = policy.allowedImagePaths.map(
+    normalizeImagePathFragment,
+  );
+  const directories = normalizedAllowed.filter(
+    (fragment) => fragment.includes("textures/") && !fragment.includes("."),
+  );
+  const fileNames = normalizedAllowed.filter(
+    (fragment) => !fragment.includes("/") && /\.[a-z0-9]+$/i.test(fragment),
+  );
+  return directories.flatMap((directory) =>
+    fileNames.map((fileName) => `${directory}/${fileName}`),
+  );
+};
+
+const hasApprovedB10TextureUrlContract = (
+  sourceFile: ts.SourceFile,
+  policy: PocProvenancePolicy,
+): boolean => {
+  if (!policy.allowSplitImageFragments) return false;
+  const typeAlias = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === "B10TextureUrl",
+  );
+  if (
+    !typeAlias ||
+    typeAlias.type.getText(sourceFile).replaceAll(/\s/g, "") !==
+      "(typeofB10_TEXTURE_URLS)[number]"
+  ) {
+    return false;
+  }
+
+  const staticValues = collectStaticStringValues(sourceFile);
+  const expectedCompletePaths = getSplitComposedImagePaths(policy);
+  return (
+    expectedCompletePaths.length > 0 &&
+    expectedCompletePaths.every((expectedPath) =>
+      [...staticValues].some(
+        (value) => normalizeImagePathFragment(value) === expectedPath,
+      ),
+    )
+  );
+};
+
+const isApprovedTypedTextureUrl = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  sourceFile: ts.SourceFile,
+  policy: PocProvenancePolicy,
+): boolean => {
+  if (!ts.isIdentifier(expression)) return false;
+  const declaration = resolveStaticBinding(expression, context)?.declaration;
+  return (
+    declaration !== undefined &&
+    ts.isParameter(declaration) &&
+    declaration.type !== undefined &&
+    declaration.type.getText(sourceFile) === "B10TextureUrl" &&
+    hasApprovedB10TextureUrlContract(sourceFile, policy)
+  );
+};
+
 const collectUnapprovedDynamicTextureLoads = (
   sourceFile: ts.SourceFile,
   policy: PocProvenancePolicy,
 ): string[] => {
-  const bindings = collectStaticConstBindings(sourceFile);
+  const context = createStaticBindingContext(sourceFile);
   const violations: string[] = [];
 
   const visit = (node: ts.Node): void => {
@@ -448,32 +687,15 @@ const collectUnapprovedDynamicTextureLoads = (
       const [pathExpression] = node.arguments;
       if (
         pathExpression &&
-        evaluateStaticExpression(pathExpression, bindings) === undefined
+        evaluateStaticExpression(pathExpression, context) === undefined &&
+        !isApprovedTypedTextureUrl(
+          pathExpression,
+          context,
+          sourceFile,
+          policy,
+        )
       ) {
-        const staticCandidates = new Set<string>();
-        const collectCandidates = (candidateNode: ts.Node): void => {
-          if (ts.isExpression(candidateNode)) {
-            const value = evaluateStaticExpression(candidateNode, bindings);
-            if (typeof value === "string" && IMAGE_PATH_PATTERN.test(value)) {
-              staticCandidates.add(value);
-            }
-          }
-          ts.forEachChild(candidateNode, collectCandidates);
-        };
-        collectCandidates(pathExpression);
-
-        const hasOnlyApprovedStaticFragments =
-          staticCandidates.size > 0 &&
-          [...staticCandidates].every((candidate) =>
-            isAllowedImagePathFragment(
-              candidate,
-              policy.allowedImagePaths,
-              policy.allowSplitImageFragments,
-            ),
-          );
-        if (!hasOnlyApprovedStaticFragments) {
-          violations.push(pathExpression.getText(sourceFile));
-        }
+        violations.push(pathExpression.getText(sourceFile));
       }
     }
 
@@ -891,6 +1113,117 @@ test("immutable const bindings expose composed unknown B10 image paths", () => {
       violation.includes("/textures/b10/door-2.png"),
     ),
     `Expected composed unknown image path to fail, received: ${violations.join("\n")}`,
+  );
+});
+
+test("B10 TextureLoader paths use the complete approved URL contract", async () => {
+  const source = await readFile(POC_PROVENANCE_POLICIES.B10.entryPath, "utf8");
+  const executableSource = stripSourceComments(
+    source,
+    POC_PROVENANCE_POLICIES.B10.entryPath,
+  );
+  const sourceFile = createSourceFile(
+    POC_PROVENANCE_POLICIES.B10.entryPath,
+    executableSource,
+  );
+  const approvedUrls = [
+    "/textures/b10/door.png",
+    "/textures/b10/lower.png",
+    "/textures/b10/lever-sign.png",
+    "/textures/b10/lever-box.png",
+  ];
+  const staticValues = collectStaticStringValues(sourceFile);
+
+  for (const approvedUrl of approvedUrls) {
+    assert.ok(staticValues.has(approvedUrl), `Missing immutable ${approvedUrl}`);
+    assert.equal(
+      isAllowedImagePathFragment(
+        approvedUrl,
+        POC_PROVENANCE_POLICIES.B10.allowedImagePaths,
+        true,
+      ),
+      true,
+    );
+  }
+
+  const urlType = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === "B10TextureUrl",
+  );
+  assert.ok(urlType, "B10TextureUrl must derive from the immutable URL constants");
+  assert.equal(
+    urlType.type.getText(sourceFile).replaceAll(/\s/g, ""),
+    "(typeofB10_TEXTURE_URLS)[number]",
+  );
+
+  const loaderArguments: ts.Expression[] = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === "load" &&
+      isTextureLoaderConstruction(node.expression.expression) &&
+      node.arguments[0]
+    ) {
+      loaderArguments.push(node.arguments[0]);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+
+  assert.equal(loaderArguments.length, 2);
+  for (const loaderArgument of loaderArguments) {
+    assert.ok(ts.isIdentifier(loaderArgument));
+    assert.equal(loaderArgument.text, "textureUrl");
+  }
+  assert.deepEqual(
+    collectProvenanceViolations(
+      new Map([[sourceFile.fileName, sourceFile]]),
+      POC_PROVENANCE_POLICIES.B10,
+    ),
+    [],
+  );
+});
+
+test("join-produced unknown B10 filenames resolve and fail provenance", () => {
+  const source = [
+    'const base = "/textures/b10";',
+    'const filename = ["door-2", "png"].join(".");',
+    'const textureUrl = [base, filename].join("/");',
+    "new THREE.TextureLoader().load(textureUrl);",
+  ].join("\n");
+  const sourceFile = createSourceFile("joined-image-fixture.ts", source);
+  const violations = collectProvenanceViolations(
+    new Map([[sourceFile.fileName, sourceFile]]),
+    POC_PROVENANCE_POLICIES.B10,
+  );
+
+  assert.ok(
+    violations.some((violation) =>
+      violation.includes("/textures/b10/door-2.png"),
+    ),
+    `Expected joined unknown image path to fail, received: ${violations.join("\n")}`,
+  );
+});
+
+test("function parameters shadow same-named approved outer const bindings", () => {
+  const source = [
+    'const textureUrl = "/textures/b10/door.png";',
+    "const loadTexture = (textureUrl: string) =>",
+    "  new THREE.TextureLoader().load(textureUrl);",
+  ].join("\n");
+  const sourceFile = createSourceFile("shadowed-image-fixture.ts", source);
+  const violations = collectProvenanceViolations(
+    new Map([[sourceFile.fileName, sourceFile]]),
+    POC_PROVENANCE_POLICIES.B10,
+  );
+
+  assert.ok(
+    violations.some((violation) =>
+      violation.includes("unresolved TextureLoader image path"),
+    ),
+    `Expected shadowed parameter to remain unresolved, received: ${violations.join("\n")}`,
   );
 });
 
