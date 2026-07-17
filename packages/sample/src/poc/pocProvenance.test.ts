@@ -15,33 +15,74 @@ const SAMPLE_SOURCE_ROOT = path.resolve(HERE, "..");
 type PocProvenancePolicy = Readonly<{
   entryPath: string;
   allowedImagePaths: readonly string[];
+  expectedDependencyFiles: readonly string[];
+  allowSplitImageFragments: boolean;
 }>;
 
 const createPocProvenancePolicy = (
   entryFile: string,
   allowedImagePaths: readonly string[],
+  expectedDependencyFiles: readonly string[],
+  allowSplitImageFragments = false,
 ): PocProvenancePolicy =>
   Object.freeze({
     entryPath: path.join(HERE, entryFile),
     allowedImagePaths: Object.freeze([...allowedImagePaths]),
+    expectedDependencyFiles: Object.freeze([...expectedDependencyFiles]),
+    allowSplitImageFragments,
   });
 
 const POC_PROVENANCE_POLICIES = Object.freeze({
-  A11: createPocProvenancePolicy("HeavyWaterDoorA11.tsx", []),
-  B10: createPocProvenancePolicy("SewerGateB10.tsx", [
-    "/textures/b10/door.png",
-    "/textures/b10/lower.png",
-    "/textures/b10/lever-sign.png",
-    "/textures/b10/lever-box.png",
-  ]),
-  C03: createPocProvenancePolicy("LiftPlatformC03.tsx", []),
-  B05: createPocProvenancePolicy("ArchedGateB05.tsx", [
-    "textures/b05/generated-gate-front.png",
-  ]),
-  B06: createPocProvenancePolicy("HeavyWaterDoubleDoorB06.tsx", [
-    "textures/b06/normal.png",
-    "textures/b06/frozen.png",
-  ]),
+  A11: createPocProvenancePolicy(
+    "HeavyWaterDoorA11.tsx",
+    [],
+    ["HeavyWaterDoorA11.tsx", "a11ProceduralMaterials.ts"],
+  ),
+  B10: createPocProvenancePolicy(
+    "SewerGateB10.tsx",
+    [
+      "/textures/b10",
+      "door.png",
+      "lower.png",
+      "lever-sign.png",
+      "lever-box.png",
+    ],
+    ["SewerGateB10.tsx"],
+    true,
+  ),
+  C03: createPocProvenancePolicy(
+    "LiftPlatformC03.tsx",
+    [],
+    ["LiftPlatformC03.tsx", "c03Motion.ts", "c03ProceduralMaterials.ts"],
+  ),
+  B05: createPocProvenancePolicy(
+    "ArchedGateB05.tsx",
+    ["textures/b05/generated-gate-front.png"],
+    [
+      "ArchedGateB05.tsx",
+      "b05BoxMaterialSlots.ts",
+      "b05FrontImage.ts",
+      "b05FrontLoader.ts",
+      "b05FrontResources.ts",
+      "b05FrontScene.ts",
+      "b05Geometry.ts",
+      "b05Motion.ts",
+      "b05ProceduralMaterials.ts",
+      "b05TextureMapping.ts",
+    ],
+  ),
+  B06: createPocProvenancePolicy(
+    "HeavyWaterDoubleDoorB06.tsx",
+    ["textures/b06/normal.png", "textures/b06/frozen.png"],
+    [
+      "HeavyWaterDoubleDoorB06.tsx",
+      "b06Assets.ts",
+      "b06FrontLoader.ts",
+      "b06FrontResources.ts",
+      "b06Motion.ts",
+      "b06Scene.ts",
+    ],
+  ),
 });
 
 const A11_ENTRY = POC_PROVENANCE_POLICIES.A11.entryPath;
@@ -276,16 +317,24 @@ const normalizeImagePathFragment = (value: string): string =>
 const isAllowedImagePathFragment = (
   candidate: string,
   allowedImagePaths: readonly string[],
+  allowSplitImageFragments = false,
 ): boolean => {
   const normalizedCandidate = normalizeImagePathFragment(candidate);
-  return allowedImagePaths.some((allowedImagePath) => {
-    const normalizedAllowed = normalizeImagePathFragment(allowedImagePath);
-    return (
-      normalizedCandidate === normalizedAllowed ||
-      normalizedAllowed.startsWith(`${normalizedCandidate}/`) ||
-      normalizedAllowed.endsWith(`/${normalizedCandidate}`)
-    );
-  });
+  const normalizedAllowed = allowedImagePaths.map(normalizeImagePathFragment);
+  if (normalizedAllowed.includes(normalizedCandidate)) return true;
+  if (!allowSplitImageFragments) return false;
+
+  const directories = normalizedAllowed.filter(
+    (fragment) => fragment.includes("textures/") && !fragment.includes("."),
+  );
+  const fileNames = normalizedAllowed.filter(
+    (fragment) => !fragment.includes("/") && /\.[a-z0-9]+$/i.test(fragment),
+  );
+  return directories.some((directory) =>
+    fileNames.some(
+      (fileName) => normalizedCandidate === `${directory}/${fileName}`,
+    ),
+  );
 };
 
 const collectProvenanceViolations = (
@@ -306,7 +355,13 @@ const collectProvenanceViolations = (
     }
 
     for (const candidate of collectImagePathCandidates(sourceFile)) {
-      if (!isAllowedImagePathFragment(candidate, policy.allowedImagePaths)) {
+      if (
+        !isAllowedImagePathFragment(
+          candidate,
+          policy.allowedImagePaths,
+          policy.allowSplitImageFragments,
+        )
+      ) {
         violations.add(
           `${path.relative(REPOSITORY_ROOT, filePath)}: unapproved image path in ${JSON.stringify(candidate)}`,
         );
@@ -424,38 +479,136 @@ test("forbidden matching is case-insensitive and path-oriented", () => {
 
 test("POC provenance policies are immutable and explicitly allowlisted", () => {
   const expectedPolicies = {
-    A11: ["HeavyWaterDoorA11.tsx", []],
-    B10: [
-      "SewerGateB10.tsx",
-      [
-        "/textures/b10/door.png",
-        "/textures/b10/lower.png",
-        "/textures/b10/lever-sign.png",
-        "/textures/b10/lever-box.png",
+    A11: {
+      entryFile: "HeavyWaterDoorA11.tsx",
+      allowedImagePaths: [],
+      expectedDependencyFiles: [
+        "HeavyWaterDoorA11.tsx",
+        "a11ProceduralMaterials.ts",
       ],
-    ],
-    C03: ["LiftPlatformC03.tsx", []],
-    B05: ["ArchedGateB05.tsx", ["textures/b05/generated-gate-front.png"]],
-    B06: [
-      "HeavyWaterDoubleDoorB06.tsx",
-      ["textures/b06/normal.png", "textures/b06/frozen.png"],
-    ],
+      allowSplitImageFragments: false,
+    },
+    B10: {
+      entryFile: "SewerGateB10.tsx",
+      allowedImagePaths: [
+        "/textures/b10",
+        "door.png",
+        "lower.png",
+        "lever-sign.png",
+        "lever-box.png",
+      ],
+      expectedDependencyFiles: ["SewerGateB10.tsx"],
+      allowSplitImageFragments: true,
+    },
+    C03: {
+      entryFile: "LiftPlatformC03.tsx",
+      allowedImagePaths: [],
+      expectedDependencyFiles: [
+        "LiftPlatformC03.tsx",
+        "c03Motion.ts",
+        "c03ProceduralMaterials.ts",
+      ],
+      allowSplitImageFragments: false,
+    },
+    B05: {
+      entryFile: "ArchedGateB05.tsx",
+      allowedImagePaths: ["textures/b05/generated-gate-front.png"],
+      expectedDependencyFiles: [
+        "ArchedGateB05.tsx",
+        "b05BoxMaterialSlots.ts",
+        "b05FrontImage.ts",
+        "b05FrontLoader.ts",
+        "b05FrontResources.ts",
+        "b05FrontScene.ts",
+        "b05Geometry.ts",
+        "b05Motion.ts",
+        "b05ProceduralMaterials.ts",
+        "b05TextureMapping.ts",
+      ],
+      allowSplitImageFragments: false,
+    },
+    B06: {
+      entryFile: "HeavyWaterDoubleDoorB06.tsx",
+      allowedImagePaths: ["textures/b06/normal.png", "textures/b06/frozen.png"],
+      expectedDependencyFiles: [
+        "HeavyWaterDoubleDoorB06.tsx",
+        "b06Assets.ts",
+        "b06FrontLoader.ts",
+        "b06FrontResources.ts",
+        "b06Motion.ts",
+        "b06Scene.ts",
+      ],
+      allowSplitImageFragments: false,
+    },
   } as const;
 
   assert.equal(Object.isFrozen(POC_PROVENANCE_POLICIES), true);
   assert.deepEqual(Object.keys(POC_PROVENANCE_POLICIES), Object.keys(expectedPolicies));
 
-  for (const [entryName, [entryFile, allowedImagePaths]] of Object.entries(
-    expectedPolicies,
-  )) {
+  for (const [entryName, expectedPolicy] of Object.entries(expectedPolicies)) {
     const policy = POC_PROVENANCE_POLICIES[
       entryName as keyof typeof POC_PROVENANCE_POLICIES
     ];
-    assert.equal(path.basename(policy.entryPath), entryFile);
+    assert.equal(path.basename(policy.entryPath), expectedPolicy.entryFile);
     assert.equal(Object.isFrozen(policy), true);
     assert.equal(Object.isFrozen(policy.allowedImagePaths), true);
-    assert.deepEqual(policy.allowedImagePaths, allowedImagePaths);
+    assert.deepEqual(policy.allowedImagePaths, expectedPolicy.allowedImagePaths);
+    assert.equal(Object.isFrozen(policy.expectedDependencyFiles), true);
+    assert.deepEqual(
+      policy.expectedDependencyFiles,
+      expectedPolicy.expectedDependencyFiles,
+    );
+    assert.equal(
+      policy.allowSplitImageFragments,
+      expectedPolicy.allowSplitImageFragments,
+    );
   }
+});
+
+test("only B10 composes approved split image fragments", () => {
+  const b10Fragments = [
+    "/textures/b10",
+    "door.png",
+    "lower.png",
+    "lever-sign.png",
+    "lever-box.png",
+  ];
+
+  for (const fragment of b10Fragments) {
+    assert.equal(isAllowedImagePathFragment(fragment, b10Fragments, true), true);
+  }
+  assert.equal(
+    isAllowedImagePathFragment(
+      "/textures/b10/door.png",
+      b10Fragments,
+      true,
+    ),
+    true,
+  );
+  assert.equal(
+    isAllowedImagePathFragment(
+      "/textures/b10/door-2.png",
+      b10Fragments,
+      true,
+    ),
+    false,
+  );
+  assert.equal(
+    isAllowedImagePathFragment(
+      "generated-gate-front.png",
+      POC_PROVENANCE_POLICIES.B05.allowedImagePaths,
+      false,
+    ),
+    false,
+  );
+  assert.equal(
+    isAllowedImagePathFragment(
+      "normal.png",
+      POC_PROVENANCE_POLICIES.B06.allowedImagePaths,
+      false,
+    ),
+    false,
+  );
 });
 
 test("image candidate collection sees static paths but ignores comments and prose", () => {
@@ -530,6 +683,13 @@ test("all POC entry points comply with their asset provenance policy", async (t)
     await t.test(entryName, async () => {
       const dependencies = await collectLocalTypeScriptDependencies(
         policy.entryPath,
+      );
+      const dependencyFiles = [...dependencies.keys()]
+        .map((filePath) => path.basename(filePath))
+        .sort();
+      assert.deepEqual(
+        dependencyFiles,
+        [...policy.expectedDependencyFiles].sort(),
       );
       assert.deepEqual(collectProvenanceViolations(dependencies, policy), []);
     });
