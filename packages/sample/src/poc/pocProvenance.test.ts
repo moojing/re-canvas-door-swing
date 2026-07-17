@@ -932,6 +932,19 @@ const collectGalleryJsxSourceViolations = (
   const context = createStaticBindingContext(sourceFile);
 
   const visit = (node: ts.Node): void => {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tagName = node.tagName.getText(sourceFile);
+      if (tagName === "img") {
+        for (const attribute of node.attributes.properties) {
+          if (ts.isJsxSpreadAttribute(attribute)) {
+            violations.push(
+              `unresolved JSX image spread ${attribute.getText(sourceFile)}`,
+            );
+          }
+        }
+      }
+    }
+
     if (
       ts.isJsxAttribute(node) &&
       ts.isIdentifier(node.name) &&
@@ -983,6 +996,151 @@ const isDetailPocImport = (specifier: string): boolean => {
   return GALLERY_DETAIL_POC_MODULES.has(moduleName);
 };
 
+const isThreeImportDeclaration = (
+  declaration: ts.ImportDeclaration,
+): boolean =>
+  ts.isStringLiteral(declaration.moduleSpecifier) &&
+  declaration.moduleSpecifier.text === "three";
+
+const isRuntimeThreeNamedImport = (
+  declaration: ts.Node,
+  importedName: string,
+): declaration is ts.ImportSpecifier => {
+  if (!ts.isImportSpecifier(declaration) || declaration.isTypeOnly) return false;
+  const importDeclaration = getImportDeclaration(declaration);
+  return (
+    importDeclaration !== null &&
+    isThreeImportDeclaration(importDeclaration) &&
+    importDeclaration.importClause?.isTypeOnly !== true &&
+    (declaration.propertyName?.text ?? declaration.name.text) === importedName
+  );
+};
+
+const isRuntimeThreeNamespaceIdentifier = (
+  identifier: ts.Identifier,
+  context: StaticBindingContext,
+): boolean => {
+  const declaration = resolveStaticBinding(identifier, context)?.declaration;
+  if (!declaration) return false;
+  const importDeclaration = getImportDeclaration(declaration);
+  if (
+    importDeclaration === null ||
+    !isThreeImportDeclaration(importDeclaration) ||
+    importDeclaration.importClause?.isTypeOnly === true
+  ) {
+    return false;
+  }
+  return (
+    ts.isNamespaceImport(declaration) ||
+    (ts.isImportClause(declaration) &&
+      declaration.name?.text === identifier.text)
+  );
+};
+
+const isRuntimeThreeWebGLRendererReference = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+): boolean => {
+  if (ts.isIdentifier(expression)) {
+    const declaration = resolveStaticBinding(expression, context)?.declaration;
+    return (
+      declaration !== undefined &&
+      isRuntimeThreeNamedImport(declaration, "WebGLRenderer")
+    );
+  }
+  if (
+    ts.isPropertyAccessExpression(expression) &&
+    expression.name.text === "WebGLRenderer" &&
+    ts.isIdentifier(expression.expression)
+  ) {
+    return isRuntimeThreeNamespaceIdentifier(expression.expression, context);
+  }
+  if (
+    ts.isElementAccessExpression(expression) &&
+    ts.isIdentifier(expression.expression) &&
+    expression.argumentExpression &&
+    evaluateStaticExpression(expression.argumentExpression, context) ===
+      "WebGLRenderer"
+  ) {
+    return isRuntimeThreeNamespaceIdentifier(expression.expression, context);
+  }
+  return false;
+};
+
+const collectThreeWebGLRendererViolations = (
+  sourceFile: ts.SourceFile,
+): string[] => {
+  const violations = new Set<string>();
+  const context = createStaticBindingContext(sourceFile);
+
+  for (const statement of sourceFile.statements) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      isThreeImportDeclaration(statement) &&
+      statement.importClause?.isTypeOnly !== true &&
+      statement.importClause?.namedBindings &&
+      ts.isNamedImports(statement.importClause.namedBindings)
+    ) {
+      for (const specifier of statement.importClause.namedBindings.elements) {
+        if (
+          !specifier.isTypeOnly &&
+          (specifier.propertyName?.text ?? specifier.name.text) ===
+            "WebGLRenderer"
+        ) {
+          violations.add(
+            `forbidden Three.js WebGLRenderer import ${specifier.getText(sourceFile)}`,
+          );
+        }
+      }
+    }
+
+    if (
+      ts.isExportDeclaration(statement) &&
+      statement.isTypeOnly !== true &&
+      statement.moduleSpecifier &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === "three" &&
+      statement.exportClause &&
+      ts.isNamedExports(statement.exportClause)
+    ) {
+      for (const specifier of statement.exportClause.elements) {
+        if (
+          !specifier.isTypeOnly &&
+          (specifier.propertyName?.text ?? specifier.name.text) ===
+            "WebGLRenderer"
+        ) {
+          violations.add(
+            `forbidden Three.js WebGLRenderer export ${specifier.getText(sourceFile)}`,
+          );
+        }
+      }
+    }
+  }
+
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isNewExpression(node) &&
+      isRuntimeThreeWebGLRendererReference(node.expression, context)
+    ) {
+      violations.add(
+        `forbidden Three.js WebGLRenderer construction ${node.expression.getText(sourceFile)}`,
+      );
+    } else if (
+      (ts.isPropertyAccessExpression(node) ||
+        ts.isElementAccessExpression(node)) &&
+      isRuntimeThreeWebGLRendererReference(node, context)
+    ) {
+      violations.add(
+        `forbidden Three.js WebGLRenderer reference ${node.getText(sourceFile)}`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return [...violations].sort();
+};
+
 const collectGalleryRuntimeViolations = (
   dependencies: ReadonlyMap<string, ts.SourceFile>,
 ): string[] => {
@@ -1004,6 +1162,10 @@ const collectGalleryRuntimeViolations = (
           `${relativePath}: forbidden detail POC import ${JSON.stringify(specifier)}`,
         );
       }
+    }
+
+    for (const violation of collectThreeWebGLRendererViolations(sourceFile)) {
+      violations.add(`${relativePath}: ${violation}`);
     }
 
     const visit = (node: ts.Node): void => {
@@ -1758,6 +1920,38 @@ test("gallery JSX source analysis only permits the registry-driven resolver call
   );
 });
 
+test("gallery JSX image spreads fail closed", async (t) => {
+  const fixtures = [
+    [
+      "runtime props",
+      "declare const props: object; export const Card = () => <img {...props} />;",
+      "{...props}",
+    ],
+    [
+      "inline object with runtime src",
+      [
+        "declare const runtimeValue: string;",
+        "export const Card = () => <img {...{ src: runtimeValue }} />;",
+      ].join("\n"),
+      "{...{ src: runtimeValue }}",
+    ],
+  ] as const;
+
+  for (const [name, source, spreadText] of fixtures) {
+    await t.test(name, () => {
+      const sourceFile = createSourceFile(`${name}.tsx`, source);
+
+      assert.deepEqual(
+        collectGalleryJsxSourceViolations(
+          sourceFile,
+          POC_PROVENANCE_POLICIES.GALLERY,
+        ),
+        [`unresolved JSX image spread ${spreadText}`],
+      );
+    });
+  }
+});
+
 test("gallery runtime analysis rejects forbidden imports in reachable helpers", async (t) => {
   const fixtureRoot = await mkdtemp(path.join(tmpdir(), "poc-provenance-"));
   t.after(() => rm(fixtureRoot, { recursive: true, force: true }));
@@ -1815,6 +2009,79 @@ test("gallery runtime analysis rejects canvas, iframe, and detail POC imports", 
     violations.some((violation) =>
       violation.includes("forbidden gallery JSX element <iframe>"),
     ),
+  );
+});
+
+test("gallery runtime analysis rejects transitive aliased WebGLRenderer construction", async (t) => {
+  const fixtureRoot = await mkdtemp(path.join(tmpdir(), "poc-provenance-"));
+  t.after(() => rm(fixtureRoot, { recursive: true, force: true }));
+  const entryPath = path.join(fixtureRoot, "entry.ts");
+  const helperPath = path.join(fixtureRoot, "helper.ts");
+  const rendererPath = path.join(fixtureRoot, "renderer.ts");
+  await Promise.all([
+    writeFile(entryPath, 'export { helper } from "./helper";'),
+    writeFile(helperPath, 'export { renderer as helper } from "./renderer";'),
+    writeFile(
+      rendererPath,
+      [
+        'import { WebGLRenderer as Renderer } from "three";',
+        "export const renderer = new Renderer();",
+      ].join("\n"),
+    ),
+  ]);
+  const dependencies = await collectLocalTypeScriptDependencies(
+    entryPath,
+    fixtureRoot,
+  );
+  const violations = collectProvenanceViolations(
+    dependencies,
+    POC_PROVENANCE_POLICIES.GALLERY,
+  );
+
+  assert.ok(
+    violations.some(
+      (violation) =>
+        violation.includes(path.relative(REPOSITORY_ROOT, rendererPath)) &&
+        violation.includes("WebGLRenderer"),
+    ),
+    `Expected transitive WebGLRenderer violation, received: ${violations.join("\n")}`,
+  );
+});
+
+test("gallery runtime analysis rejects namespace-aliased WebGLRenderer references", () => {
+  const sourceFile = createSourceFile(
+    "namespace-webgl-renderer.ts",
+    [
+      'import * as Engine from "three";',
+      "export const Renderer = Engine.WebGLRenderer;",
+    ].join("\n"),
+  );
+  const violations = collectGalleryRuntimeViolations(
+    new Map([[sourceFile.fileName, sourceFile]]),
+  );
+
+  assert.ok(
+    violations.some((violation) => violation.includes("WebGLRenderer")),
+    `Expected namespace WebGLRenderer violation, received: ${violations.join("\n")}`,
+  );
+});
+
+test("gallery runtime analysis permits Three.js WebGLRenderer type-only imports", () => {
+  const sourceFile = createSourceFile(
+    "type-only-webgl-renderer.ts",
+    [
+      'import type { WebGLRenderer } from "three";',
+      'import { type WebGLRenderer as RendererType } from "three";',
+      'import type * as THREE from "three";',
+      "export type Renderer = WebGLRenderer | RendererType | THREE.WebGLRenderer;",
+    ].join("\n"),
+  );
+
+  assert.deepEqual(
+    collectGalleryRuntimeViolations(
+      new Map([[sourceFile.fileName, sourceFile]]),
+    ),
+    [],
   );
 });
 
