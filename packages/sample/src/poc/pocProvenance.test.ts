@@ -142,13 +142,8 @@ const collectImportSpecifiers = (sourceFile: ts.SourceFile): Set<string> => {
       node.expression.kind === ts.SyntaxKind.ImportKeyword
     ) {
       const [specifier] = node.arguments;
-      if (
-        specifier &&
-        (ts.isStringLiteral(specifier) ||
-          ts.isNoSubstitutionTemplateLiteral(specifier))
-      ) {
-        specifiers.add(specifier.text);
-      }
+      const value = specifier && evaluateStaticExpression(specifier);
+      if (typeof value === "string") specifiers.add(value);
     }
 
     ts.forEachChild(node, visit);
@@ -273,6 +268,37 @@ test("dependency collection recognizes every supported local import form", async
     [...dependencies.keys()].map((filePath) => path.basename(filePath)).sort(),
     ["aliased.ts", "dynamic.ts", "entry.ts", "exported.ts", "static.ts"],
   );
+});
+
+test("dependency collection evaluates static dynamic import expressions", async (t) => {
+  const fixtures = [
+    ["static template", 'void import(`./${"unsafe"}`);'],
+    ["static concatenation", 'void import("./" + "unsafe");'],
+  ] as const;
+
+  for (const [name, statement] of fixtures) {
+    await t.test(name, async (fixtureTest) => {
+      const fixtureRoot = await mkdtemp(path.join(tmpdir(), "poc-provenance-"));
+      fixtureTest.after(() => rm(fixtureRoot, { recursive: true, force: true }));
+      const sourceRoot = path.join(fixtureRoot, "src");
+      const entryPath = path.join(sourceRoot, "entry.ts");
+      await mkdir(sourceRoot, { recursive: true });
+      await Promise.all([
+        writeFile(entryPath, statement),
+        writeFile(path.join(sourceRoot, "unsafe.ts"), "export {};"),
+      ]);
+
+      const dependencies = await collectLocalTypeScriptDependencies(
+        entryPath,
+        sourceRoot,
+      );
+
+      assert.deepEqual(
+        [...dependencies.keys()].map((filePath) => path.basename(filePath)).sort(),
+        ["entry.ts", "unsafe.ts"],
+      );
+    });
+  }
 });
 
 test("string collection decodes and composes fully static expressions", () => {
