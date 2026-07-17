@@ -586,7 +586,8 @@ const collectImagePathCandidates = (sourceFile: ts.SourceFile): Set<string> =>
 
 const normalizeImagePathFragment = (value: string): string =>
   value
-    .replaceAll("\\", "/")
+    .split("\\")
+    .join("/")
     .replace(/^\/+/, "");
 
 const isAllowedImagePathFragment = (
@@ -769,7 +770,7 @@ const hasApprovedB10TexturePathContract = (
     typeAlias.modifiers?.some(
       (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
     ) !== true ||
-    typeAlias.type.getText(sourceFile).replaceAll(/\s/g, "") !==
+    typeAlias.type.getText(sourceFile).replace(/\s/g, "") !==
       "(typeofB10_TEXTURE_PATHS)[number]"
   ) {
     return false;
@@ -1120,7 +1121,7 @@ const GALLERY_DETAIL_POC_MODULES = new Set([
 ]);
 
 const isDetailPocImport = (specifier: string): boolean => {
-  const fileName = specifier.replaceAll("\\", "/").split("/").at(-1) ?? "";
+  const fileName = specifier.split("\\").join("/").split("/").pop() ?? "";
   const moduleName = fileName.replace(/\.(?:[cm]?[jt]sx?)$/i, "");
   return GALLERY_DETAIL_POC_MODULES.has(moduleName);
 };
@@ -2355,7 +2356,7 @@ test("all POC entry points comply with their asset provenance policy", async (t)
       );
       const dependencyFiles = [...dependencies.keys()]
         .map((filePath) =>
-          path.relative(REPOSITORY_ROOT, filePath).replaceAll(path.sep, "/"),
+          path.relative(REPOSITORY_ROOT, filePath).split(path.sep).join("/"),
         )
         .sort();
       assert.deepEqual(
