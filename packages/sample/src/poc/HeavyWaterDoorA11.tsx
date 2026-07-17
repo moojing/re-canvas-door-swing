@@ -1,27 +1,20 @@
 /**
- * PoC:1-2 a11 重型水門(Biohazard 2)
+ * PoC:1-2 a11 重型水門
  *
- * 驗證目標:「浮凸造型門」不需外找模型——用程式疊 Box + 影片截圖貼圖即可近似。
- * 門體 = 門板 + 上下橫樑 + 中央凸板 + 閥輪座 + 閥輪(圓柱),全部是 primitive。
- *
- * ⚠️ 貼圖是遊戲畫面截圖(placeholder,gitignored,不進發佈包)。
- *    執行 scripts/poc/extract-a11-textures.sh 產生。
- *    正式版需以自製 / CC0 材質替換。
- *
+ * 門體由門板、上下橫樑、中央凸板、閥輪座與閥輪等 primitive 組成。
  * 動畫沿用 door-entrance 的 direct-entry 時間軸(開門 → 前推 → 淡出),不動 lib。
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import {
   getDoorAnimationConfig,
   easeInOutCubic,
 } from "door-entrance";
-import { setTextureColorSpace } from "./textureColorSpace";
+import {
+  createA11MaterialPixels as generateA11ProceduralMaterials,
+} from "./a11ProceduralMaterials";
 
-const TEX_BASE = "/textures/poc-a11";
-
-// ---- 來源影格量測值(px)。與 extract-a11-textures.sh 的 crop 參數同步 ----
 const SRC = {
   door: { w: 335, h: 594, x: 485, y: 178 },
   railTop: { w: 340, h: 96, x: 482, y: 236 },
@@ -34,6 +27,60 @@ const SRC = {
 const DOOR_HEIGHT = 6;
 const S = DOOR_HEIGHT / SRC.door.h; // px → 世界單位
 const DOOR_WIDTH = SRC.door.w * S;
+const TEXTURE_SIZE = 256;
+const MATERIAL_METALNESS = 0.65;
+const MATERIAL_ROUGHNESS = 0.82;
+
+type A11TextureMaps = Readonly<{
+  colorMap: THREE.DataTexture;
+  roughnessMap: THREE.DataTexture;
+}>;
+
+const createDataTexture = (
+  pixels: Uint8ClampedArray,
+  encoding: THREE.TextureEncoding,
+): THREE.DataTexture => {
+  const texture = new THREE.DataTexture(
+    new Uint8Array(pixels),
+    TEXTURE_SIZE,
+    TEXTURE_SIZE,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+  );
+  texture.encoding = encoding;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.repeat.set(1, 1);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+};
+
+const useA11ProceduralTextures = (): A11TextureMaps => {
+  const textures = useMemo(() => {
+    const { colorPixels, roughnessPixels } = generateA11ProceduralMaterials(
+      TEXTURE_SIZE,
+      TEXTURE_SIZE,
+      1101,
+    );
+    return {
+      colorMap: createDataTexture(colorPixels, THREE.sRGBEncoding),
+      roughnessMap: createDataTexture(roughnessPixels, THREE.LinearEncoding),
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      textures.colorMap.dispose();
+      textures.roughnessMap.dispose();
+    },
+    [textures],
+  );
+
+  return textures;
+};
 
 /** 來源 px 矩形 → 門局部座標(門中心為原點,+y 向上) */
 const rectToLocal = (r: { w: number; h: number; x: number; y: number }) => ({
@@ -43,73 +90,53 @@ const rectToLocal = (r: { w: number; h: number; x: number; y: number }) => ({
   y: (SRC.door.h / 2 - (r.y + r.h / 2 - SRC.door.y)) * S,
 });
 
-const useDoorTexture = (file: string) => {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
-  useEffect(() => {
-    let alive = true;
-    // 載入「成功」才綁上材質;載入中/失敗一律走鏽色 fallback,避免空貼圖渲染成白模
-    const tex = new THREE.TextureLoader().load(
-      `${TEX_BASE}/${file}`,
-      () => {
-        if (alive) setTexture(tex);
-      },
-      undefined,
-      () => {
-        console.warn(`[poc-a11] 貼圖載入失敗:${TEX_BASE}/${file}(先執行 scripts/poc/extract-a11-textures.sh?)`);
-      }
-    );
-    setTextureColorSpace(tex);
-    return () => {
-      alive = false;
-      setTexture(null);
-      tex.dispose();
-    };
-  }, [file]);
-  return texture;
-};
-
-/** 通用「凸出部件」:有厚度的色塊 Box + 正面貼圖 */
+/** 通用「凸出部件」:有厚度的 Box + 正面細節層 */
 const ReliefPart = ({
   rect,
   z,
   depth,
-  file,
   sideColor,
+  colorMap,
+  roughnessMap,
 }: {
   rect: { w: number; h: number; x: number; y: number };
   z: number;
   depth: number;
-  file: string;
   sideColor: string;
-}) => {
-  const tex = useDoorTexture(file);
-  return (
-    <group position={[rect.x, rect.y, z]}>
-      <mesh>
-        <boxGeometry args={[rect.w, rect.h, depth]} />
-        <meshLambertMaterial color={sideColor} />
-      </mesh>
-      <mesh position={[0, 0, depth / 2 + 0.002]}>
-        <planeGeometry args={[rect.w, rect.h]} />
-        {/* key 強制換新材質:shader 需以 USE_MAP 重新編譯,否則沿用無貼圖材質會渲染成白色 */}
-        <meshLambertMaterial
-          key={tex ? "textured" : "flat"}
-          map={tex ?? undefined}
-          color={tex ? undefined : sideColor}
-        />
-      </mesh>
-    </group>
-  );
-};
+} & A11TextureMaps) => (
+  <group position={[rect.x, rect.y, z]}>
+    <mesh>
+      <boxGeometry args={[rect.w, rect.h, depth]} />
+      <meshStandardMaterial
+        color={sideColor}
+        map={colorMap}
+        roughnessMap={roughnessMap}
+        metalness={MATERIAL_METALNESS}
+        roughness={MATERIAL_ROUGHNESS}
+      />
+    </mesh>
+    <mesh position={[0, 0, depth / 2 + 0.002]}>
+      <planeGeometry args={[rect.w, rect.h]} />
+      <meshStandardMaterial
+        color={sideColor}
+        map={colorMap}
+        roughnessMap={roughnessMap}
+        metalness={MATERIAL_METALNESS}
+        roughness={MATERIAL_ROUGHNESS}
+      />
+    </mesh>
+  </group>
+);
 
 const ValveWheel = ({
   position,
   spinAngle,
+  colorMap,
+  roughnessMap,
 }: {
   position: [number, number, number];
   spinAngle: number;
-}) => {
-  const tex = useDoorTexture("wheel.png");
+} & A11TextureMaps) => {
   const r = SRC.wheel.r * S;
   const wheelRef = useRef<THREE.Mesh>(null);
   // 繞圓柱自身軸(局部 y)轉 = 閥輪解鎖轉動
@@ -118,17 +145,32 @@ const ValveWheel = ({
   });
   return (
     <group position={position} rotation={[Math.PI / 2, 0, 0]}>
-      {/* 圓柱側面 = 輪圈厚度;頂蓋貼閥輪截圖 */}
       <mesh ref={wheelRef}>
         <cylinderGeometry args={[r, r, 0.14, 24]} />
-        <meshLambertMaterial attach="material-0" color="#5d4a41" />
-        <meshLambertMaterial
-          key={tex ? "textured" : "flat"}
-          attach="material-1"
-          map={tex ?? undefined}
-          color={tex ? undefined : "#6a564c"}
+        <meshStandardMaterial
+          attach="material-0"
+          color="#75645a"
+          map={colorMap}
+          roughnessMap={roughnessMap}
+          metalness={MATERIAL_METALNESS}
+          roughness={MATERIAL_ROUGHNESS}
         />
-        <meshLambertMaterial attach="material-2" color="#4a3a33" />
+        <meshStandardMaterial
+          attach="material-1"
+          color="#806e61"
+          map={colorMap}
+          roughnessMap={roughnessMap}
+          metalness={MATERIAL_METALNESS}
+          roughness={MATERIAL_ROUGHNESS}
+        />
+        <meshStandardMaterial
+          attach="material-2"
+          color="#66564e"
+          map={colorMap}
+          roughnessMap={roughnessMap}
+          metalness={MATERIAL_METALNESS}
+          roughness={MATERIAL_ROUGHNESS}
+        />
       </mesh>
     </group>
   );
@@ -137,12 +179,13 @@ const ValveWheel = ({
 const A11Door = ({
   doorAngle,
   wheelAngle,
+  colorMap,
+  roughnessMap,
 }: {
   doorAngle: number;
   wheelAngle: number;
-}) => {
+} & A11TextureMaps) => {
   const doorGroupRef = useRef<THREE.Group>(null);
-  const faceTex = useDoorTexture("door.png");
 
   const railTop = rectToLocal(SRC.railTop);
   const railBottom = rectToLocal(SRC.railBottom);
@@ -165,7 +208,11 @@ const A11Door = ({
       {/* 門框(沿用 lib 的暗色框) */}
       <mesh position={[0, 0, -0.1]}>
         <boxGeometry args={[DOOR_WIDTH + 0.25, DOOR_HEIGHT + 0.25, 0.2]} />
-        <meshLambertMaterial color="#2d2520" />
+        <meshStandardMaterial
+          color="#2d2520"
+          metalness={MATERIAL_METALNESS}
+          roughness={MATERIAL_ROUGHNESS}
+        />
       </mesh>
 
       {/* 鉸鏈在左緣 */}
@@ -174,23 +221,64 @@ const A11Door = ({
           {/* 門板本體 */}
           <mesh>
             <boxGeometry args={[DOOR_WIDTH, DOOR_HEIGHT, 0.15]} />
-            <meshLambertMaterial color="#5f4c43" />
+            <meshStandardMaterial
+              color="#77665d"
+              map={colorMap}
+              roughnessMap={roughnessMap}
+              metalness={MATERIAL_METALNESS}
+              roughness={MATERIAL_ROUGHNESS}
+            />
           </mesh>
           <mesh position={[0, 0, 0.077]}>
             <planeGeometry args={[DOOR_WIDTH, DOOR_HEIGHT]} />
-            <meshLambertMaterial
-              key={faceTex ? "textured" : "flat"}
-              map={faceTex ?? undefined}
-              color={faceTex ? undefined : "#5f4c43"}
+            <meshStandardMaterial
+              color="#77665d"
+              map={colorMap}
+              roughnessMap={roughnessMap}
+              metalness={MATERIAL_METALNESS}
+              roughness={MATERIAL_ROUGHNESS}
             />
           </mesh>
 
           {/* 浮凸部件:上/下橫樑、中央面板、閥輪座、閥輪 */}
-          <ReliefPart rect={railTop} z={0.12} depth={0.12} file="rail-top.png" sideColor="#8d8578" />
-          <ReliefPart rect={railBottom} z={0.12} depth={0.12} file="rail-bottom.png" sideColor="#8d8578" />
-          <ReliefPart rect={panel} z={0.14} depth={0.14} file="panel.png" sideColor="#74615a" />
-          <ReliefPart rect={housing} z={0.22} depth={0.16} file="valve-housing.png" sideColor="#867d70" />
-          <ValveWheel position={wheelPos} spinAngle={wheelAngle} />
+          <ReliefPart
+            rect={railTop}
+            z={0.12}
+            depth={0.12}
+            sideColor="#8d8578"
+            colorMap={colorMap}
+            roughnessMap={roughnessMap}
+          />
+          <ReliefPart
+            rect={railBottom}
+            z={0.12}
+            depth={0.12}
+            sideColor="#8d8578"
+            colorMap={colorMap}
+            roughnessMap={roughnessMap}
+          />
+          <ReliefPart
+            rect={panel}
+            z={0.14}
+            depth={0.14}
+            sideColor="#74615a"
+            colorMap={colorMap}
+            roughnessMap={roughnessMap}
+          />
+          <ReliefPart
+            rect={housing}
+            z={0.22}
+            depth={0.16}
+            sideColor="#867d70"
+            colorMap={colorMap}
+            roughnessMap={roughnessMap}
+          />
+          <ValveWheel
+            position={wheelPos}
+            spinAngle={wheelAngle}
+            colorMap={colorMap}
+            roughnessMap={roughnessMap}
+          />
         </group>
       </group>
     </group>
@@ -215,6 +303,7 @@ const CameraRig = ({ z }: { z: number }) => {
 
 const HeavyWaterDoorA11 = () => {
   const config = getDoorAnimationConfig("direct-entry");
+  const { colorMap, roughnessMap } = useA11ProceduralTextures();
   const [progress, setProgress] = useState(0);
   const frameRef = useRef<number | null>(null);
 
@@ -259,11 +348,12 @@ const HeavyWaterDoorA11 = () => {
     <div className="min-h-screen bg-black p-6 text-white">
       <div className="mx-auto max-w-3xl space-y-4">
         <h1 className="text-xl font-bold">
-          PoC:1-2 a11 重型水門(Box 疊加 + 截圖貼圖)
+          PoC:1-2 a11 重型水門(Box 疊加 + 程序材質)
         </h1>
         <p className="text-sm text-white/60">
-          驗證「浮凸造型門可用 primitive 自組,不需外找模型」。貼圖為遊戲截圖
-          placeholder(gitignored),正式版需替換為自製 / CC0 材質。
+          驗證「浮凸造型門可用 primitive 自組,不需外找模型」。Material is
+          deterministic and procedurally generated; it contains no original game
+          pixels.
         </p>
 
         <div className="h-[520px] w-full overflow-hidden rounded-xl border border-white/10 bg-black">
@@ -275,7 +365,12 @@ const HeavyWaterDoorA11 = () => {
             <directionalLight position={[2, 5, 5]} intensity={0.7} />
             <directionalLight position={[-3, 2, -4]} intensity={0.35} color="#8fa8c7" />
             <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
-            <A11Door doorAngle={state.doorAngle} wheelAngle={wheelAngle} />
+            <A11Door
+              doorAngle={state.doorAngle}
+              wheelAngle={wheelAngle}
+              colorMap={colorMap}
+              roughnessMap={roughnessMap}
+            />
             <CameraRig z={state.cameraPosition[2]} />
             <FadePlane opacity={state.fadeOut} cameraZ={state.cameraPosition[2]} />
           </Canvas>
