@@ -17,18 +17,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { getDoorAnimationConfig, easeInOutCubic } from "door-entrance";
+import {
+  B10_TEXTURE_PATHS,
+  resolveB10TextureUrl,
+  type B10TexturePath,
+} from "./b10TextureUrls";
 
-const B10_DOOR_TEXTURE_URL = "/textures/b10/door.png" as const;
-const B10_LOWER_TEXTURE_URL = "/textures/b10/lower.png" as const;
-const B10_LEVER_SIGN_TEXTURE_URL = "/textures/b10/lever-sign.png" as const;
-const B10_LEVER_BOX_TEXTURE_URL = "/textures/b10/lever-box.png" as const;
-const B10_TEXTURE_URLS = Object.freeze([
-  B10_DOOR_TEXTURE_URL,
-  B10_LOWER_TEXTURE_URL,
-  B10_LEVER_SIGN_TEXTURE_URL,
-  B10_LEVER_BOX_TEXTURE_URL,
-] as const);
-type B10TextureUrl = (typeof B10_TEXTURE_URLS)[number];
+const [
+  B10_DOOR_TEXTURE_PATH,
+  B10_LOWER_TEXTURE_PATH,
+  B10_LEVER_SIGN_TEXTURE_PATH,
+  B10_LEVER_BOX_TEXTURE_PATH,
+] = B10_TEXTURE_PATHS;
 
 // ---- 來源影格量測值(px,亮度剖面量得)。與 extract-b10-textures.sh 的 crop 參數同步 ----
 // 上閘板 bbox x 345–905、y 0–440(t=3.6s 關門特寫);齒根 y=403、齒尖 y=440。
@@ -117,13 +117,17 @@ const buildLowerShape = () => {
  * repeat=1/尺寸、offset=0.5 讓 crop 影像剛好鋪滿輪廓 bbox。
  */
 const useCropTexture = (
-  textureUrl: B10TextureUrl,
+  texturePath: B10TexturePath,
   wPx: number,
   hPx: number,
 ) => {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   useEffect(() => {
     let alive = true;
+    const textureUrl = resolveB10TextureUrl(
+      import.meta.env.BASE_URL,
+      texturePath,
+    );
     const tex = new THREE.TextureLoader().load(
       textureUrl,
       () => {
@@ -144,7 +148,7 @@ const useCropTexture = (
       setTexture(null);
       tex.dispose();
     };
-  }, [textureUrl, wPx, hPx]);
+  }, [texturePath, wPx, hPx]);
   return texture;
 };
 
@@ -195,10 +199,14 @@ const ToothedPlate = ({
 };
 
 /** 警示牌/拉桿盒的貼圖:plane UV 是 0..1,直接載入不做 UV 轉換 */
-const useFlatTexture = (textureUrl: B10TextureUrl) => {
+const useFlatTexture = (texturePath: B10TexturePath) => {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   useEffect(() => {
     let alive = true;
+    const textureUrl = resolveB10TextureUrl(
+      import.meta.env.BASE_URL,
+      texturePath,
+    );
     const tex = new THREE.TextureLoader().load(
       textureUrl,
       () => {
@@ -215,7 +223,7 @@ const useFlatTexture = (textureUrl: B10TextureUrl) => {
       setTexture(null);
       tex.dispose();
     };
-  }, [textureUrl]);
+  }, [texturePath]);
   return texture;
 };
 
@@ -227,10 +235,10 @@ const FlatReliefPart = ({
 }: {
   rect: { w: number; h: number; x: number; y: number };
   depth: number;
-  textureUrl: B10TextureUrl;
+  texturePath: B10TexturePath;
   sideColor: string;
 }) => {
-  const tex = useFlatTexture(textureUrl);
+  const tex = useFlatTexture(texturePath);
   const { cx, cy } = rectToLocal(rect);
   return (
     <group position={[cx, cy, PLATE_DEPTH / 2 + depth / 2]}>
@@ -256,12 +264,12 @@ const B10Gate = ({ doorAngle }: { doorAngle: number }) => {
   const gateShape = useMemo(buildGateShape, []);
   const lowerShape = useMemo(buildLowerShape, []);
   const gateTex = useCropTexture(
-    B10_DOOR_TEXTURE_URL,
+    B10_DOOR_TEXTURE_PATH,
     GATE_PX.w,
     GATE_PX.h,
   );
   const lowerTex = useCropTexture(
-    B10_LOWER_TEXTURE_URL,
+    B10_LOWER_TEXTURE_PATH,
     LOWER_PX.w,
     LOWER_PX.h,
   );
@@ -295,13 +303,13 @@ const B10Gate = ({ doorAngle }: { doorAngle: number }) => {
           <FlatReliefPart
             rect={LEVER_SIGN}
             depth={8}
-            textureUrl={B10_LEVER_SIGN_TEXTURE_URL}
+            texturePath={B10_LEVER_SIGN_TEXTURE_PATH}
             sideColor="#6b6428"
           />
           <FlatReliefPart
             rect={LEVER_BOX}
             depth={14}
-            textureUrl={B10_LEVER_BOX_TEXTURE_URL}
+            texturePath={B10_LEVER_BOX_TEXTURE_PATH}
             sideColor="#3c3a2c"
           />
         </group>

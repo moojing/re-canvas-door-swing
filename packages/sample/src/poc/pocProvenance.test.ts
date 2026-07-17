@@ -71,7 +71,10 @@ const POC_PROVENANCE_POLICIES = Object.freeze({
       "lever-sign.png",
       "lever-box.png",
     ],
-    ["packages/sample/src/poc/SewerGateB10.tsx"],
+    [
+      "packages/sample/src/poc/SewerGateB10.tsx",
+      "packages/sample/src/poc/b10TextureUrls.ts",
+    ],
     [],
     true,
   ),
@@ -687,7 +690,7 @@ const isImmutableLiteralStringExpression = (
   );
 };
 
-const collectB10TextureUrlTupleValues = (
+const collectB10TexturePathTupleValues = (
   sourceFile: ts.SourceFile,
 ): readonly string[] | null => {
   const declarations = sourceFile.statements.flatMap((statement) => {
@@ -699,8 +702,11 @@ const collectB10TextureUrlTupleValues = (
     }
     return statement.declarationList.declarations.filter(
       (declaration) =>
+        statement.modifiers?.some(
+          (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+        ) === true &&
         ts.isIdentifier(declaration.name) &&
-        declaration.name.text === "B10_TEXTURE_URLS",
+        declaration.name.text === "B10_TEXTURE_PATHS",
     );
   });
   if (declarations.length !== 1) return null;
@@ -748,7 +754,7 @@ const collectB10TextureUrlTupleValues = (
   return values;
 };
 
-const hasApprovedB10TextureUrlContract = (
+const hasApprovedB10TexturePathContract = (
   sourceFile: ts.SourceFile,
   policy: PocProvenancePolicy,
 ): boolean => {
@@ -756,20 +762,21 @@ const hasApprovedB10TextureUrlContract = (
   const typeAlias = sourceFile.statements.find(
     (statement): statement is ts.TypeAliasDeclaration =>
       ts.isTypeAliasDeclaration(statement) &&
-      statement.name.text === "B10TextureUrl",
+      statement.name.text === "B10TexturePath",
   );
   if (
     !typeAlias ||
+    typeAlias.modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+    ) !== true ||
     typeAlias.type.getText(sourceFile).replaceAll(/\s/g, "") !==
-      "(typeofB10_TEXTURE_URLS)[number]"
+      "(typeofB10_TEXTURE_PATHS)[number]"
   ) {
     return false;
   }
 
-  const tupleValues = collectB10TextureUrlTupleValues(sourceFile);
-  const expectedCompletePaths = getSplitComposedImagePaths(policy).map(
-    (value) => `/${value}`,
-  );
+  const tupleValues = collectB10TexturePathTupleValues(sourceFile);
+  const expectedCompletePaths = getSplitComposedImagePaths(policy);
   const sortedExpectedPaths = [...expectedCompletePaths].sort();
   return (
     tupleValues !== null &&
@@ -782,26 +789,63 @@ const hasApprovedB10TextureUrlContract = (
   );
 };
 
-const isApprovedTypedTextureUrl = (
+const isApprovedTypedB10TexturePath = (
   expression: ts.Expression,
   context: StaticBindingContext,
-  sourceFile: ts.SourceFile,
-  policy: PocProvenancePolicy,
 ): boolean => {
   if (!ts.isIdentifier(expression)) return false;
   const declaration = resolveStaticBinding(expression, context)?.declaration;
+  const parameterType =
+    declaration !== undefined && ts.isParameter(declaration)
+      ? declaration.type
+      : undefined;
   return (
-    declaration !== undefined &&
-    ts.isParameter(declaration) &&
-    declaration.type !== undefined &&
-    declaration.type.getText(sourceFile) === "B10TextureUrl" &&
-    hasApprovedB10TextureUrlContract(sourceFile, policy)
+    parameterType !== undefined &&
+    ts.isTypeReferenceNode(parameterType) &&
+    parameterType.typeArguments === undefined &&
+    ts.isIdentifier(parameterType.typeName) &&
+    isNamedImportFrom(
+      parameterType.typeName,
+      "B10TexturePath",
+      "./b10TextureUrls",
+      context,
+    )
+  );
+};
+
+const isApprovedB10TextureResolverCall = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+): boolean =>
+  ts.isCallExpression(expression) &&
+  expression.arguments.length === 2 &&
+  ts.isIdentifier(expression.expression) &&
+  isNamedImportFrom(
+    expression.expression,
+    "resolveB10TextureUrl",
+    "./b10TextureUrls",
+    context,
+  ) &&
+  isImportMetaBaseUrl(expression.arguments[0]) &&
+  isApprovedTypedB10TexturePath(expression.arguments[1], context);
+
+const isApprovedResolvedB10TextureUrl = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  hasApprovedPathContract: boolean,
+): boolean => {
+  if (!hasApprovedPathContract || !ts.isIdentifier(expression)) return false;
+  const binding = resolveStaticBinding(expression, context);
+  return (
+    binding?.initializer !== null &&
+    binding?.initializer !== undefined &&
+    isApprovedB10TextureResolverCall(binding.initializer, context)
   );
 };
 
 const collectUnapprovedDynamicTextureLoads = (
   sourceFile: ts.SourceFile,
-  policy: PocProvenancePolicy,
+  hasApprovedB10PathContract = false,
 ): string[] => {
   const context = createStaticBindingContext(sourceFile);
   const violations: string[] = [];
@@ -817,11 +861,10 @@ const collectUnapprovedDynamicTextureLoads = (
       if (
         pathExpression &&
         evaluateStaticExpression(pathExpression, context) === undefined &&
-        !isApprovedTypedTextureUrl(
+        !isApprovedResolvedB10TextureUrl(
           pathExpression,
           context,
-          sourceFile,
-          policy,
+          hasApprovedB10PathContract,
         )
       ) {
         violations.push(pathExpression.getText(sourceFile));
@@ -1196,6 +1239,12 @@ const collectProvenanceViolations = (
   policy: PocProvenancePolicy,
 ): string[] => {
   const violations = new Set<string>();
+  const approvedB10ContractCount = [...dependencies.values()].filter(
+    (sourceFile) => hasApprovedB10TexturePathContract(sourceFile, policy),
+  ).length;
+  const hasApprovedB10PathContract =
+    policy.entryPath === POC_PROVENANCE_POLICIES.B10.entryPath &&
+    approvedB10ContractCount === 1;
 
   for (const [filePath, sourceFile] of dependencies) {
     for (const value of collectStaticStringValues(sourceFile)) {
@@ -1224,7 +1273,7 @@ const collectProvenanceViolations = (
 
     for (const expression of collectUnapprovedDynamicTextureLoads(
       sourceFile,
-      policy,
+      hasApprovedB10PathContract,
     )) {
       violations.add(
         `${path.relative(REPOSITORY_ROOT, filePath)}: unresolved TextureLoader image path in ${JSON.stringify(expression)}`,
@@ -1433,7 +1482,10 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
         "lever-sign.png",
         "lever-box.png",
       ],
-      expectedDependencyFiles: ["packages/sample/src/poc/SewerGateB10.tsx"],
+      expectedDependencyFiles: [
+        "packages/sample/src/poc/SewerGateB10.tsx",
+        "packages/sample/src/poc/b10TextureUrls.ts",
+      ],
       trackedTextureDirectories: [],
       allowSplitImageFragments: true,
     },
@@ -1634,29 +1686,34 @@ test("immutable const bindings expose composed unknown B10 image paths", () => {
   );
 });
 
-test("B10 TextureLoader paths use the complete approved URL contract", async () => {
-  const source = await readFile(POC_PROVENANCE_POLICIES.B10.entryPath, "utf8");
-  const executableSource = stripSourceComments(
-    source,
+test("B10 TextureLoader paths use the exact typed basename-aware contract", async () => {
+  const dependencies = await collectLocalTypeScriptDependencies(
     POC_PROVENANCE_POLICIES.B10.entryPath,
   );
-  const sourceFile = createSourceFile(
-    POC_PROVENANCE_POLICIES.B10.entryPath,
-    executableSource,
-  );
-  const approvedUrls = [
-    "/textures/b10/door.png",
-    "/textures/b10/lower.png",
-    "/textures/b10/lever-sign.png",
-    "/textures/b10/lever-box.png",
+  const sourceFile = dependencies.get(POC_PROVENANCE_POLICIES.B10.entryPath);
+  assert.ok(sourceFile);
+  const approvedPaths = [
+    "textures/b10/door.png",
+    "textures/b10/lower.png",
+    "textures/b10/lever-sign.png",
+    "textures/b10/lever-box.png",
   ];
-  const staticValues = collectStaticStringValues(sourceFile);
+  const staticValues = new Set(
+    [...dependencies.values()].flatMap((dependency) => [
+      ...collectStaticStringValues(dependency),
+    ]),
+  );
 
-  for (const approvedUrl of approvedUrls) {
-    assert.ok(staticValues.has(approvedUrl), `Missing immutable ${approvedUrl}`);
+  for (const approvedPath of approvedPaths) {
+    assert.equal(
+      staticValues.has(`/${approvedPath}`),
+      false,
+      `Root-relative /${approvedPath} bypasses the production base path`,
+    );
+    assert.ok(staticValues.has(approvedPath), `Missing immutable ${approvedPath}`);
     assert.equal(
       isAllowedImagePathFragment(
-        approvedUrl,
+        approvedPath,
         POC_PROVENANCE_POLICIES.B10.allowedImagePaths,
         true,
       ),
@@ -1664,16 +1721,13 @@ test("B10 TextureLoader paths use the complete approved URL contract", async () 
     );
   }
 
-  const urlType = sourceFile.statements.find(
-    (statement): statement is ts.TypeAliasDeclaration =>
-      ts.isTypeAliasDeclaration(statement) &&
-      statement.name.text === "B10TextureUrl",
+  const contractSources = [...dependencies.values()].filter((dependency) =>
+    hasApprovedB10TexturePathContract(
+      dependency,
+      POC_PROVENANCE_POLICIES.B10,
+    ),
   );
-  assert.ok(urlType, "B10TextureUrl must derive from the immutable URL constants");
-  assert.equal(
-    urlType.type.getText(sourceFile).replaceAll(/\s/g, ""),
-    "(typeofB10_TEXTURE_URLS)[number]",
-  );
+  assert.equal(contractSources.length, 1);
 
   const loaderArguments: ts.Expression[] = [];
   const visit = (node: ts.Node): void => {
@@ -1696,49 +1750,110 @@ test("B10 TextureLoader paths use the complete approved URL contract", async () 
     assert.equal(loaderArgument.text, "textureUrl");
   }
   assert.deepEqual(
-    collectProvenanceViolations(
-      new Map([[sourceFile.fileName, sourceFile]]),
-      POC_PROVENANCE_POLICIES.B10,
+    collectUnapprovedDynamicTextureLoads(
+      sourceFile,
+      true,
     ),
+    [],
+  );
+  assert.deepEqual(
+    collectProvenanceViolations(dependencies, POC_PROVENANCE_POLICIES.B10),
     [],
   );
 });
 
-test("B10 texture URL contract rejects a dynamic fifth tuple element", () => {
-  const source = [
-    'const B10_DOOR_TEXTURE_URL = "/textures/b10/door.png" as const;',
-    'const B10_LOWER_TEXTURE_URL = "/textures/b10/lower.png" as const;',
-    'const B10_LEVER_SIGN_TEXTURE_URL = "/textures/b10/lever-sign.png" as const;',
-    'const B10_LEVER_BOX_TEXTURE_URL = "/textures/b10/lever-box.png" as const;',
-    "declare const dynamicTextureUrl: string;",
-    "const B10_TEXTURE_URLS = Object.freeze([",
-    "  B10_DOOR_TEXTURE_URL,",
-    "  B10_LOWER_TEXTURE_URL,",
-    "  B10_LEVER_SIGN_TEXTURE_URL,",
-    "  B10_LEVER_BOX_TEXTURE_URL,",
-    "  dynamicTextureUrl,",
-    "] as const);",
-    "type B10TextureUrl = (typeof B10_TEXTURE_URLS)[number];",
-    "const loadTexture = (textureUrl: B10TextureUrl) =>",
-    "  new THREE.TextureLoader().load(textureUrl);",
-  ].join("\n");
-  const sourceFile = createSourceFile("widened-b10-contract.ts", source);
+const createB10TexturePathContractFixture = (
+  elements: readonly string[],
+  typeExpression = "(typeof B10_TEXTURE_PATHS)[number]",
+  prefix = "",
+): ts.SourceFile =>
+  createSourceFile(
+    "b10-texture-path-contract.ts",
+    [
+      prefix,
+      "export const B10_TEXTURE_PATHS = Object.freeze([",
+      ...elements.map((element) => `  ${element},`),
+      "] as const);",
+      `export type B10TexturePath = ${typeExpression};`,
+    ].join("\n"),
+  );
 
-  assert.equal(
-    hasApprovedB10TextureUrlContract(
-      sourceFile,
-      POC_PROVENANCE_POLICIES.B10,
+test("B10 texture path contract rejects extra, dynamic, and widened entries", () => {
+  const approvedElements = [
+    '"textures/b10/door.png"',
+    '"textures/b10/lower.png"',
+    '"textures/b10/lever-sign.png"',
+    '"textures/b10/lever-box.png"',
+  ];
+  const fixtures = [
+    createB10TexturePathContractFixture([
+      ...approvedElements,
+      '"textures/b10/extra.png"',
+    ]),
+    createB10TexturePathContractFixture(
+      [...approvedElements, "dynamicTexturePath"],
+      undefined,
+      "declare const dynamicTexturePath: string;",
     ),
-    false,
-  );
-  assert.ok(
-    collectProvenanceViolations(
-      new Map([[sourceFile.fileName, sourceFile]]),
-      POC_PROVENANCE_POLICIES.B10,
-    ).some((violation) =>
-      violation.includes("unresolved TextureLoader image path"),
+    createB10TexturePathContractFixture(approvedElements, "string"),
+  ];
+
+  for (const fixture of fixtures) {
+    assert.equal(
+      hasApprovedB10TexturePathContract(
+        fixture,
+        POC_PROVENANCE_POLICIES.B10,
+      ),
+      false,
+    );
+  }
+});
+
+test("B10 TextureLoader provenance only approves the typed BASE_URL resolver", () => {
+  const approvedSource = [
+    'import { resolveB10TextureUrl, type B10TexturePath } from "./b10TextureUrls";',
+    "const loadTexture = (texturePath: B10TexturePath) => {",
+    "  const textureUrl = resolveB10TextureUrl(import.meta.env.BASE_URL, texturePath);",
+    "  new THREE.TextureLoader().load(textureUrl);",
+    "};",
+  ].join("\n");
+  const rejectedSources = [
+    approvedSource.replace(
+      "new THREE.TextureLoader().load(textureUrl);",
+      "new THREE.TextureLoader().load(texturePath);",
     ),
+    approvedSource.replace(
+      "import.meta.env.BASE_URL, texturePath",
+      '"/", texturePath',
+    ),
+    approvedSource
+      .replace("texturePath: B10TexturePath", "texturePath: string")
+      .replace("type B10TexturePath", "B10TexturePath"),
+    approvedSource.replace(
+      'import { resolveB10TextureUrl, type B10TexturePath } from "./b10TextureUrls";',
+      [
+        'import { resolveB10TextureUrl } from "./b10TextureUrls";',
+        "type B10TexturePath = string;",
+      ].join("\n"),
+    ),
+  ];
+
+  assert.deepEqual(
+    collectUnapprovedDynamicTextureLoads(
+      createSourceFile("approved-b10-loader.ts", approvedSource),
+      true,
+    ),
+    [],
   );
+  for (const rejectedSource of rejectedSources) {
+    assert.equal(
+      collectUnapprovedDynamicTextureLoads(
+        createSourceFile("rejected-b10-loader.ts", rejectedSource),
+        true,
+      ).length,
+      1,
+    );
+  }
 });
 
 test("join-produced unknown B10 filenames resolve and fail provenance", () => {
