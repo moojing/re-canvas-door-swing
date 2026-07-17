@@ -10,13 +10,13 @@ The gallery, its thumbnails, and every linked POC must contain no original game 
 
 The first gallery release contains exactly these entries:
 
-| ID | Title | Route | Thumbnail |
-| --- | --- | --- | --- |
-| A11 | Heavy Water Door | `/poc/a11` | `/poc-thumbnails/a11.png` |
-| B10 | Sewer Gate | `/poc/b10` | `/poc-thumbnails/b10.png` |
-| C03 | Lift Platform | `/poc/c03` | `/poc-thumbnails/c03.png` |
-| B05 | Arched Double Gate | `/poc/b05` | `/poc-thumbnails/b05.png` |
-| B06 | Heavy Water Double Door | `/poc/b06` | `/poc-thumbnails/b06.png` |
+| ID | Title | Verification target | Route | Thumbnail |
+| --- | --- | --- | --- | --- |
+| A11 | Heavy Water Door | Primitive relief geometry with a procedural heavy-metal finish. | `/poc/a11` | `/poc-thumbnails/a11.png` |
+| B10 | Sewer Gate | Extruded interlocking teeth with opposing vertical motion. | `/poc/b10` | `/poc-thumbnails/b10.png` |
+| C03 | Lift Platform | Primitive lift platform with procedural rust and mesh. | `/poc/c03` | `/poc-thumbnails/c03.png` |
+| B05 | Arched Double Gate | Generated arched iron leaves with mirrored inward swing. | `/poc/b05` | `/poc-thumbnails/b05.png` |
+| B06 | Heavy Water Double Door | Generated Normal and Frozen leaves with valve-first motion. | `/poc/b06` | `/poc-thumbnails/b06.png` |
 
 This work does not change feasibility classifications, evaluation CSV data, or the sibling evaluation gallery.
 
@@ -68,7 +68,9 @@ If a thumbnail fails to decode, the card retains its dimensions and shows a dark
 
 Thumbnails are committed PNG files under `packages/sample/public/poc-thumbnails/`.
 
-Each thumbnail is captured from the POC's WebGL canvas at progress zero after its safe assets have loaded. Capture uses one fixed desktop viewport and one fixed crop aspect ratio, excluding page controls, headings, browser chrome, and unrelated UI. A11 is captured only after its procedural replacement is active.
+Each thumbnail is captured from the POC's WebGL canvas at progress zero after its safe assets have loaded. B06 is captured with the default Normal variant. A11 is captured only after its procedural replacement is active.
+
+The canonical browser viewport is `1440x1000` CSS pixels. The capture is a centered `960x540` CSS-pixel clip around the WebGL canvas area. For fixed-height 520-pixel canvases, the remaining 20 vertical pixels come from the adjacent safe page background, split evenly above and below. The clip excludes controls, headings, browser chrome, and unrelated UI. The committed PNG must be exactly `960x540` pixels; device-scale overrides are disabled during capture so CSS and output pixels match one to one.
 
 The capture workflow must not read the sibling gallery, ignored materials, source videos, or extracted frames. The resulting PNGs are runtime-only previews and are not used as 3D materials.
 
