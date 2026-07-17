@@ -835,6 +835,200 @@ const collectUnapprovedDynamicTextureLoads = (
   return violations;
 };
 
+const getImportDeclaration = (
+  node: ts.Node,
+): ts.ImportDeclaration | null => {
+  let current: ts.Node | undefined = node;
+  while (current) {
+    if (ts.isImportDeclaration(current)) return current;
+    current = current.parent;
+  }
+  return null;
+};
+
+const isNamedImportFrom = (
+  identifier: ts.Identifier,
+  importedName: string,
+  moduleSpecifier: string,
+  context: StaticBindingContext,
+): boolean => {
+  const declaration = resolveStaticBinding(identifier, context)?.declaration;
+  if (!declaration || !ts.isImportSpecifier(declaration)) return false;
+  const importDeclaration = getImportDeclaration(declaration);
+  return (
+    (declaration.propertyName?.text ?? declaration.name.text) === importedName &&
+    importDeclaration !== null &&
+    ts.isStringLiteral(importDeclaration.moduleSpecifier) &&
+    importDeclaration.moduleSpecifier.text === moduleSpecifier
+  );
+};
+
+const isImportMetaBaseUrl = (expression: ts.Expression): boolean =>
+  ts.isPropertyAccessExpression(expression) &&
+  expression.name.text === "BASE_URL" &&
+  ts.isPropertyAccessExpression(expression.expression) &&
+  expression.expression.name.text === "env" &&
+  ts.isMetaProperty(expression.expression.expression) &&
+  expression.expression.expression.keywordToken === ts.SyntaxKind.ImportKeyword &&
+  expression.expression.expression.name.text === "meta";
+
+const isMappedGalleryThumbnailPath = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+): boolean => {
+  if (
+    !ts.isPropertyAccessExpression(expression) ||
+    expression.name.text !== "thumbnailPath" ||
+    !ts.isIdentifier(expression.expression)
+  ) {
+    return false;
+  }
+
+  const itemIdentifier = expression.expression;
+  const parameter = resolveStaticBinding(itemIdentifier, context)?.declaration;
+  if (!parameter || !ts.isParameter(parameter)) return false;
+  const callback = parameter.parent;
+  if (
+    (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) ||
+    callback.parameters[0] !== parameter ||
+    !ts.isCallExpression(callback.parent) ||
+    !callback.parent.arguments.includes(callback) ||
+    !ts.isPropertyAccessExpression(callback.parent.expression) ||
+    callback.parent.expression.name.text !== "map" ||
+    !ts.isIdentifier(callback.parent.expression.expression)
+  ) {
+    return false;
+  }
+
+  return isNamedImportFrom(
+    callback.parent.expression.expression,
+    "POC_GALLERY_ITEMS",
+    "./pocGalleryData",
+    context,
+  );
+};
+
+const isApprovedGalleryThumbnailResolverCall = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+): boolean =>
+  ts.isCallExpression(expression) &&
+  expression.arguments.length === 2 &&
+  ts.isIdentifier(expression.expression) &&
+  isNamedImportFrom(
+    expression.expression,
+    "resolvePocThumbnailUrl",
+    "./pocGalleryData",
+    context,
+  ) &&
+  isImportMetaBaseUrl(expression.arguments[0]) &&
+  isMappedGalleryThumbnailPath(expression.arguments[1], context);
+
+const collectGalleryJsxSourceViolations = (
+  sourceFile: ts.SourceFile,
+  policy: PocProvenancePolicy,
+): string[] => {
+  const violations: string[] = [];
+  const context = createStaticBindingContext(sourceFile);
+
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isJsxAttribute(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === "src"
+    ) {
+      const initializer = node.initializer;
+      const expression =
+        initializer && ts.isJsxExpression(initializer)
+          ? initializer.expression
+          : undefined;
+      const staticValue = initializer && ts.isStringLiteral(initializer)
+        ? initializer.text
+        : expression
+          ? evaluateStaticExpression(expression, context)
+          : undefined;
+
+      if (typeof staticValue === "string") {
+        if (!isAllowedImagePathFragment(staticValue, policy.allowedImagePaths)) {
+          violations.push(`unapproved JSX src ${JSON.stringify(staticValue)}`);
+        }
+      } else if (
+        !expression ||
+        !isApprovedGalleryThumbnailResolverCall(expression, context)
+      ) {
+        violations.push(
+          `unresolved JSX src ${expression?.getText(sourceFile) ?? node.getText(sourceFile)}`,
+        );
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return violations.sort();
+};
+
+const GALLERY_DETAIL_POC_MODULES = new Set([
+  "HeavyWaterDoorA11",
+  "SewerGateB10",
+  "LiftPlatformC03",
+  "ArchedGateB05",
+  "HeavyWaterDoubleDoorB06",
+]);
+
+const isDetailPocImport = (specifier: string): boolean => {
+  const fileName = specifier.replaceAll("\\", "/").split("/").at(-1) ?? "";
+  const moduleName = fileName.replace(/\.(?:[cm]?[jt]sx?)$/i, "");
+  return GALLERY_DETAIL_POC_MODULES.has(moduleName);
+};
+
+const collectGalleryRuntimeViolations = (
+  dependencies: ReadonlyMap<string, ts.SourceFile>,
+): string[] => {
+  const violations = new Set<string>();
+
+  for (const [filePath, sourceFile] of dependencies) {
+    const relativePath = path.relative(REPOSITORY_ROOT, filePath);
+    for (const specifier of collectImportSpecifiers(sourceFile)) {
+      if (
+        specifier === "@react-three/fiber" ||
+        specifier.startsWith("@react-three/fiber/")
+      ) {
+        violations.add(
+          `${relativePath}: forbidden gallery import ${JSON.stringify(specifier)}`,
+        );
+      }
+      if (isDetailPocImport(specifier)) {
+        violations.add(
+          `${relativePath}: forbidden detail POC import ${JSON.stringify(specifier)}`,
+        );
+      }
+    }
+
+    const visit = (node: ts.Node): void => {
+      if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+        const tagName = node.tagName.getText(sourceFile);
+        const terminalName = tagName.split(/[.:]/).at(-1);
+        if (
+          terminalName === "Canvas" ||
+          terminalName === "canvas" ||
+          terminalName?.toLowerCase() === "iframe"
+        ) {
+          violations.add(
+            `${relativePath}: forbidden gallery JSX element <${tagName}>`,
+          );
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
+  }
+
+  return [...violations].sort();
+};
+
 const collectProvenanceViolations = (
   dependencies: ReadonlyMap<string, ts.SourceFile>,
   policy: PocProvenancePolicy,
@@ -873,6 +1067,23 @@ const collectProvenanceViolations = (
       violations.add(
         `${path.relative(REPOSITORY_ROOT, filePath)}: unresolved TextureLoader image path in ${JSON.stringify(expression)}`,
       );
+    }
+
+    if (policy.entryPath === POC_PROVENANCE_POLICIES.GALLERY.entryPath) {
+      for (const violation of collectGalleryJsxSourceViolations(
+        sourceFile,
+        policy,
+      )) {
+        violations.add(
+          `${path.relative(REPOSITORY_ROOT, filePath)}: ${violation}`,
+        );
+      }
+    }
+  }
+
+  if (policy.entryPath === POC_PROVENANCE_POLICIES.GALLERY.entryPath) {
+    for (const violation of collectGalleryRuntimeViolations(dependencies)) {
+      violations.add(violation);
     }
   }
 
@@ -1469,17 +1680,150 @@ test("gallery policy rejects image paths outside its five thumbnails", () => {
   );
 });
 
-test("gallery source remains a static index without detail POC runtimes", async () => {
-  const source = await readFile(
-    POC_PROVENANCE_POLICIES.GALLERY.entryPath,
-    "utf8",
+test("gallery JSX source analysis fails closed for runtime expressions", () => {
+  const filePath = path.join(HERE, "dynamic-gallery-image.tsx");
+  const sourceFile = createSourceFile(
+    filePath,
+    [
+      "declare const runtimeValue: string;",
+      "export const Card = () => <img src={runtimeValue} />;",
+    ].join("\n"),
   );
 
-  assert.doesNotMatch(source, /@react-three\/fiber|<canvas\b|<iframe\b/i);
-  assert.doesNotMatch(
-    source,
-    /HeavyWaterDoorA11|SewerGateB10|LiftPlatformC03|ArchedGateB05|HeavyWaterDoubleDoorB06/,
+  assert.deepEqual(
+    collectProvenanceViolations(
+      new Map([[filePath, sourceFile]]),
+      POC_PROVENANCE_POLICIES.GALLERY,
+    ),
+    [
+      "packages/sample/src/poc/dynamic-gallery-image.tsx: unresolved JSX src runtimeValue",
+    ],
   );
+});
+
+test("gallery JSX source analysis rejects unapproved literals", () => {
+  const filePath = path.join(HERE, "literal-gallery-image.tsx");
+  const sourceFile = createSourceFile(
+    filePath,
+    'export const Card = () => <img src="/not-approved" />;',
+  );
+
+  assert.deepEqual(
+    collectProvenanceViolations(
+      new Map([[filePath, sourceFile]]),
+      POC_PROVENANCE_POLICIES.GALLERY,
+    ),
+    [
+      'packages/sample/src/poc/literal-gallery-image.tsx: unapproved JSX src "/not-approved"',
+    ],
+  );
+});
+
+test("gallery JSX source analysis only permits the registry-driven resolver call", () => {
+  const approvedSource = createSourceFile(
+    "approved-gallery-image.tsx",
+    [
+      'import { POC_GALLERY_ITEMS, resolvePocThumbnailUrl } from "./pocGalleryData";',
+      "export const Cards = () => POC_GALLERY_ITEMS.map((item) => (",
+      "  <img src={resolvePocThumbnailUrl(import.meta.env.BASE_URL, item.thumbnailPath)} />",
+      "));",
+    ].join("\n"),
+  );
+  const arbitrarySource = createSourceFile(
+    "arbitrary-gallery-image.tsx",
+    [
+      'import { resolvePocThumbnailUrl } from "./pocGalleryData";',
+      "declare const runtimeValue: string;",
+      "export const Card = () => (",
+      "  <img src={resolvePocThumbnailUrl(import.meta.env.BASE_URL, runtimeValue)} />",
+      ");",
+    ].join("\n"),
+  );
+
+  assert.deepEqual(
+    collectGalleryJsxSourceViolations(
+      approvedSource,
+      POC_PROVENANCE_POLICIES.GALLERY,
+    ),
+    [],
+  );
+  assert.deepEqual(
+    collectGalleryJsxSourceViolations(
+      arbitrarySource,
+      POC_PROVENANCE_POLICIES.GALLERY,
+    ),
+    [
+      "unresolved JSX src resolvePocThumbnailUrl(import.meta.env.BASE_URL, runtimeValue)",
+    ],
+  );
+});
+
+test("gallery runtime analysis rejects forbidden imports in reachable helpers", async (t) => {
+  const fixtureRoot = await mkdtemp(path.join(tmpdir(), "poc-provenance-"));
+  t.after(() => rm(fixtureRoot, { recursive: true, force: true }));
+  const entryPath = path.join(fixtureRoot, "entry.tsx");
+  const helperPath = path.join(fixtureRoot, "helper.tsx");
+  await Promise.all([
+    writeFile(entryPath, 'import { Helper } from "./helper"; export { Helper };'),
+    writeFile(
+      helperPath,
+      'import { Canvas } from "@react-three/fiber"; export const Helper = () => <Canvas />;',
+    ),
+  ]);
+  const dependencies = await collectLocalTypeScriptDependencies(
+    entryPath,
+    fixtureRoot,
+  );
+
+  assert.deepEqual(
+    collectProvenanceViolations(
+      dependencies,
+      POC_PROVENANCE_POLICIES.GALLERY,
+    ),
+    [
+      `${path.relative(REPOSITORY_ROOT, helperPath)}: forbidden gallery JSX element <Canvas>`,
+      `${path.relative(REPOSITORY_ROOT, helperPath)}: forbidden gallery import "@react-three/fiber"`,
+    ],
+  );
+});
+
+test("gallery runtime analysis rejects canvas, iframe, and detail POC imports", () => {
+  const sourceFile = createSourceFile(
+    "forbidden-gallery-runtime.tsx",
+    [
+      'import HeavyWaterDoorA11 from "./HeavyWaterDoorA11";',
+      "export const Runtime = () => (",
+      "  <><canvas /><iframe title=\"embedded\" /></>",
+      ");",
+    ].join("\n"),
+  );
+  const violations = collectGalleryRuntimeViolations(
+    new Map([[sourceFile.fileName, sourceFile]]),
+  );
+
+  assert.ok(
+    violations.some((violation) =>
+      violation.includes('forbidden detail POC import "./HeavyWaterDoorA11"'),
+    ),
+  );
+  assert.ok(
+    violations.some((violation) =>
+      violation.includes("forbidden gallery JSX element <canvas>"),
+    ),
+  );
+  assert.ok(
+    violations.some((violation) =>
+      violation.includes("forbidden gallery JSX element <iframe>"),
+    ),
+  );
+});
+
+test("gallery dependency graph remains a static index without detail POC runtimes", async () => {
+  const dependencies = await collectLocalTypeScriptDependencies(
+    POC_PROVENANCE_POLICIES.GALLERY.entryPath,
+  );
+
+  assert.deepEqual(collectGalleryRuntimeViolations(dependencies), []);
 });
 
 test("A11 procedural textures clamp instead of repeating", async () => {
