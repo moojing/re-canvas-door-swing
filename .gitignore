@@ -39,3 +39,5 @@ __pycache__/
 # Codex CLI 本地工作目錄
 .codex/
 .agents/
+.superpowers/
+.worktrees/

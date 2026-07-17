@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import A04DoorPoC from "./poc/A04DoorPoC";
 import HeavyWaterDoorA11 from "./poc/HeavyWaterDoorA11";
 import SewerGateB10 from "./poc/SewerGateB10";
 
@@ -18,6 +19,7 @@ const App = () => (
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/poc/a04" element={<A04DoorPoC />} />
           <Route path="/poc/a11" element={<HeavyWaterDoorA11 />} />
           <Route path="/poc/b10" element={<SewerGateB10 />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

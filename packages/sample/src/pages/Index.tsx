@@ -71,6 +71,23 @@ const Index = () => {
             <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">
               <CardHeader className="space-y-2">
                 <Badge variant="outline" className="w-fit border-amber-500/60 text-amber-200">
+                  1-2 a04
+                </Badge>
+                <CardTitle className="text-lg">單門-粗把手</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-white/70">
+                  共用單門骨架切換 s1 柵欄鐵門 / s2 目字鐵門，驗證兩者都可用低複雜度幾何成立。
+                </p>
+                <Button asChild variant="secondary" size="sm">
+                  <a href="/poc/a04">開啟 POC</a>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">
+              <CardHeader className="space-y-2">
+                <Badge variant="outline" className="w-fit border-amber-500/60 text-amber-200">
                   1-2 a11
                 </Badge>
                 <CardTitle className="text-lg">重型水門</CardTitle>
