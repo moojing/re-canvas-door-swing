@@ -40,6 +40,15 @@ A11 is the exception and must be remediated before gallery thumbnails are captur
 
 Automated provenance checks will inspect the executable dependency graph of the gallery and all five linked POC entry points after removing comments. They will enumerate shipped assets for every POC and reject prohibited runtime paths or image sources. Existing B05 and B06 dependency and asset-directory guards will be reused; equivalent coverage will be added for A11, B10, and C03. Thumbnail SHA-256 values will be recorded so later replacement is intentional and reviewable.
 
+The approved generated B10 files are also identity-pinned:
+
+| File | SHA-256 |
+| --- | --- |
+| `door.png` | `09f57fd7f8a6d994d75b27b2d63e1483a87db4eefabb2d63d1e63b575b3f3a14` |
+| `lever-box.png` | `33c9b346ab720afe5d7aecc36898d73dbcc361d07cb3bee330f8cf4102af465d` |
+| `lever-sign.png` | `243df5381f5f10fafa50e287afeea81c88faa03e5a846aad6297c5c7d5420e3f` |
+| `lower.png` | `d5df4859e9ac156bc20c05d47f2bab8473afaf7e8d94a061b4068fb31896300a` |
+
 ## Page Architecture
 
 ### Gallery data
@@ -83,7 +92,7 @@ Automated checks cover:
 - The shipped thumbnail directory contains no extra files.
 - A11 procedural material output is deterministic, opaque, and visibly varied.
 - Gallery, A11, B10, C03, B05, and B06 runtime dependencies contain no prohibited image source after comments are excluded. The scanner rejects path-like references to `textures/poc-*`, sibling gallery content, materials, frame extracts, source videos, embedded image data, and remote image URLs without treating explanatory prose as an asset reference.
-- Shipped asset directories for all five POCs contain only their explicitly approved generated or procedural runtime files. A11 and C03 are asserted to require no committed image texture directory; existing B05 and B06 directory guards remain active, and B10 receives an exact generated-file allowlist.
+- Shipped asset directories for all five POCs contain only their explicitly approved generated or procedural runtime files. A11 and C03 are asserted to require no committed image texture directory; existing B05 and B06 directory guards remain active, and B10 receives an exact generated-file allowlist plus SHA-256 checks for every approved bitmap.
 - The `/poc` route builds and all existing B05, B06, C03, and B10 tests remain green.
 
 Browser verification covers desktop and mobile layouts, all five thumbnails, card navigation, A11 procedural rendering, animation playback, and the absence of original game imagery.
