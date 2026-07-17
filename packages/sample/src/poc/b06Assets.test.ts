@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   B06_FRONT_ASSETS,
@@ -19,6 +22,59 @@ const ASSET_PATHS = {
   normal: new URL("../../public/textures/b06/normal.png", import.meta.url),
   frozen: new URL("../../public/textures/b06/frozen.png", import.meta.url),
 } as const;
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ASSET_DIRECTORY = path.resolve(HERE, "../../public/textures/b06");
+
+const collectLocalTypeScriptDependencies = async (
+  entryPath: string,
+): Promise<Map<string, string>> => {
+  const dependencies = new Map<string, string>();
+
+  const resolveImport = async (
+    importerPath: string,
+    specifier: string,
+  ): Promise<string | null> => {
+    const unresolvedPath = path.resolve(path.dirname(importerPath), specifier);
+    const extension = path.extname(unresolvedPath);
+    if (extension && extension !== ".ts" && extension !== ".tsx") return null;
+
+    const candidates = extension
+      ? [unresolvedPath]
+      : [
+          `${unresolvedPath}.ts`,
+          `${unresolvedPath}.tsx`,
+          path.join(unresolvedPath, "index.ts"),
+          path.join(unresolvedPath, "index.tsx"),
+        ];
+    for (const candidate of candidates) {
+      try {
+        await readFile(candidate, "utf8");
+        return candidate;
+      } catch {
+        // Try the next TypeScript resolution candidate.
+      }
+    }
+    throw new Error(`Unable to resolve ${specifier} imported by ${importerPath}`);
+  };
+
+  const visit = async (filePath: string): Promise<void> => {
+    if (dependencies.has(filePath)) return;
+    const source = await readFile(filePath, "utf8");
+    dependencies.set(filePath, source);
+
+    const importPattern =
+      /\b(?:import|export)\s+(?:type\s+)?(?:[^"'`;]*?\s+from\s+)?["'](\.[^"']+)["']/g;
+    const specifiers = [...source.matchAll(importPattern)].map((match) => match[1]);
+    for (const specifier of specifiers) {
+      const dependencyPath = await resolveImport(filePath, specifier);
+      if (dependencyPath) await visit(dependencyPath);
+    }
+  };
+
+  await visit(entryPath);
+  return dependencies;
+};
 
 const EXPECTED_ASSETS = {
   normal: {
@@ -47,6 +103,40 @@ test("locks both approved generated PNG identities", () => {
     assert.equal(asset[24], 8);
     assert.equal(asset[25], 2);
     assert.equal(createHash("sha256").update(asset).digest("hex"), expected.sha256);
+  }
+});
+
+test("the generated B06 asset directory contains only the approved fronts", async () => {
+  assert.deepEqual((await readdir(ASSET_DIRECTORY)).sort(), ["frozen.png", "normal.png"]);
+});
+
+test("recursively rejects prohibited provenance from every B06 runtime dependency", async () => {
+  const dependencies = await collectLocalTypeScriptDependencies(
+    path.join(HERE, "HeavyWaterDoubleDoorB06.tsx"),
+  );
+  const dependencyNames = [...dependencies.keys()].map((filePath) =>
+    path.basename(filePath),
+  );
+  for (const expectedName of [
+    "b06Assets.ts",
+    "b06FrontLoader.ts",
+    "b06FrontResources.ts",
+    "b06Motion.ts",
+    "b06Scene.ts",
+  ]) {
+    assert.ok(dependencyNames.includes(expectedName), `${expectedName} was not traversed`);
+  }
+
+  const forbidden = [
+    /gallery/i,
+    /game[-_/ ]?frames?/i,
+    /data:image\//i,
+    /https?:\/\//i,
+  ];
+  for (const [filePath, source] of dependencies) {
+    for (const pattern of forbidden) {
+      assert.equal(pattern.test(source), false, `${path.basename(filePath)} matched ${pattern}`);
+    }
   }
 });
 
