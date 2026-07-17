@@ -623,6 +623,117 @@ const getSplitComposedImagePaths = (
   );
 };
 
+const isImmutableLiteralStringExpression = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  resolvingBindings: ReadonlySet<ts.Node> = new Set(),
+): boolean => {
+  if (
+    ts.isParenthesizedExpression(expression) ||
+    ts.isNonNullExpression(expression) ||
+    ts.isSatisfiesExpression(expression)
+  ) {
+    return isImmutableLiteralStringExpression(
+      expression.expression,
+      context,
+      resolvingBindings,
+    );
+  }
+  if (ts.isAsExpression(expression)) {
+    return (
+      expression.type.getText() === "const" &&
+      isImmutableLiteralStringExpression(
+        expression.expression,
+        context,
+        resolvingBindings,
+      )
+    );
+  }
+  if (
+    ts.isStringLiteral(expression) ||
+    ts.isNoSubstitutionTemplateLiteral(expression)
+  ) {
+    return true;
+  }
+  if (!ts.isIdentifier(expression)) return false;
+
+  const binding = resolveStaticBinding(expression, context);
+  if (
+    !binding?.initializer ||
+    resolvingBindings.has(binding.declaration) ||
+    !ts.isVariableDeclaration(binding.declaration) ||
+    binding.declaration.type !== undefined
+  ) {
+    return false;
+  }
+  return isImmutableLiteralStringExpression(
+    binding.initializer,
+    context,
+    new Set([...resolvingBindings, binding.declaration]),
+  );
+};
+
+const collectB10TextureUrlTupleValues = (
+  sourceFile: ts.SourceFile,
+): readonly string[] | null => {
+  const declarations = sourceFile.statements.flatMap((statement) => {
+    if (
+      !ts.isVariableStatement(statement) ||
+      (statement.declarationList.flags & ts.NodeFlags.Const) === 0
+    ) {
+      return [];
+    }
+    return statement.declarationList.declarations.filter(
+      (declaration) =>
+        ts.isIdentifier(declaration.name) &&
+        declaration.name.text === "B10_TEXTURE_URLS",
+    );
+  });
+  if (declarations.length !== 1) return null;
+
+  const declaration = declarations[0];
+  const initializer = declaration.initializer;
+  if (
+    declaration.type !== undefined ||
+    !initializer ||
+    !ts.isCallExpression(initializer) ||
+    initializer.typeArguments !== undefined ||
+    initializer.arguments.length !== 1 ||
+    !ts.isPropertyAccessExpression(initializer.expression) ||
+    !ts.isIdentifier(initializer.expression.expression) ||
+    initializer.expression.expression.text !== "Object" ||
+    initializer.expression.name.text !== "freeze"
+  ) {
+    return null;
+  }
+
+  const frozenValue = initializer.arguments[0];
+  if (
+    !ts.isAsExpression(frozenValue) ||
+    frozenValue.type.getText(sourceFile) !== "const" ||
+    !ts.isArrayLiteralExpression(frozenValue.expression)
+  ) {
+    return null;
+  }
+
+  const context = createStaticBindingContext(sourceFile);
+  const values: string[] = [];
+  for (const element of frozenValue.expression.elements) {
+    if (ts.isSpreadElement(element) || ts.isOmittedExpression(element)) {
+      return null;
+    }
+    const value = evaluateStaticExpression(element, context);
+    if (
+      typeof value !== "string" ||
+      !isImmutableLiteralStringExpression(element, context)
+    ) {
+      return null;
+    }
+    values.push(value);
+  }
+  return values;
+};
+
 const hasApprovedB10TextureUrlContract = (
   sourceFile: ts.SourceFile,
   policy: PocProvenancePolicy,
@@ -641,14 +752,18 @@ const hasApprovedB10TextureUrlContract = (
     return false;
   }
 
-  const staticValues = collectStaticStringValues(sourceFile);
-  const expectedCompletePaths = getSplitComposedImagePaths(policy);
+  const tupleValues = collectB10TextureUrlTupleValues(sourceFile);
+  const expectedCompletePaths = getSplitComposedImagePaths(policy).map(
+    (value) => `/${value}`,
+  );
+  const sortedExpectedPaths = [...expectedCompletePaths].sort();
   return (
+    tupleValues !== null &&
     expectedCompletePaths.length > 0 &&
-    expectedCompletePaths.every((expectedPath) =>
-      [...staticValues].some(
-        (value) => normalizeImagePathFragment(value) === expectedPath,
-      ),
+    tupleValues.length === expectedCompletePaths.length &&
+    new Set(tupleValues).size === tupleValues.length &&
+    [...tupleValues].sort().every(
+      (value, index) => value === sortedExpectedPaths[index],
     )
   );
 };
@@ -1183,6 +1298,43 @@ test("B10 TextureLoader paths use the complete approved URL contract", async () 
       POC_PROVENANCE_POLICIES.B10,
     ),
     [],
+  );
+});
+
+test("B10 texture URL contract rejects a dynamic fifth tuple element", () => {
+  const source = [
+    'const B10_DOOR_TEXTURE_URL = "/textures/b10/door.png" as const;',
+    'const B10_LOWER_TEXTURE_URL = "/textures/b10/lower.png" as const;',
+    'const B10_LEVER_SIGN_TEXTURE_URL = "/textures/b10/lever-sign.png" as const;',
+    'const B10_LEVER_BOX_TEXTURE_URL = "/textures/b10/lever-box.png" as const;',
+    "declare const dynamicTextureUrl: string;",
+    "const B10_TEXTURE_URLS = Object.freeze([",
+    "  B10_DOOR_TEXTURE_URL,",
+    "  B10_LOWER_TEXTURE_URL,",
+    "  B10_LEVER_SIGN_TEXTURE_URL,",
+    "  B10_LEVER_BOX_TEXTURE_URL,",
+    "  dynamicTextureUrl,",
+    "] as const);",
+    "type B10TextureUrl = (typeof B10_TEXTURE_URLS)[number];",
+    "const loadTexture = (textureUrl: B10TextureUrl) =>",
+    "  new THREE.TextureLoader().load(textureUrl);",
+  ].join("\n");
+  const sourceFile = createSourceFile("widened-b10-contract.ts", source);
+
+  assert.equal(
+    hasApprovedB10TextureUrlContract(
+      sourceFile,
+      POC_PROVENANCE_POLICIES.B10,
+    ),
+    false,
+  );
+  assert.ok(
+    collectProvenanceViolations(
+      new Map([[sourceFile.fileName, sourceFile]]),
+      POC_PROVENANCE_POLICIES.B10,
+    ).some((violation) =>
+      violation.includes("unresolved TextureLoader image path"),
+    ),
   );
 });
 
