@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { inflateSync } from "node:zlib";
 import {
   POC_GALLERY_ITEMS,
   resolvePocThumbnailUrl,
@@ -19,6 +20,113 @@ const EXPECTED_THUMBNAIL_FILENAMES = [
   "b10.png",
   "c03.png",
 ];
+
+const CRC32_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
+  let crc = value;
+  for (let bit = 0; bit < 8; bit += 1) {
+    crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+  }
+  return crc >>> 0;
+});
+
+const crc32 = (contents: Buffer): number => {
+  let crc = 0xffffffff;
+  for (const byte of contents) {
+    crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+};
+
+const assertValidPng = (contents: Buffer, label: string): void => {
+  assert.ok(
+    contents.length >= PNG_SIGNATURE.length,
+    `${label} truncated PNG signature`,
+  );
+  assert.deepEqual(contents.subarray(0, 8), PNG_SIGNATURE, label);
+
+  let offset = PNG_SIGNATURE.length;
+  let chunkIndex = 0;
+  let ihdrCount = 0;
+  let iendCount = 0;
+  const idatPayloads: Buffer[] = [];
+
+  while (offset < contents.length) {
+    assert.ok(
+      contents.length - offset >= 12,
+      `${label} truncated chunk header`,
+    );
+
+    const length = contents.readUInt32BE(offset);
+    const typeStart = offset + 4;
+    const dataStart = offset + 8;
+    const type = contents.subarray(typeStart, dataStart).toString("ascii");
+    assert.ok(
+      length <= contents.length - dataStart - 4,
+      `${label} truncated ${type} chunk`,
+    );
+
+    const dataEnd = dataStart + length;
+    const chunkEnd = dataEnd + 4;
+    const data = contents.subarray(dataStart, dataEnd);
+
+    if (chunkIndex === 0) {
+      assert.equal(type, "IHDR", `${label} first chunk must be IHDR`);
+    }
+
+    if (type === "IHDR") {
+      ihdrCount += 1;
+      assert.equal(ihdrCount, 1, `${label} must contain exactly one IHDR`);
+      assert.equal(chunkIndex, 0, `${label} IHDR must be first`);
+      assert.equal(length, 13, `${label} IHDR length`);
+      assert.equal(data.readUInt32BE(0), 960, `${label} width`);
+      assert.equal(data.readUInt32BE(4), 540, `${label} height`);
+      assert.equal(data[8], 8, `${label} bit depth`);
+      assert.ok(
+        data[9] === 2 || data[9] === 6,
+        `${label} color type must be RGB or RGBA`,
+      );
+      assert.equal(data[10], 0, `${label} compression method`);
+      assert.equal(data[11], 0, `${label} filter method`);
+      assert.equal(data[12], 0, `${label} interlace method`);
+    }
+
+    assert.equal(
+      contents.readUInt32BE(dataEnd),
+      crc32(contents.subarray(typeStart, dataEnd)),
+      `${label} ${type} CRC`,
+    );
+
+    if (type === "IDAT") {
+      idatPayloads.push(data);
+    }
+
+    if (type === "IEND") {
+      iendCount += 1;
+      assert.equal(iendCount, 1, `${label} must contain exactly one IEND`);
+      assert.equal(length, 0, `${label} IEND length`);
+      assert.equal(
+        chunkEnd,
+        contents.length,
+        `${label} trailing bytes after IEND`,
+      );
+    }
+
+    offset = chunkEnd;
+    chunkIndex += 1;
+  }
+
+  assert.equal(ihdrCount, 1, `${label} must contain exactly one IHDR`);
+  assert.ok(idatPayloads.length > 0, `${label} must contain at least one IDAT`);
+  assert.equal(iendCount, 1, `${label} must contain exactly one IEND`);
+
+  let inflated: Buffer;
+  try {
+    inflated = inflateSync(Buffer.concat(idatPayloads));
+  } catch {
+    assert.fail(`${label} IDAT payloads must contain valid zlib data`);
+  }
+  assert.ok(inflated.length > 0, `${label} inflated image data must not be empty`);
+};
 
 const EXPECTED_ITEMS = [
   {
@@ -98,14 +206,7 @@ for (const item of POC_GALLERY_ITEMS) {
     assert.ok(filename, `${item.id} thumbnail filename`);
 
     const contents = readFileSync(`${THUMBNAIL_DIRECTORY}${filename}`);
-    assert.deepEqual(contents.subarray(0, 8), PNG_SIGNATURE, item.id);
-    assert.equal(contents.subarray(12, 16).toString("ascii"), "IHDR", item.id);
-    assert.equal(contents.readUInt32BE(16), 960, `${item.id} width`);
-    assert.equal(contents.readUInt32BE(20), 540, `${item.id} height`);
-    assert.ok(
-      contents[25] === 2 || contents[25] === 6,
-      `${item.id} color type must be RGB or RGBA`,
-    );
+    assertValidPng(contents, item.id);
     assert.equal(
       createHash("sha256").update(contents).digest("hex"),
       item.sha256,
@@ -113,6 +214,41 @@ for (const item of POC_GALLERY_ITEMS) {
     );
   });
 }
+
+const readCanonicalPng = (): Buffer =>
+  readFileSync(`${THUMBNAIL_DIRECTORY}a11.png`);
+
+test("PNG validation rejects a malformed IHDR length", () => {
+  const malformed = Buffer.from(readCanonicalPng());
+  malformed.writeUInt32BE(12, PNG_SIGNATURE.length);
+
+  assert.throws(() => assertValidPng(malformed, "malformed"), /IHDR length/);
+});
+
+test("PNG validation rejects a truncated terminal chunk", () => {
+  const canonical = readCanonicalPng();
+  const truncated = canonical.subarray(0, canonical.length - 1);
+
+  assert.throws(() => assertValidPng(truncated, "truncated"), /truncated/);
+});
+
+test("PNG validation rejects a corrupted chunk CRC", () => {
+  const corrupted = Buffer.from(readCanonicalPng());
+  const idatTypeOffset = corrupted.indexOf("IDAT", PNG_SIGNATURE.length, "ascii");
+  assert.notEqual(idatTypeOffset, -1);
+  corrupted[idatTypeOffset + 4] ^= 1;
+
+  assert.throws(() => assertValidPng(corrupted, "corrupted"), /IDAT CRC/);
+});
+
+test("PNG validation rejects bytes after the terminal IEND", () => {
+  const withTrailingByte = Buffer.concat([readCanonicalPng(), Buffer.from([0])]);
+
+  assert.throws(
+    () => assertValidPng(withTrailingByte, "trailing"),
+    /trailing bytes/,
+  );
+});
 
 test("gallery identities, routes, and thumbnails are unique and local", () => {
   const ids = POC_GALLERY_ITEMS.map(({ id }) => id);
