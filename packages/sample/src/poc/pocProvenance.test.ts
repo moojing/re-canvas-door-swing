@@ -44,11 +44,27 @@ const POC_PROVENANCE_POLICIES = Object.freeze({
       "poc-thumbnails/c03.png",
       "poc-thumbnails/b05.png",
       "poc-thumbnails/b06.png",
+      "poc-thumbnails/a04.png",
+      "poc-thumbnails/c06.png",
     ],
     [
       "packages/sample/src/poc/PocGallery.tsx",
       "packages/sample/src/poc/pocGalleryData.ts",
     ],
+  ),
+  A04: createPocProvenancePolicy(
+    "A04DoorPoC.tsx",
+    [
+      "textures/a04/sewer-gate-aged-albedo.png",
+      "textures/a04/metal-plate-02-roughness.jpg",
+      "textures/a04/green-metal-rust-roughness.jpg",
+    ],
+    [
+      "packages/sample/src/poc/A04DoorPoC.tsx",
+      "packages/sample/src/poc/a04TextureUrls.ts",
+      "packages/sample/src/poc/textureColorSpace.ts",
+    ],
+    ["packages/sample/public/textures/a04"],
   ),
   A11: createPocProvenancePolicy(
     "HeavyWaterDoorA11.tsx",
@@ -119,6 +135,20 @@ const POC_PROVENANCE_POLICIES = Object.freeze({
       "packages/sample/src/poc/b06Motion.ts",
       "packages/sample/src/poc/b06Scene.ts",
     ],
+  ),
+  C06: createPocProvenancePolicy(
+    "C06DrilledHolePoC.tsx",
+    [
+      "textures/c06/aged-brick-albedo.png",
+      "textures/c06/broken-brick-core-albedo.png",
+    ],
+    [
+      "packages/sample/src/poc/C06DrilledHolePoC.tsx",
+      "packages/sample/src/poc/c06TextureUrls.ts",
+      "packages/sample/src/poc/c06SceneModel.ts",
+      "packages/sample/src/poc/textureColorSpace.ts",
+    ],
+    ["packages/sample/public/textures/c06"],
   ),
 });
 
@@ -791,6 +821,90 @@ const hasApprovedB10TexturePathContract = (
   );
 };
 
+type TypedTextureUrlContract = Readonly<{
+  typeName: string;
+  resolverName: string;
+  moduleSpecifier: string;
+}>;
+
+const TYPED_TEXTURE_URL_CONTRACTS = Object.freeze({
+  A04: {
+    typeName: "A04TexturePath",
+    resolverName: "resolveA04TextureUrl",
+    moduleSpecifier: "./a04TextureUrls",
+  },
+  C06: {
+    typeName: "C06TexturePath",
+    resolverName: "resolveC06TextureUrl",
+    moduleSpecifier: "./c06TextureUrls",
+  },
+} as const satisfies Record<string, TypedTextureUrlContract>);
+
+const getTypedTextureUrlContract = (
+  policy: PocProvenancePolicy,
+): TypedTextureUrlContract | null => {
+  const entryName = path.basename(policy.entryPath, ".tsx");
+  if (entryName === "A04DoorPoC") return TYPED_TEXTURE_URL_CONTRACTS.A04;
+  if (entryName === "C06DrilledHolePoC") return TYPED_TEXTURE_URL_CONTRACTS.C06;
+  return null;
+};
+
+const isApprovedTypedTexturePath = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  contract: TypedTextureUrlContract,
+): boolean => {
+  if (!ts.isIdentifier(expression)) return false;
+  const declaration = resolveStaticBinding(expression, context)?.declaration;
+  const parameterType =
+    declaration !== undefined && ts.isParameter(declaration)
+      ? declaration.type
+      : undefined;
+  return (
+    parameterType !== undefined &&
+    ts.isTypeReferenceNode(parameterType) &&
+    parameterType.typeArguments === undefined &&
+    ts.isIdentifier(parameterType.typeName) &&
+    isNamedImportFrom(
+      parameterType.typeName,
+      contract.typeName,
+      contract.moduleSpecifier,
+      context,
+    )
+  );
+};
+
+const isApprovedTypedTextureResolverCall = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  contract: TypedTextureUrlContract,
+): boolean =>
+  ts.isCallExpression(expression) &&
+  expression.arguments.length === 2 &&
+  ts.isIdentifier(expression.expression) &&
+  isNamedImportFrom(
+    expression.expression,
+    contract.resolverName,
+    contract.moduleSpecifier,
+    context,
+  ) &&
+  isImportMetaBaseUrl(expression.arguments[0]) &&
+  isApprovedTypedTexturePath(expression.arguments[1], context, contract);
+
+const isApprovedResolvedTypedTextureUrl = (
+  expression: ts.Expression,
+  context: StaticBindingContext,
+  contract: TypedTextureUrlContract | null,
+): boolean => {
+  if (!contract || !ts.isIdentifier(expression)) return false;
+  const binding = resolveStaticBinding(expression, context);
+  return (
+    binding?.initializer !== null &&
+    binding?.initializer !== undefined &&
+    isApprovedTypedTextureResolverCall(binding.initializer, context, contract)
+  );
+};
+
 const isApprovedTypedB10TexturePath = (
   expression: ts.Expression,
   context: StaticBindingContext,
@@ -934,6 +1048,7 @@ const collectFlatReliefTexturePathContractViolations = (
 const collectUnapprovedDynamicTextureLoads = (
   sourceFile: ts.SourceFile,
   hasApprovedB10PathContract = false,
+  typedTextureUrlContract: TypedTextureUrlContract | null = null,
 ): string[] => {
   const context = createStaticBindingContext(sourceFile);
   const violations: string[] = [];
@@ -953,6 +1068,11 @@ const collectUnapprovedDynamicTextureLoads = (
           pathExpression,
           context,
           hasApprovedB10PathContract,
+        ) &&
+        !isApprovedResolvedTypedTextureUrl(
+          pathExpression,
+          context,
+          typedTextureUrlContract,
         )
       ) {
         violations.push(pathExpression.getText(sourceFile));
@@ -1114,11 +1234,13 @@ const collectGalleryJsxSourceViolations = (
 };
 
 const GALLERY_DETAIL_POC_MODULES = new Set([
+  "A04DoorPoC",
   "HeavyWaterDoorA11",
   "SewerGateB10",
   "LiftPlatformC03",
   "ArchedGateB05",
   "HeavyWaterDoubleDoorB06",
+  "C06DrilledHolePoC",
 ]);
 
 const isDetailPocImport = (specifier: string): boolean => {
@@ -1362,6 +1484,7 @@ const collectProvenanceViolations = (
     for (const expression of collectUnapprovedDynamicTextureLoads(
       sourceFile,
       hasApprovedB10PathContract,
+      getTypedTextureUrlContract(policy),
     )) {
       violations.add(
         `${path.relative(REPOSITORY_ROOT, filePath)}: unresolved TextureLoader image path in ${JSON.stringify(expression)}`,
@@ -1540,12 +1663,29 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
         "poc-thumbnails/c03.png",
         "poc-thumbnails/b05.png",
         "poc-thumbnails/b06.png",
+        "poc-thumbnails/a04.png",
+        "poc-thumbnails/c06.png",
       ],
       expectedDependencyFiles: [
         "packages/sample/src/poc/PocGallery.tsx",
         "packages/sample/src/poc/pocGalleryData.ts",
       ],
       trackedTextureDirectories: [],
+      allowSplitImageFragments: false,
+    },
+    A04: {
+      entryFile: "A04DoorPoC.tsx",
+      allowedImagePaths: [
+        "textures/a04/sewer-gate-aged-albedo.png",
+        "textures/a04/metal-plate-02-roughness.jpg",
+        "textures/a04/green-metal-rust-roughness.jpg",
+      ],
+      expectedDependencyFiles: [
+        "packages/sample/src/poc/A04DoorPoC.tsx",
+        "packages/sample/src/poc/a04TextureUrls.ts",
+        "packages/sample/src/poc/textureColorSpace.ts",
+      ],
+      trackedTextureDirectories: ["packages/sample/public/textures/a04"],
       allowSplitImageFragments: false,
     },
     A11: {
@@ -1622,6 +1762,21 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
         "packages/sample/src/poc/b06Scene.ts",
       ],
       trackedTextureDirectories: [],
+      allowSplitImageFragments: false,
+    },
+    C06: {
+      entryFile: "C06DrilledHolePoC.tsx",
+      allowedImagePaths: [
+        "textures/c06/aged-brick-albedo.png",
+        "textures/c06/broken-brick-core-albedo.png",
+      ],
+      expectedDependencyFiles: [
+        "packages/sample/src/poc/C06DrilledHolePoC.tsx",
+        "packages/sample/src/poc/c06TextureUrls.ts",
+        "packages/sample/src/poc/c06SceneModel.ts",
+        "packages/sample/src/poc/textureColorSpace.ts",
+      ],
+      trackedTextureDirectories: ["packages/sample/public/textures/c06"],
       allowSplitImageFragments: false,
     },
   } as const;
@@ -2060,7 +2215,7 @@ test("unknown shared image fixture violates the no-image A11 policy", async (t) 
   );
 });
 
-test("gallery policy rejects image paths outside its five thumbnails", () => {
+test("gallery policy rejects image paths outside its approved thumbnails", () => {
   const sourceFile = createSourceFile(
     "gallery-image-fixture.ts",
     'export const image = "poc-thumbnails/unknown.png";',
@@ -2399,6 +2554,51 @@ test("B10 tracked textures exactly match the approved files and hashes", async (
     );
     const actualHash = createHash("sha256").update(contents).digest("hex");
     assert.equal(actualHash, expectedHash, fileName);
+  }
+});
+
+test("A04 and C06 tracked textures exactly match their approved files and hashes", async () => {
+  const expectedTextureSets = {
+    "packages/sample/public/textures/a04": {
+      "README.md": "f968415bc2acc9685c72e04481dc0c96e2d2e21dffdeba26ad2c01d9f0249755",
+      "green-metal-rust-diffuse.jpg": "4509ab0cb1cf6bf9b9f970450a41f83ebd9bff178006deae568ff34b404856fc",
+      "green-metal-rust-roughness.jpg": "f214f22608dd75aa3e7b4da8bffac97c344cbacbc50f49ba0beb0236701a622c",
+      "metal-plate-02-diffuse.jpg": "6e80877d0e9d5973d96298c6091df7ace906b0a6760afc4f3592e4855f3f1d4c",
+      "metal-plate-02-roughness.jpg": "73a6bd6393f6de7be42058584c2d382f2a3e9148ceabc2d02e748e2c860e74d1",
+      "sewer-gate-aged-albedo.png": "db09b3fdbb940b18281202782ea8df774e012806c3f6876003b8e4c864a0951b",
+    },
+    "packages/sample/public/textures/c06": {
+      "README.md": "8a2fa71769239c027c3da6bea32fb54456a063f5bae3962c40dd8479a3e668dc",
+      "aged-brick-albedo.png": "27c2c350b402f807209f214d8c053069fd78215544db6e53c1a6f165420e6a24",
+      "broken-brick-core-albedo.png": "939056b60fe94b649a2778af5ce7ff5c5bca704eed6ab1938d2d8413418ade95",
+    },
+  } as const;
+
+  for (const [textureDirectory, expectedHashes] of Object.entries(
+    expectedTextureSets,
+  )) {
+    const expectedTrackedTextures = Object.keys(expectedHashes)
+      .map((fileName) => `${textureDirectory}/${fileName}`)
+      .sort();
+    const trackedTextures = execFileSync(
+      "git",
+      ["ls-files", "--", textureDirectory],
+      { cwd: REPOSITORY_ROOT, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .sort();
+
+    assert.deepEqual(trackedTextures, expectedTrackedTextures, textureDirectory);
+
+    for (const [fileName, expectedHash] of Object.entries(expectedHashes)) {
+      const contents = await readFile(
+        path.join(REPOSITORY_ROOT, textureDirectory, fileName),
+      );
+      const actualHash = createHash("sha256").update(contents).digest("hex");
+      assert.equal(actualHash, expectedHash, `${textureDirectory}/${fileName}`);
+    }
   }
 });
 

@@ -14,11 +14,13 @@ const THUMBNAIL_DIRECTORY = fileURLToPath(
   new URL("../../public/poc-thumbnails/", import.meta.url),
 );
 const EXPECTED_THUMBNAIL_FILENAMES = [
+  "a04.png",
   "a11.png",
   "b05.png",
   "b06.png",
   "b10.png",
   "c03.png",
+  "c06.png",
 ];
 
 const CRC32_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
@@ -191,10 +193,27 @@ const EXPECTED_ITEMS = [
     thumbnailPath: "poc-thumbnails/b06.png",
     sha256: "853f5ef4d458c099d8e49cbd6166692329f2d249c9bf374ad4c586cd097abc0c",
   },
+  {
+    id: "A04",
+    title: "Aged Grille Gate",
+    description:
+      "Original aged gate materials with an inward hinged opening.",
+    route: "/poc/a04",
+    thumbnailPath: "poc-thumbnails/a04.png",
+    sha256: "cdbcf6207b93b7ee8f38e94b3f8f4a5dbba04c8faf525914353a5f86c5c63e14",
+  },
+  {
+    id: "C06",
+    title: "Drilled Wall Opening",
+    description: "Textured brick wall breached by a camera pass-through.",
+    route: "/poc/c06",
+    thumbnailPath: "poc-thumbnails/c06.png",
+    sha256: "f26db47c5dae97493c33a3719f76ec95489c5954408a49faddc5fee463c1378f",
+  },
 ] as const;
 
 test("gallery registry contains the exact canonical records in order", () => {
-  assert.equal(POC_GALLERY_ITEMS.length, 5);
+  assert.equal(POC_GALLERY_ITEMS.length, 7);
   assert.deepEqual(POC_GALLERY_ITEMS, EXPECTED_ITEMS);
 });
 

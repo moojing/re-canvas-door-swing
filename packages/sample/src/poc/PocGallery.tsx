@@ -9,13 +9,13 @@ const PocGallery = () => (
     <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10 lg:py-20">
       <header className="mb-10 border-l border-[#b77a38]/70 pl-5 sm:mb-14 sm:pl-7">
         <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-[#c58a45]">
-          Door motion studies / 01-05
+          Door motion studies / 01-07
         </p>
         <h1 className="max-w-3xl font-[Georgia,serif] text-4xl leading-[1.02] tracking-[-0.035em] text-[#f1e7d6] sm:text-5xl lg:text-6xl">
           Proof of Concept Archive
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-7 text-[#aa9f90] sm:text-base">
-          Five mechanical entrance studies, preserved as focused animation
+          Seven focused entrance studies, preserved as focused animation
           records. Select an entry to inspect its movement and material system.
         </p>
       </header>

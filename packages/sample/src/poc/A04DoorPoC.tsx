@@ -3,6 +3,10 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { easeInOutCubic, getDoorAnimationConfig } from "door-entrance";
 import { setTextureColorSpace } from "./textureColorSpace";
+import {
+  resolveA04TextureUrl,
+  type A04TexturePath,
+} from "./a04TextureUrls";
 
 type VariantId = "s1" | "s2";
 
@@ -31,7 +35,6 @@ const variants: VariantDefinition[] = [
 const DOOR_WIDTH = 3.42;
 const DOOR_HEIGHT = 6.55;
 const DOOR_DEPTH = 0.18;
-const TEX_BASE = "/textures/a04";
 const S2_PANEL_Z = DOOR_DEPTH / 2 + 0.04;
 const S2_TRIM_Z = DOOR_DEPTH / 2 + 0.06;
 const S2_HANDLE_Z = DOOR_DEPTH / 2 + 0.13;
@@ -113,28 +116,24 @@ const AgingPatina = ({
   </group>
 );
 
-const useA04Texture = ({
-  file,
-  color,
-  repeatX,
-  repeatY,
-}: {
-  file: string;
-  color: boolean;
-  repeatX: number;
-  repeatY: number;
-}) => {
+const useA04Texture = (
+  file: A04TexturePath,
+  color: boolean,
+  repeatX: number,
+  repeatY: number,
+) => {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const textureUrl = resolveA04TextureUrl(import.meta.env.BASE_URL, file);
 
   useEffect(() => {
     let alive = true;
     const loaded = new THREE.TextureLoader().load(
-      `${TEX_BASE}/${file}`,
+      textureUrl,
       () => {
         if (alive) setTexture(loaded);
       },
       undefined,
-      () => console.warn(`[poc-a04] 貼圖載入失敗:${TEX_BASE}/${file}`)
+      () => console.warn(`[poc-a04] 貼圖載入失敗:${textureUrl}`)
     );
     if (color) setTextureColorSpace(loaded);
     loaded.wrapS = THREE.RepeatWrapping;
@@ -146,36 +145,36 @@ const useA04Texture = ({
       setTexture(null);
       loaded.dispose();
     };
-  }, [color, file, repeatX, repeatY]);
+  }, [color, repeatX, repeatY, textureUrl]);
 
   return texture;
 };
 
 const useA04Materials = (): A04Materials => {
-  const s1Diffuse = useA04Texture({
-    file: "sewer-gate-aged-albedo.png",
-    color: true,
-    repeatX: 1,
-    repeatY: 1,
-  });
-  const s1Roughness = useA04Texture({
-    file: "metal-plate-02-roughness.jpg",
-    color: false,
-    repeatX: 0.72,
-    repeatY: 1.8,
-  });
-  const s2Diffuse = useA04Texture({
-    file: "sewer-gate-aged-albedo.png",
-    color: true,
-    repeatX: 1,
-    repeatY: 1,
-  });
-  const s2Roughness = useA04Texture({
-    file: "green-metal-rust-roughness.jpg",
-    color: false,
-    repeatX: 0.84,
-    repeatY: 1.5,
-  });
+  const s1Diffuse = useA04Texture(
+    "textures/a04/sewer-gate-aged-albedo.png",
+    true,
+    1,
+    1,
+  );
+  const s1Roughness = useA04Texture(
+    "textures/a04/metal-plate-02-roughness.jpg",
+    false,
+    0.72,
+    1.8,
+  );
+  const s2Diffuse = useA04Texture(
+    "textures/a04/sewer-gate-aged-albedo.png",
+    true,
+    1,
+    1,
+  );
+  const s2Roughness = useA04Texture(
+    "textures/a04/green-metal-rust-roughness.jpg",
+    false,
+    0.84,
+    1.5,
+  );
 
   return useMemo(
     () => ({
