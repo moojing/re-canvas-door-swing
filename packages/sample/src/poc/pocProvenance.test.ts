@@ -36,6 +36,20 @@ const createPocProvenancePolicy = (
   });
 
 const POC_PROVENANCE_POLICIES = Object.freeze({
+  GALLERY: createPocProvenancePolicy(
+    "PocGallery.tsx",
+    [
+      "poc-thumbnails/a11.png",
+      "poc-thumbnails/b10.png",
+      "poc-thumbnails/c03.png",
+      "poc-thumbnails/b05.png",
+      "poc-thumbnails/b06.png",
+    ],
+    [
+      "packages/sample/src/poc/PocGallery.tsx",
+      "packages/sample/src/poc/pocGalleryData.ts",
+    ],
+  ),
   A11: createPocProvenancePolicy(
     "HeavyWaterDoorA11.tsx",
     [],
@@ -1008,6 +1022,22 @@ test("forbidden matching is case-insensitive and path-oriented", () => {
 
 test("POC provenance policies are immutable and explicitly allowlisted", () => {
   const expectedPolicies = {
+    GALLERY: {
+      entryFile: "PocGallery.tsx",
+      allowedImagePaths: [
+        "poc-thumbnails/a11.png",
+        "poc-thumbnails/b10.png",
+        "poc-thumbnails/c03.png",
+        "poc-thumbnails/b05.png",
+        "poc-thumbnails/b06.png",
+      ],
+      expectedDependencyFiles: [
+        "packages/sample/src/poc/PocGallery.tsx",
+        "packages/sample/src/poc/pocGalleryData.ts",
+      ],
+      trackedTextureDirectories: [],
+      allowSplitImageFragments: false,
+    },
     A11: {
       entryFile: "HeavyWaterDoorA11.tsx",
       allowedImagePaths: [],
@@ -1419,6 +1449,36 @@ test("unknown shared image fixture violates the no-image A11 policy", async (t) 
   assert.ok(
     violations.some((violation) => violation.includes("/textures/door-2.png")),
     `Expected /textures/door-2.png to fail, received: ${violations.join("\n")}`,
+  );
+});
+
+test("gallery policy rejects image paths outside its five thumbnails", () => {
+  const sourceFile = createSourceFile(
+    "gallery-image-fixture.ts",
+    'export const image = "poc-thumbnails/unknown.png";',
+  );
+  const violations = collectProvenanceViolations(
+    new Map([[sourceFile.fileName, sourceFile]]),
+    POC_PROVENANCE_POLICIES.GALLERY,
+  );
+
+  assert.ok(
+    violations.some((violation) =>
+      violation.includes("poc-thumbnails/unknown.png"),
+    ),
+  );
+});
+
+test("gallery source remains a static index without detail POC runtimes", async () => {
+  const source = await readFile(
+    POC_PROVENANCE_POLICIES.GALLERY.entryPath,
+    "utf8",
+  );
+
+  assert.doesNotMatch(source, /@react-three\/fiber|<canvas\b|<iframe\b/i);
+  assert.doesNotMatch(
+    source,
+    /HeavyWaterDoorA11|SewerGateB10|LiftPlatformC03|ArchedGateB05|HeavyWaterDoubleDoorB06/,
   );
 });
 
