@@ -16,6 +16,7 @@ type PocProvenancePolicy = Readonly<{
   entryPath: string;
   allowedImagePaths: readonly string[];
   expectedDependencyFiles: readonly string[];
+  trackedTextureDirectories: readonly string[];
   allowSplitImageFragments: boolean;
 }>;
 
@@ -23,12 +24,14 @@ const createPocProvenancePolicy = (
   entryFile: string,
   allowedImagePaths: readonly string[],
   expectedDependencyFiles: readonly string[],
+  trackedTextureDirectories: readonly string[] = [],
   allowSplitImageFragments = false,
 ): PocProvenancePolicy =>
   Object.freeze({
     entryPath: path.join(HERE, entryFile),
     allowedImagePaths: Object.freeze([...allowedImagePaths]),
     expectedDependencyFiles: Object.freeze([...expectedDependencyFiles]),
+    trackedTextureDirectories: Object.freeze([...trackedTextureDirectories]),
     allowSplitImageFragments,
   });
 
@@ -36,7 +39,14 @@ const POC_PROVENANCE_POLICIES = Object.freeze({
   A11: createPocProvenancePolicy(
     "HeavyWaterDoorA11.tsx",
     [],
-    ["HeavyWaterDoorA11.tsx", "a11ProceduralMaterials.ts"],
+    [
+      "packages/sample/src/poc/HeavyWaterDoorA11.tsx",
+      "packages/sample/src/poc/a11ProceduralMaterials.ts",
+    ],
+    [
+      "packages/sample/public/textures/poc-a11",
+      "packages/sample/public/textures/a11",
+    ],
   ),
   B10: createPocProvenancePolicy(
     "SewerGateB10.tsx",
@@ -47,40 +57,49 @@ const POC_PROVENANCE_POLICIES = Object.freeze({
       "lever-sign.png",
       "lever-box.png",
     ],
-    ["SewerGateB10.tsx"],
+    ["packages/sample/src/poc/SewerGateB10.tsx"],
+    [],
     true,
   ),
   C03: createPocProvenancePolicy(
     "LiftPlatformC03.tsx",
     [],
-    ["LiftPlatformC03.tsx", "c03Motion.ts", "c03ProceduralMaterials.ts"],
+    [
+      "packages/sample/src/poc/LiftPlatformC03.tsx",
+      "packages/sample/src/poc/c03Motion.ts",
+      "packages/sample/src/poc/c03ProceduralMaterials.ts",
+    ],
+    [
+      "packages/sample/public/textures/c03",
+      "packages/sample/public/textures/poc-c03",
+    ],
   ),
   B05: createPocProvenancePolicy(
     "ArchedGateB05.tsx",
     ["textures/b05/generated-gate-front.png"],
     [
-      "ArchedGateB05.tsx",
-      "b05BoxMaterialSlots.ts",
-      "b05FrontImage.ts",
-      "b05FrontLoader.ts",
-      "b05FrontResources.ts",
-      "b05FrontScene.ts",
-      "b05Geometry.ts",
-      "b05Motion.ts",
-      "b05ProceduralMaterials.ts",
-      "b05TextureMapping.ts",
+      "packages/sample/src/poc/ArchedGateB05.tsx",
+      "packages/sample/src/poc/b05BoxMaterialSlots.ts",
+      "packages/sample/src/poc/b05FrontImage.ts",
+      "packages/sample/src/poc/b05FrontLoader.ts",
+      "packages/sample/src/poc/b05FrontResources.ts",
+      "packages/sample/src/poc/b05FrontScene.ts",
+      "packages/sample/src/poc/b05Geometry.ts",
+      "packages/sample/src/poc/b05Motion.ts",
+      "packages/sample/src/poc/b05ProceduralMaterials.ts",
+      "packages/sample/src/poc/b05TextureMapping.ts",
     ],
   ),
   B06: createPocProvenancePolicy(
     "HeavyWaterDoubleDoorB06.tsx",
     ["textures/b06/normal.png", "textures/b06/frozen.png"],
     [
-      "HeavyWaterDoubleDoorB06.tsx",
-      "b06Assets.ts",
-      "b06FrontLoader.ts",
-      "b06FrontResources.ts",
-      "b06Motion.ts",
-      "b06Scene.ts",
+      "packages/sample/src/poc/HeavyWaterDoubleDoorB06.tsx",
+      "packages/sample/src/poc/b06Assets.ts",
+      "packages/sample/src/poc/b06FrontLoader.ts",
+      "packages/sample/src/poc/b06FrontResources.ts",
+      "packages/sample/src/poc/b06Motion.ts",
+      "packages/sample/src/poc/b06Scene.ts",
     ],
   ),
 });
@@ -127,9 +146,35 @@ const stripSourceComments = (
 };
 
 type StaticPrimitive = string | number | boolean | null;
+type StaticBindings = ReadonlyMap<string, ts.Expression | null>;
+
+const EMPTY_STATIC_BINDINGS: StaticBindings = new Map();
+
+const collectStaticConstBindings = (sourceFile: ts.SourceFile): StaticBindings => {
+  const bindings = new Map<string, ts.Expression | null>();
+
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      ts.isVariableDeclarationList(node.parent) &&
+      (node.parent.flags & ts.NodeFlags.Const) !== 0
+    ) {
+      const name = node.name.text;
+      bindings.set(name, bindings.has(name) ? null : node.initializer);
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return bindings;
+};
 
 const evaluateStaticExpression = (
   expression: ts.Expression,
+  bindings: StaticBindings = EMPTY_STATIC_BINDINGS,
+  resolvingBindings: ReadonlySet<string> = new Set(),
 ): StaticPrimitive | undefined => {
   if (
     ts.isParenthesizedExpression(expression) ||
@@ -138,7 +183,21 @@ const evaluateStaticExpression = (
     ts.isNonNullExpression(expression) ||
     ts.isSatisfiesExpression(expression)
   ) {
-    return evaluateStaticExpression(expression.expression);
+    return evaluateStaticExpression(
+      expression.expression,
+      bindings,
+      resolvingBindings,
+    );
+  }
+
+  if (ts.isIdentifier(expression)) {
+    const binding = bindings.get(expression.text);
+    if (!binding || resolvingBindings.has(expression.text)) return undefined;
+    return evaluateStaticExpression(
+      binding,
+      bindings,
+      new Set([...resolvingBindings, expression.text]),
+    );
   }
 
   if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
@@ -150,7 +209,11 @@ const evaluateStaticExpression = (
   if (expression.kind === ts.SyntaxKind.NullKeyword) return null;
 
   if (ts.isPrefixUnaryExpression(expression)) {
-    const operand = evaluateStaticExpression(expression.operand);
+    const operand = evaluateStaticExpression(
+      expression.operand,
+      bindings,
+      resolvingBindings,
+    );
     if (typeof operand !== "number") return undefined;
     if (expression.operator === ts.SyntaxKind.PlusToken) return operand;
     if (expression.operator === ts.SyntaxKind.MinusToken) return -operand;
@@ -160,7 +223,11 @@ const evaluateStaticExpression = (
   if (ts.isTemplateExpression(expression)) {
     let value = expression.head.text;
     for (const span of expression.templateSpans) {
-      const interpolation = evaluateStaticExpression(span.expression);
+      const interpolation = evaluateStaticExpression(
+        span.expression,
+        bindings,
+        resolvingBindings,
+      );
       if (interpolation === undefined) return undefined;
       value += `${String(interpolation)}${span.literal.text}`;
     }
@@ -171,8 +238,16 @@ const evaluateStaticExpression = (
     ts.isBinaryExpression(expression) &&
     expression.operatorToken.kind === ts.SyntaxKind.PlusToken
   ) {
-    const left = evaluateStaticExpression(expression.left);
-    const right = evaluateStaticExpression(expression.right);
+    const left = evaluateStaticExpression(
+      expression.left,
+      bindings,
+      resolvingBindings,
+    );
+    const right = evaluateStaticExpression(
+      expression.right,
+      bindings,
+      resolvingBindings,
+    );
     if (left === undefined || right === undefined) return undefined;
     if (typeof left === "string" || typeof right === "string") {
       return String(left) + String(right);
@@ -187,10 +262,11 @@ const evaluateStaticExpression = (
 
 const collectStaticStringValues = (sourceFile: ts.SourceFile): Set<string> => {
   const values = new Set<string>();
+  const bindings = collectStaticConstBindings(sourceFile);
 
   const visit = (node: ts.Node): void => {
     if (ts.isExpression(node)) {
-      const value = evaluateStaticExpression(node);
+      const value = evaluateStaticExpression(node, bindings);
       if (typeof value === "string") values.add(value);
     }
     ts.forEachChild(node, visit);
@@ -202,6 +278,7 @@ const collectStaticStringValues = (sourceFile: ts.SourceFile): Set<string> => {
 
 const collectImportSpecifiers = (sourceFile: ts.SourceFile): Set<string> => {
   const specifiers = new Set<string>();
+  const bindings = collectStaticConstBindings(sourceFile);
 
   const visit = (node: ts.Node): void => {
     if (
@@ -217,7 +294,7 @@ const collectImportSpecifiers = (sourceFile: ts.SourceFile): Set<string> => {
       node.expression.kind === ts.SyntaxKind.ImportKeyword
     ) {
       const [specifier] = node.arguments;
-      const value = specifier && evaluateStaticExpression(specifier);
+      const value = specifier && evaluateStaticExpression(specifier, bindings);
       if (typeof value === "string") specifiers.add(value);
     }
 
@@ -233,36 +310,46 @@ const resolveTypeScriptImport = async (
   specifier: string,
   aliasRoot: string,
 ): Promise<string | null> => {
-  let unresolvedPath: string;
-  if (specifier.startsWith("./") || specifier.startsWith("../")) {
-    unresolvedPath = path.resolve(path.dirname(importerPath), specifier);
-  } else if (specifier.startsWith("@/")) {
-    unresolvedPath = path.resolve(aliasRoot, specifier.slice(2));
-  } else {
-    return null;
-  }
+  const isRelative = specifier.startsWith("./") || specifier.startsWith("../");
+  const isAlias = specifier.startsWith("@/");
+  if (!isRelative && !isAlias) return null;
 
+  const compilerOptions: ts.CompilerOptions = {
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    allowImportingTsExtensions: true,
+    baseUrl: aliasRoot,
+    paths: { "@/*": ["*"] },
+  };
+  const resolved = ts.resolveModuleName(
+    specifier,
+    importerPath,
+    compilerOptions,
+    ts.sys,
+  ).resolvedModule?.resolvedFileName;
+  if (resolved && /(?<!\.d)\.tsx?$/.test(resolved)) return path.resolve(resolved);
+
+  const unresolvedPath = isRelative
+    ? path.resolve(path.dirname(importerPath), specifier)
+    : path.resolve(aliasRoot, specifier.slice(2));
   const extension = path.extname(unresolvedPath);
-  if (extension && extension !== ".ts" && extension !== ".tsx") return null;
-  const candidates = extension
+  const fallbackStem = extension === ".js"
+    ? unresolvedPath.slice(0, -extension.length)
+    : unresolvedPath;
+  const candidates = extension === ".ts" || extension === ".tsx"
     ? [unresolvedPath]
     : [
-        `${unresolvedPath}.ts`,
-        `${unresolvedPath}.tsx`,
-        path.join(unresolvedPath, "index.ts"),
-        path.join(unresolvedPath, "index.tsx"),
+        `${fallbackStem}.ts`,
+        `${fallbackStem}.tsx`,
+        path.join(fallbackStem, "index.ts"),
+        path.join(fallbackStem, "index.tsx"),
       ];
+  const fallback = candidates.find((candidate) => ts.sys.fileExists(candidate));
+  if (fallback) return fallback;
 
-  for (const candidate of candidates) {
-    try {
-      await readFile(candidate, "utf8");
-      return candidate;
-    } catch {
-      // Continue through the local TypeScript resolution candidates.
-    }
-  }
-
-  throw new Error(`Unable to resolve ${specifier} imported by ${importerPath}`);
+  throw new Error(
+    `Unable to resolve local module ${specifier} imported by ${importerPath}`,
+  );
 };
 
 const collectLocalTypeScriptDependencies = async (
@@ -297,7 +384,7 @@ const hasForbiddenRuntimeString = (value: string): boolean =>
   FORBIDDEN_RUNTIME_STRINGS.some(({ pattern }) => pattern.test(value));
 
 const IMAGE_PATH_PATTERN =
-  /(?:textures[\\/]|poc-thumbnails[\\/]|\.(?:png|jpe?g|webp|gif|avif|svg)\b)/i;
+  /(?:textures[\\/]|poc-thumbnails[\\/]|\.(?:png|jpe?g|webp|gif|avif|svg)(?:[?#][^\s]*)?$)/i;
 
 const collectImagePathCandidates = (sourceFile: ts.SourceFile): Set<string> =>
   new Set(
@@ -309,10 +396,7 @@ const collectImagePathCandidates = (sourceFile: ts.SourceFile): Set<string> =>
 const normalizeImagePathFragment = (value: string): string =>
   value
     .replaceAll("\\", "/")
-    .replace(/^\.\//, "")
-    .replace(/^\//, "")
-    .replace(/[?#].*$/, "")
-    .toLowerCase();
+    .replace(/^\/+/, "");
 
 const isAllowedImagePathFragment = (
   candidate: string,
@@ -335,6 +419,69 @@ const isAllowedImagePathFragment = (
       (fileName) => normalizedCandidate === `${directory}/${fileName}`,
     ),
   );
+};
+
+const isTextureLoaderConstruction = (expression: ts.Expression): boolean => {
+  if (!ts.isNewExpression(expression)) return false;
+  const constructor = expression.expression;
+  return (
+    (ts.isIdentifier(constructor) && constructor.text === "TextureLoader") ||
+    (ts.isPropertyAccessExpression(constructor) &&
+      constructor.name.text === "TextureLoader")
+  );
+};
+
+const collectUnapprovedDynamicTextureLoads = (
+  sourceFile: ts.SourceFile,
+  policy: PocProvenancePolicy,
+): string[] => {
+  const bindings = collectStaticConstBindings(sourceFile);
+  const violations: string[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === "load" &&
+      isTextureLoaderConstruction(node.expression.expression)
+    ) {
+      const [pathExpression] = node.arguments;
+      if (
+        pathExpression &&
+        evaluateStaticExpression(pathExpression, bindings) === undefined
+      ) {
+        const staticCandidates = new Set<string>();
+        const collectCandidates = (candidateNode: ts.Node): void => {
+          if (ts.isExpression(candidateNode)) {
+            const value = evaluateStaticExpression(candidateNode, bindings);
+            if (typeof value === "string" && IMAGE_PATH_PATTERN.test(value)) {
+              staticCandidates.add(value);
+            }
+          }
+          ts.forEachChild(candidateNode, collectCandidates);
+        };
+        collectCandidates(pathExpression);
+
+        const hasOnlyApprovedStaticFragments =
+          staticCandidates.size > 0 &&
+          [...staticCandidates].every((candidate) =>
+            isAllowedImagePathFragment(
+              candidate,
+              policy.allowedImagePaths,
+              policy.allowSplitImageFragments,
+            ),
+          );
+        if (!hasOnlyApprovedStaticFragments) {
+          violations.push(pathExpression.getText(sourceFile));
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return violations;
 };
 
 const collectProvenanceViolations = (
@@ -366,6 +513,15 @@ const collectProvenanceViolations = (
           `${path.relative(REPOSITORY_ROOT, filePath)}: unapproved image path in ${JSON.stringify(candidate)}`,
         );
       }
+    }
+
+    for (const expression of collectUnapprovedDynamicTextureLoads(
+      sourceFile,
+      policy,
+    )) {
+      violations.add(
+        `${path.relative(REPOSITORY_ROOT, filePath)}: unresolved TextureLoader image path in ${JSON.stringify(expression)}`,
+      );
     }
   }
 
@@ -418,6 +574,42 @@ test("dependency collection recognizes every supported local import form", async
   assert.deepEqual(
     [...dependencies.keys()].map((filePath) => path.basename(filePath)).sort(),
     ["aliased.ts", "dynamic.ts", "entry.ts", "exported.ts", "static.ts"],
+  );
+});
+
+test("dependency collection resolves dotted extensionless and bundler-style js imports", async (t) => {
+  const fixtureRoot = await mkdtemp(path.join(tmpdir(), "poc-provenance-"));
+  t.after(() => rm(fixtureRoot, { recursive: true, force: true }));
+  const entryPath = path.join(fixtureRoot, "entry.ts");
+  await Promise.all([
+    writeFile(
+      entryPath,
+      ['import "./unsafe.runtime";', 'import "./unsafe.js";'].join("\n"),
+    ),
+    writeFile(path.join(fixtureRoot, "unsafe.runtime.ts"), "export {};"),
+    writeFile(path.join(fixtureRoot, "unsafe.tsx"), "export {};"),
+  ]);
+
+  const dependencies = await collectLocalTypeScriptDependencies(
+    entryPath,
+    fixtureRoot,
+  );
+
+  assert.deepEqual(
+    [...dependencies.keys()].map((filePath) => path.basename(filePath)).sort(),
+    ["entry.ts", "unsafe.runtime.ts", "unsafe.tsx"],
+  );
+});
+
+test("dependency collection fails closed for unresolved local runtime imports", async (t) => {
+  const fixtureRoot = await mkdtemp(path.join(tmpdir(), "poc-provenance-"));
+  t.after(() => rm(fixtureRoot, { recursive: true, force: true }));
+  const entryPath = path.join(fixtureRoot, "entry.ts");
+  await writeFile(entryPath, 'import "./missing.runtime";');
+
+  await assert.rejects(
+    collectLocalTypeScriptDependencies(entryPath, fixtureRoot),
+    /Unable to resolve local module \.\/missing\.runtime/,
   );
 });
 
@@ -483,8 +675,12 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
       entryFile: "HeavyWaterDoorA11.tsx",
       allowedImagePaths: [],
       expectedDependencyFiles: [
-        "HeavyWaterDoorA11.tsx",
-        "a11ProceduralMaterials.ts",
+        "packages/sample/src/poc/HeavyWaterDoorA11.tsx",
+        "packages/sample/src/poc/a11ProceduralMaterials.ts",
+      ],
+      trackedTextureDirectories: [
+        "packages/sample/public/textures/poc-a11",
+        "packages/sample/public/textures/a11",
       ],
       allowSplitImageFragments: false,
     },
@@ -497,16 +693,21 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
         "lever-sign.png",
         "lever-box.png",
       ],
-      expectedDependencyFiles: ["SewerGateB10.tsx"],
+      expectedDependencyFiles: ["packages/sample/src/poc/SewerGateB10.tsx"],
+      trackedTextureDirectories: [],
       allowSplitImageFragments: true,
     },
     C03: {
       entryFile: "LiftPlatformC03.tsx",
       allowedImagePaths: [],
       expectedDependencyFiles: [
-        "LiftPlatformC03.tsx",
-        "c03Motion.ts",
-        "c03ProceduralMaterials.ts",
+        "packages/sample/src/poc/LiftPlatformC03.tsx",
+        "packages/sample/src/poc/c03Motion.ts",
+        "packages/sample/src/poc/c03ProceduralMaterials.ts",
+      ],
+      trackedTextureDirectories: [
+        "packages/sample/public/textures/c03",
+        "packages/sample/public/textures/poc-c03",
       ],
       allowSplitImageFragments: false,
     },
@@ -514,30 +715,32 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
       entryFile: "ArchedGateB05.tsx",
       allowedImagePaths: ["textures/b05/generated-gate-front.png"],
       expectedDependencyFiles: [
-        "ArchedGateB05.tsx",
-        "b05BoxMaterialSlots.ts",
-        "b05FrontImage.ts",
-        "b05FrontLoader.ts",
-        "b05FrontResources.ts",
-        "b05FrontScene.ts",
-        "b05Geometry.ts",
-        "b05Motion.ts",
-        "b05ProceduralMaterials.ts",
-        "b05TextureMapping.ts",
+        "packages/sample/src/poc/ArchedGateB05.tsx",
+        "packages/sample/src/poc/b05BoxMaterialSlots.ts",
+        "packages/sample/src/poc/b05FrontImage.ts",
+        "packages/sample/src/poc/b05FrontLoader.ts",
+        "packages/sample/src/poc/b05FrontResources.ts",
+        "packages/sample/src/poc/b05FrontScene.ts",
+        "packages/sample/src/poc/b05Geometry.ts",
+        "packages/sample/src/poc/b05Motion.ts",
+        "packages/sample/src/poc/b05ProceduralMaterials.ts",
+        "packages/sample/src/poc/b05TextureMapping.ts",
       ],
+      trackedTextureDirectories: [],
       allowSplitImageFragments: false,
     },
     B06: {
       entryFile: "HeavyWaterDoubleDoorB06.tsx",
       allowedImagePaths: ["textures/b06/normal.png", "textures/b06/frozen.png"],
       expectedDependencyFiles: [
-        "HeavyWaterDoubleDoorB06.tsx",
-        "b06Assets.ts",
-        "b06FrontLoader.ts",
-        "b06FrontResources.ts",
-        "b06Motion.ts",
-        "b06Scene.ts",
+        "packages/sample/src/poc/HeavyWaterDoubleDoorB06.tsx",
+        "packages/sample/src/poc/b06Assets.ts",
+        "packages/sample/src/poc/b06FrontLoader.ts",
+        "packages/sample/src/poc/b06FrontResources.ts",
+        "packages/sample/src/poc/b06Motion.ts",
+        "packages/sample/src/poc/b06Scene.ts",
       ],
+      trackedTextureDirectories: [],
       allowSplitImageFragments: false,
     },
   } as const;
@@ -557,6 +760,11 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
     assert.deepEqual(
       policy.expectedDependencyFiles,
       expectedPolicy.expectedDependencyFiles,
+    );
+    assert.equal(Object.isFrozen(policy.trackedTextureDirectories), true);
+    assert.deepEqual(
+      policy.trackedTextureDirectories,
+      expectedPolicy.trackedTextureDirectories,
     );
     assert.equal(
       policy.allowSplitImageFragments,
@@ -609,6 +817,30 @@ test("only B10 composes approved split image fragments", () => {
     ),
     false,
   );
+  assert.equal(
+    isAllowedImagePathFragment(
+      "/textures/B10/door.png",
+      POC_PROVENANCE_POLICIES.B10.allowedImagePaths,
+      true,
+    ),
+    false,
+  );
+  assert.equal(
+    isAllowedImagePathFragment(
+      "textures/B05/generated-gate-front.png",
+      POC_PROVENANCE_POLICIES.B05.allowedImagePaths,
+      false,
+    ),
+    false,
+  );
+  assert.equal(
+    isAllowedImagePathFragment(
+      "textures/b06/Normal.png",
+      POC_PROVENANCE_POLICIES.B06.allowedImagePaths,
+      false,
+    ),
+    false,
+  );
 });
 
 test("image candidate collection sees static paths but ignores comments and prose", () => {
@@ -617,6 +849,8 @@ test("image candidate collection sees static paths but ignores comments and pros
     'const template = `TEXTURES/b10/${"door"}.PNG`;',
     'const concatenated = "poc-" + "thumbnails/card.webp";',
     'const extensionOnly = "icons/door.SvG";',
+    'const queried = "icons/door.png?v=1#preview";',
+    'const imageProse = "Generated from door.png for documentation";',
     'const prose = "gallery materials overview";',
   ].join("\n");
   const executableSource = stripSourceComments(source);
@@ -627,8 +861,55 @@ test("image candidate collection sees static paths but ignores comments and pros
   assert.ok(candidates.has("TEXTURES/b10/door.PNG"));
   assert.ok(candidates.has("poc-thumbnails/card.webp"));
   assert.ok(candidates.has("icons/door.SvG"));
+  assert.ok(candidates.has("icons/door.png?v=1#preview"));
   assert.equal(candidates.has("/textures/comment-only.png"), false);
+  assert.equal(
+    candidates.has("Generated from door.png for documentation"),
+    false,
+  );
   assert.equal(candidates.has("gallery materials overview"), false);
+});
+
+test("immutable const bindings expose composed unknown B10 image paths", () => {
+  const source = [
+    'const base = "/textures/b10";',
+    'const stem = "door-2";',
+    'const ext = "png";',
+    'const first = second;',
+    'const second = first;',
+    'export const image = `${base}/${stem}.${ext}`;',
+  ].join("\n");
+  const sourceFile = createSourceFile("const-image-fixture.ts", source);
+  const dependencies = new Map([[sourceFile.fileName, sourceFile]]);
+  const violations = collectProvenanceViolations(
+    dependencies,
+    POC_PROVENANCE_POLICIES.B10,
+  );
+
+  assert.ok(
+    violations.some((violation) =>
+      violation.includes("/textures/b10/door-2.png"),
+    ),
+    `Expected composed unknown image path to fail, received: ${violations.join("\n")}`,
+  );
+});
+
+test("opaque TextureLoader paths fail closed without flagging unrelated loaders", () => {
+  const source = [
+    "declare const dynamicPath: string;",
+    "declare const cache: { load(path: string): void };",
+    "new THREE.TextureLoader().load(dynamicPath);",
+    "cache.load(dynamicPath);",
+  ].join("\n");
+  const sourceFile = createSourceFile("dynamic-image-load-fixture.ts", source);
+  const dependencies = new Map([[sourceFile.fileName, sourceFile]]);
+  const violations = collectProvenanceViolations(
+    dependencies,
+    POC_PROVENANCE_POLICIES.A11,
+  );
+
+  assert.equal(violations.length, 1);
+  assert.match(violations[0], /unresolved TextureLoader image path/);
 });
 
 test("unknown shared image fixture violates the no-image A11 policy", async (t) => {
@@ -685,7 +966,9 @@ test("all POC entry points comply with their asset provenance policy", async (t)
         policy.entryPath,
       );
       const dependencyFiles = [...dependencies.keys()]
-        .map((filePath) => path.basename(filePath))
+        .map((filePath) =>
+          path.relative(REPOSITORY_ROOT, filePath).replaceAll(path.sep, "/"),
+        )
         .sort();
       assert.deepEqual(
         dependencyFiles,
@@ -729,14 +1012,26 @@ test("B10 tracked textures exactly match the approved files and hashes", async (
 });
 
 test("A11 has no committed texture directory", () => {
+  const textureDirectories =
+    POC_PROVENANCE_POLICIES.A11.trackedTextureDirectories;
   const trackedTextures = execFileSync(
     "git",
-    [
-      "ls-files",
-      "--",
-      "packages/sample/public/textures/poc-a11",
-      "packages/sample/public/textures/a11",
-    ],
+    ["ls-files", "--", ...textureDirectories],
+    { cwd: REPOSITORY_ROOT, encoding: "utf8" },
+  )
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+
+  assert.deepEqual(trackedTextures, []);
+});
+
+test("C03 has no committed texture directory", () => {
+  const textureDirectories =
+    POC_PROVENANCE_POLICIES.C03.trackedTextureDirectories;
+  const trackedTextures = execFileSync(
+    "git",
+    ["ls-files", "--", ...textureDirectories],
     { cwd: REPOSITORY_ROOT, encoding: "utf8" },
   )
     .trim()
