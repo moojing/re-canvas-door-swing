@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { inflateSync } from "node:zlib";
+import { deflateSync, inflateSync } from "node:zlib";
 import {
   POC_GALLERY_ITEMS,
   resolvePocThumbnailUrl,
@@ -48,6 +48,9 @@ const assertValidPng = (contents: Buffer, label: string): void => {
   let chunkIndex = 0;
   let ihdrCount = 0;
   let iendCount = 0;
+  let width = 0;
+  let height = 0;
+  let channels = 0;
   const idatPayloads: Buffer[] = [];
 
   while (offset < contents.length) {
@@ -78,13 +81,16 @@ const assertValidPng = (contents: Buffer, label: string): void => {
       assert.equal(ihdrCount, 1, `${label} must contain exactly one IHDR`);
       assert.equal(chunkIndex, 0, `${label} IHDR must be first`);
       assert.equal(length, 13, `${label} IHDR length`);
-      assert.equal(data.readUInt32BE(0), 960, `${label} width`);
-      assert.equal(data.readUInt32BE(4), 540, `${label} height`);
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      assert.equal(width, 960, `${label} width`);
+      assert.equal(height, 540, `${label} height`);
       assert.equal(data[8], 8, `${label} bit depth`);
       assert.ok(
         data[9] === 2 || data[9] === 6,
         `${label} color type must be RGB or RGBA`,
       );
+      channels = data[9] === 2 ? 3 : 4;
       assert.equal(data[10], 0, `${label} compression method`);
       assert.equal(data[11], 0, `${label} filter method`);
       assert.equal(data[12], 0, `${label} interlace method`);
@@ -125,7 +131,19 @@ const assertValidPng = (contents: Buffer, label: string): void => {
   } catch {
     assert.fail(`${label} IDAT payloads must contain valid zlib data`);
   }
-  assert.ok(inflated.length > 0, `${label} inflated image data must not be empty`);
+
+  const scanlineLength = 1 + width * channels;
+  assert.equal(
+    inflated.length,
+    height * scanlineLength,
+    `${label} inflated image data length`,
+  );
+  for (let row = 0; row < height; row += 1) {
+    assert.ok(
+      inflated[row * scanlineLength] <= 4,
+      `${label} scanline ${row} filter byte must be 0..4`,
+    );
+  }
 };
 
 const EXPECTED_ITEMS = [
@@ -218,6 +236,40 @@ for (const item of POC_GALLERY_ITEMS) {
 const readCanonicalPng = (): Buffer =>
   readFileSync(`${THUMBNAIL_DIRECTORY}a11.png`);
 
+const encodePngChunk = (type: string, data: Buffer): Buffer => {
+  const chunk = Buffer.alloc(12 + data.length);
+  chunk.writeUInt32BE(data.length, 0);
+  chunk.write(type, 4, 4, "ascii");
+  data.copy(chunk, 8);
+  chunk.writeUInt32BE(crc32(chunk.subarray(4, 8 + data.length)), 8 + data.length);
+  return chunk;
+};
+
+const replaceIdatPayloads = (png: Buffer, rawImageData: Buffer): Buffer => {
+  const parts = [png.subarray(0, PNG_SIGNATURE.length)];
+  let offset = PNG_SIGNATURE.length;
+  let replaced = false;
+
+  while (offset < png.length) {
+    const length = png.readUInt32BE(offset);
+    const type = png.subarray(offset + 4, offset + 8).toString("ascii");
+    const chunkEnd = offset + 12 + length;
+
+    if (type === "IDAT") {
+      if (!replaced) {
+        parts.push(encodePngChunk("IDAT", deflateSync(rawImageData)));
+        replaced = true;
+      }
+    } else {
+      parts.push(png.subarray(offset, chunkEnd));
+    }
+    offset = chunkEnd;
+  }
+
+  assert.equal(replaced, true, "fixture source must contain IDAT");
+  return Buffer.concat(parts);
+};
+
 test("PNG validation rejects a malformed IHDR length", () => {
   const malformed = Buffer.from(readCanonicalPng());
   malformed.writeUInt32BE(12, PNG_SIGNATURE.length);
@@ -247,6 +299,28 @@ test("PNG validation rejects bytes after the terminal IEND", () => {
   assert.throws(
     () => assertValidPng(withTrailingByte, "trailing"),
     /trailing bytes/,
+  );
+});
+
+test("PNG validation rejects valid zlib data with undersized scanlines", () => {
+  const undersized = replaceIdatPayloads(readCanonicalPng(), Buffer.from([0]));
+
+  assert.throws(
+    () => assertValidPng(undersized, "undersized"),
+    /inflated image data length/,
+  );
+});
+
+test("PNG validation rejects an out-of-range scanline filter byte", () => {
+  const canonical = readCanonicalPng();
+  const channels = canonical[25] === 2 ? 3 : 4;
+  const rawImageData = Buffer.alloc(540 * (1 + 960 * channels));
+  rawImageData[0] = 5;
+  const invalidFilter = replaceIdatPayloads(canonical, rawImageData);
+
+  assert.throws(
+    () => assertValidPng(invalidFilter, "invalid filter"),
+    /scanline 0 filter byte/,
   );
 });
 
