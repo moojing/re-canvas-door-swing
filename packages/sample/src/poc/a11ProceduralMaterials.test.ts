@@ -25,6 +25,14 @@ test("generates byte-identical maps for the same dimensions and seed", () => {
   assert.deepEqual(first.roughnessPixels, second.roughnessPixels);
 });
 
+test("treats positive and negative zero seeds identically", () => {
+  const positiveZero = createA11MaterialPixels(64, 48, 0);
+  const negativeZero = createA11MaterialPixels(64, 48, -0);
+
+  assert.deepEqual(positiveZero.colorPixels, negativeZero.colorPixels);
+  assert.deepEqual(positiveZero.roughnessPixels, negativeZero.roughnessPixels);
+});
+
 test("changes both maps when the seed changes", () => {
   const first = createA11MaterialPixels(64, 48, 1101);
   const second = createA11MaterialPixels(64, 48, 1102);

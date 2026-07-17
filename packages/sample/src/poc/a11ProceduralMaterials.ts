@@ -20,7 +20,7 @@ const rotateLeft64 = (value: bigint, shift: bigint): bigint =>
 
 const seedBits = (seed: number): bigint => {
   const view = new DataView(new ArrayBuffer(8));
-  view.setFloat64(0, seed);
+  view.setFloat64(0, seed === 0 ? 0 : seed);
   return (BigInt(view.getUint32(0)) << 32n) | BigInt(view.getUint32(4));
 };
 
