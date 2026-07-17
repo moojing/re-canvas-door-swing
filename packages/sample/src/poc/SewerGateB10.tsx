@@ -230,7 +230,7 @@ const useFlatTexture = (texturePath: B10TexturePath) => {
 const FlatReliefPart = ({
   rect,
   depth,
-  textureUrl,
+  texturePath,
   sideColor,
 }: {
   rect: { w: number; h: number; x: number; y: number };

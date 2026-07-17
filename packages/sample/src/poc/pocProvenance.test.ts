@@ -843,6 +843,92 @@ const isApprovedResolvedB10TextureUrl = (
   );
 };
 
+const collectFlatReliefTexturePathContractViolations = (
+  sourceFile: ts.SourceFile,
+): string[] => {
+  const declarations = sourceFile.statements.flatMap((statement) =>
+    ts.isVariableStatement(statement)
+      ? statement.declarationList.declarations.filter(
+          (declaration) =>
+            ts.isIdentifier(declaration.name) &&
+            declaration.name.text === "FlatReliefPart",
+        )
+      : [],
+  );
+  if (declarations.length !== 1) {
+    return ["FlatReliefPart must have exactly one declaration"];
+  }
+
+  const initializer = declarations[0].initializer;
+  if (!initializer || !ts.isArrowFunction(initializer)) {
+    return ["FlatReliefPart must remain an arrow function"];
+  }
+
+  const parameter = initializer.parameters[0];
+  if (!parameter || !ts.isObjectBindingPattern(parameter.name)) {
+    return ["FlatReliefPart must destructure its props"];
+  }
+
+  const violations: string[] = [];
+  const texturePathBindings = parameter.name.elements.filter(
+    (element) =>
+      element.propertyName === undefined &&
+      ts.isIdentifier(element.name) &&
+      element.name.text === "texturePath",
+  );
+  if (texturePathBindings.length !== 1) {
+    violations.push("FlatReliefPart must destructure texturePath exactly once");
+  }
+  if (
+    parameter.name.elements.some(
+      (element) =>
+        element.propertyName === undefined &&
+        ts.isIdentifier(element.name) &&
+        element.name.text === "textureUrl",
+    )
+  ) {
+    violations.push("FlatReliefPart must not destructure stale textureUrl");
+  }
+
+  const typedTexturePathProperties =
+    parameter.type && ts.isTypeLiteralNode(parameter.type)
+      ? parameter.type.members.filter(
+          (member) =>
+            ts.isPropertySignature(member) &&
+            member.type !== undefined &&
+            ts.isIdentifier(member.name) &&
+            member.name.text === "texturePath" &&
+            member.type.getText(sourceFile) === "B10TexturePath",
+        )
+      : [];
+  if (typedTexturePathProperties.length !== 1) {
+    violations.push("FlatReliefPart must type texturePath as B10TexturePath");
+  }
+
+  const flatTextureCalls: ts.CallExpression[] = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "useFlatTexture"
+    ) {
+      flatTextureCalls.push(node);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(initializer.body);
+  if (
+    flatTextureCalls.length !== 1 ||
+    flatTextureCalls[0].arguments.length !== 1 ||
+    !ts.isIdentifier(flatTextureCalls[0].arguments[0]) ||
+    flatTextureCalls[0].arguments[0].text !== "texturePath"
+  ) {
+    violations.push("FlatReliefPart must pass texturePath to useFlatTexture");
+  }
+
+  return violations;
+};
+
 const collectUnapprovedDynamicTextureLoads = (
   sourceFile: ts.SourceFile,
   hasApprovedB10PathContract = false,
@@ -1854,6 +1940,37 @@ test("B10 TextureLoader provenance only approves the typed BASE_URL resolver", (
       1,
     );
   }
+});
+
+test("B10 FlatReliefPart binds its typed texturePath before loading it", async () => {
+  const source = await readFile(POC_PROVENANCE_POLICIES.B10.entryPath, "utf8");
+  const sourceFile = createSourceFile(
+    POC_PROVENANCE_POLICIES.B10.entryPath,
+    stripSourceComments(source, POC_PROVENANCE_POLICIES.B10.entryPath),
+  );
+  const staleSourceFile = createSourceFile(
+    "stale-b10-flat-relief.tsx",
+    [
+      "const FlatReliefPart = ({ textureUrl }: {",
+      "  texturePath: B10TexturePath;",
+      "}) => {",
+      "  const tex = useFlatTexture(texturePath);",
+      "  return <mesh />;",
+      "};",
+    ].join("\n"),
+  );
+
+  assert.deepEqual(
+    collectFlatReliefTexturePathContractViolations(sourceFile),
+    [],
+  );
+  assert.deepEqual(
+    collectFlatReliefTexturePathContractViolations(staleSourceFile),
+    [
+      "FlatReliefPart must destructure texturePath exactly once",
+      "FlatReliefPart must not destructure stale textureUrl",
+    ],
+  );
 });
 
 test("join-produced unknown B10 filenames resolve and fail provenance", () => {
