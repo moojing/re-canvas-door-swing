@@ -1,3 +1,4 @@
+import ast
 import os
 import subprocess
 import sys
@@ -9,8 +10,26 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "check-door" / "scripts" / "build_gallery.py"
 
 
+def read_literal_assignment(name: str):
+    module = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+    for node in module.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == name:
+                return ast.literal_eval(node.value)
+    raise AssertionError(f"assignment {name} not found")
+
+
 class BuildGalleryTests(unittest.TestCase):
     """Verify generated gallery UI labels stay in sync with canonical counts."""
+
+    def test_c06_gallery_assets_use_manual_door_segment_overrides(self):
+        overrides = read_literal_assignment("OVERRIDE")
+        gif_overrides = read_literal_assignment("GIF_OVERRIDE")
+
+        self.assertIn(("1-2", "c06"), overrides)
+        self.assertIn(("1-2", "c06"), gif_overrides)
 
     def test_filter_buttons_include_live_counts(self):
         with tempfile.TemporaryDirectory() as tmp:
