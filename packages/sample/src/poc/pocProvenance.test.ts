@@ -55,8 +55,9 @@ const POC_PROVENANCE_POLICIES = Object.freeze({
   A04: createPocProvenancePolicy(
     "A04DoorPoC.tsx",
     [
-      "textures/a04/sewer-gate-aged-albedo.png",
+      "textures/a04/metal-plate-02-diffuse.jpg",
       "textures/a04/metal-plate-02-roughness.jpg",
+      "textures/a04/green-metal-rust-diffuse.jpg",
       "textures/a04/green-metal-rust-roughness.jpg",
     ],
     [
@@ -1681,8 +1682,9 @@ test("POC provenance policies are immutable and explicitly allowlisted", () => {
     A04: {
       entryFile: "A04DoorPoC.tsx",
       allowedImagePaths: [
-        "textures/a04/sewer-gate-aged-albedo.png",
+        "textures/a04/metal-plate-02-diffuse.jpg",
         "textures/a04/metal-plate-02-roughness.jpg",
+        "textures/a04/green-metal-rust-diffuse.jpg",
         "textures/a04/green-metal-rust-roughness.jpg",
       ],
       expectedDependencyFiles: [
@@ -2570,7 +2572,7 @@ test("B10 tracked textures exactly match the approved files and hashes", async (
 test("A04 and C06 tracked textures exactly match their approved files and hashes", async () => {
   const expectedTextureSets = {
     "packages/sample/public/textures/a04": {
-      "README.md": "f968415bc2acc9685c72e04481dc0c96e2d2e21dffdeba26ad2c01d9f0249755",
+      "README.md": "5576af1501aab567d6e666436ff2d6c8ffe817d1295744c96150a13e9c8f3b64",
       "green-metal-rust-diffuse.jpg": "4509ab0cb1cf6bf9b9f970450a41f83ebd9bff178006deae568ff34b404856fc",
       "green-metal-rust-roughness.jpg": "f214f22608dd75aa3e7b4da8bffac97c344cbacbc50f49ba0beb0236701a622c",
       "metal-plate-02-diffuse.jpg": "6e80877d0e9d5973d96298c6091df7ace906b0a6760afc4f3592e4855f3f1d4c",

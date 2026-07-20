@@ -63,19 +63,24 @@ reference while retaining the general category: aged double arched iron gate.
 
 ## Material Provenance
 
-The implementation must not load any image from the gallery, source video, network, or
-`public/` texture directory. `b05ProceduralMaterials.ts` generates complete RGBA buffers
-from fixed coordinate noise and fixed seeds. The material combines:
+The implementation must not load any image from the gallery, source video, network, or an
+unrelated `public/` texture. The one permitted image is the tracked,
+project-owned generated front art at
+`packages/sample/public/textures/b05/generated-gate-front.png`; it is a derived asset,
+not a source-gate capture, and may only be used for the generated front-plane material.
+`b05ProceduralMaterials.ts` generates complete RGBA buffers from fixed coordinate noise
+and fixed seeds for the remaining iron surfaces. The material combines:
 
 - a dark oxidized iron base;
 - nonuniform orange-brown rust patches;
 - small pits and scratches;
 - enough luminance contrast to remain readable against black.
 
-`ArchedGateB05.tsx` converts the buffer into a `CanvasTexture`, uses nearest filtering for
-the low-resolution look, and disposes the texture on unmount. The generated pattern must
-be similar only in mood; its pixel distribution and decorative pattern must differ from
-the source gate.
+`ArchedGateB05.tsx` converts the procedural buffers into `CanvasTexture` resources and
+loads the generated front art through the owned front-resource loader. All image,
+material, and canvas resources must be disposed with their owner on unmount. The
+generated pattern and front art must be similar only in mood; their pixel distribution
+and decorative pattern must differ from the source gate.
 
 ## Motion
 

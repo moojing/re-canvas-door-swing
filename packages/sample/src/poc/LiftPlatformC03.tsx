@@ -5,7 +5,7 @@
  * 所有表面材質皆由程式化像素生成，不引用原始遊戲影格或外部圖片。
  */
 import { Canvas, useFrame } from "@react-three/fiber";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import * as THREE from "three";
 
 import { getC03MotionState } from "./c03Motion";

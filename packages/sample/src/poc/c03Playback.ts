@@ -23,6 +23,10 @@ export const startC03Playback = (
   startTime: now - state.progress * C03_DURATION_MS,
 });
 
+export const getC03PlaybackStartState = (
+  state: C03PlaybackState,
+): C03PlaybackState => (state.progress >= 1 ? createC03PlaybackState() : state);
+
 export const advanceC03Playback = (
   state: C03PlaybackState,
   startTime: number,
@@ -65,7 +69,10 @@ export const useC03Playback = () => {
 
   const play = useCallback(() => {
     stopPlayback();
-    const started = startC03Playback(stateRef.current, performance.now());
+    const started = startC03Playback(
+      getC03PlaybackStartState(stateRef.current),
+      performance.now(),
+    );
     publish(started.state);
 
     const tick = (now: number) => {

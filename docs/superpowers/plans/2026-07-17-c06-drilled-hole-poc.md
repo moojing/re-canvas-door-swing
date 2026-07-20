@@ -6,7 +6,7 @@
 
 **Architecture:** Keep deterministic scene data and camera timing in a small pure TypeScript module, then consume it from a React Three Fiber page. Compose the wall from panels and brick boxes so every exposed surface has real depth and receives the generated texture.
 
-**Tech Stack:** React 18, TypeScript, React Three Fiber, Three.js, Vitest, Vite
+**Tech Stack:** React 18, TypeScript, React Three Fiber, Three.js, Node.js test runner, Vite
 
 ---
 
@@ -15,14 +15,11 @@
 **Files:**
 - Create: `packages/sample/src/poc/c06SceneModel.test.ts`
 - Create: `packages/sample/src/poc/c06SceneModel.ts`
-- Modify: `packages/sample/package.json`
-- Modify: `package-lock.json`
+- Modify: `package.json`
 
-- [ ] **Step 1: Install and register the test runner**
+- [ ] **Step 1: Register the existing Node.js test command**
 
-Run: `npm install --save-dev vitest@2.1.9 --workspace door-entrance-sample`
-
-Add `"test:c06": "vitest run src/poc/c06SceneModel.test.ts"` to the sample scripts.
+Add the root script `"test:c06": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/c06SceneModel.test.ts"`.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -30,7 +27,7 @@ Test that camera progress clamps at both ends, moves monotonically from the fron
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `npm run test:c06 --workspace door-entrance-sample`
+Run: `npm run test:c06`
 Expected: FAIL because `c06SceneModel.ts` does not exist.
 
 - [ ] **Step 4: Write minimal implementation**
@@ -39,7 +36,7 @@ Export `C06_DURATION_SECONDS`, `getC06CameraState(elapsed)`, and immutable `C06_
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `npm run test:c06 --workspace door-entrance-sample`
+Run: `npm run test:c06`
 Expected: all C06 model tests pass.
 
 ### Task 2: Generate Original Brick Texture
@@ -90,7 +87,7 @@ Before editing, save `git diff --cached -- packages/sample/src/App.tsx packages/
 
 - [ ] **Step 1: Run focused tests and lint**
 
-Run: `npm run test:c06 --workspace door-entrance-sample`
+Run: `npm run test:c06`
 Run: `npm run lint --workspace door-entrance-sample`
 
 - [ ] **Step 2: Run production build**

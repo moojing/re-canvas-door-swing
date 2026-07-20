@@ -84,8 +84,10 @@ Copy without deleting the generated originals:
 
 ```bash
 mkdir -p packages/sample/public/textures/b06
-cp /Users/mujingtsai/.codex/generated_images/019f579c-3414-72c2-9eeb-f61e989b3d2e/exec-b4d93cef-314a-4291-8301-5ec55f5745be.png packages/sample/public/textures/b06/normal.png
-cp /Users/mujingtsai/.codex/generated_images/019f579c-3414-72c2-9eeb-f61e989b3d2e/exec-eedf3746-100b-4e53-809d-c55bb3b0de27.png packages/sample/public/textures/b06/frozen.png
+: "${B06_NORMAL_SOURCE:?set B06_NORMAL_SOURCE to the approved normal asset}"
+: "${B06_FROZEN_SOURCE:?set B06_FROZEN_SOURCE to the approved frozen asset}"
+cp "$B06_NORMAL_SOURCE" packages/sample/public/textures/b06/normal.png
+cp "$B06_FROZEN_SOURCE" packages/sample/public/textures/b06/frozen.png
 shasum -a 256 packages/sample/public/textures/b06/normal.png packages/sample/public/textures/b06/frozen.png
 ```
 

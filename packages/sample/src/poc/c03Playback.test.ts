@@ -5,6 +5,7 @@ import {
   advanceC03Playback,
   createC03PlaybackState,
   resetC03Playback,
+  getC03PlaybackStartState,
   scrubC03Playback,
   startC03Playback,
   stopC03Playback,
@@ -31,4 +32,15 @@ test("scrubbing clamps to the animation bounds and stops playback", () => {
   assert.deepEqual(scrubC03Playback(-1), { progress: 0, playing: false });
   assert.deepEqual(scrubC03Playback(0.5), { progress: 0.5, playing: false });
   assert.deepEqual(scrubC03Playback(2), { progress: 1, playing: false });
+});
+
+test("restarts completed playback from the beginning", () => {
+  assert.deepEqual(
+    getC03PlaybackStartState(createC03PlaybackState(1)),
+    createC03PlaybackState(),
+  );
+  assert.deepEqual(
+    getC03PlaybackStartState(createC03PlaybackState(0.4)),
+    createC03PlaybackState(0.4),
+  );
 });

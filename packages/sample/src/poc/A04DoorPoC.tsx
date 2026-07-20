@@ -152,7 +152,7 @@ const useA04Texture = (
 
 const useA04Materials = (): A04Materials => {
   const s1Diffuse = useA04Texture(
-    "textures/a04/sewer-gate-aged-albedo.png",
+    "textures/a04/metal-plate-02-diffuse.jpg",
     true,
     1,
     1,
@@ -163,7 +163,12 @@ const useA04Materials = (): A04Materials => {
     0.72,
     1.8,
   );
-  const s2Diffuse = s1Diffuse;
+  const s2Diffuse = useA04Texture(
+    "textures/a04/green-metal-rust-diffuse.jpg",
+    true,
+    1,
+    1,
+  );
   const s2Roughness = useA04Texture(
     "textures/a04/green-metal-rust-roughness.jpg",
     false,

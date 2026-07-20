@@ -72,7 +72,7 @@ class BuildGalleryTests(unittest.TestCase):
             env = os.environ.copy()
             env["DOOR_GALLERY_ROOT"] = str(gallery)
             output = gallery / "index.html"
-            subprocess.run(
+            subprocess.run(  # noqa: S603 - executable is resolved; arguments are fixed
                 [sys.executable, str(SCRIPT), str(output)],
                 check=True,
                 env=env,
