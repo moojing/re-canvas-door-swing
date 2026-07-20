@@ -17,8 +17,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { getDoorAnimationConfig, easeInOutCubic } from "door-entrance";
+import { setTextureColorSpace } from "./textureColorSpace";
+import {
+  B10_TEXTURE_PATHS,
+  resolveB10TextureUrl,
+  type B10TexturePath,
+} from "./b10TextureUrls";
 
-const TEX_BASE = "/textures/b10";
+const [
+  B10_DOOR_TEXTURE_PATH,
+  B10_LOWER_TEXTURE_PATH,
+  B10_LEVER_SIGN_TEXTURE_PATH,
+  B10_LEVER_BOX_TEXTURE_PATH,
+] = B10_TEXTURE_PATHS;
 
 // ---- 來源影格量測值(px,亮度剖面量得)。與 extract-b10-textures.sh 的 crop 參數同步 ----
 // 上閘板 bbox x 345–905、y 0–440(t=3.6s 關門特寫);齒根 y=403、齒尖 y=440。
@@ -106,23 +117,31 @@ const buildLowerShape = () => {
  * 載入裁切貼圖並設定 UV 轉換:ExtrudeGeometry 正面的 UV 就是輪廓座標(px),
  * repeat=1/尺寸、offset=0.5 讓 crop 影像剛好鋪滿輪廓 bbox。
  */
-const useCropTexture = (file: string, wPx: number, hPx: number) => {
+const useCropTexture = (
+  texturePath: B10TexturePath,
+  wPx: number,
+  hPx: number,
+) => {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   useEffect(() => {
     let alive = true;
+    const textureUrl = resolveB10TextureUrl(
+      import.meta.env.BASE_URL,
+      texturePath,
+    );
     const tex = new THREE.TextureLoader().load(
-      `${TEX_BASE}/${file}`,
+      textureUrl,
       () => {
         if (alive) setTexture(tex);
       },
       undefined,
       () => {
         console.warn(
-          `[poc-b10] 貼圖載入失敗:${TEX_BASE}/${file}(先執行 scripts/poc/extract-b10-textures.sh?)`
+          `[poc-b10] 貼圖載入失敗:${textureUrl}(先執行 scripts/poc/extract-b10-textures.sh?)`
         );
       }
     );
-    tex.colorSpace = THREE.SRGBColorSpace;
+    setTextureColorSpace(tex);
     tex.repeat.set(1 / wPx, 1 / hPx);
     tex.offset.set(0.5, 0.5);
     return () => {
@@ -130,7 +149,7 @@ const useCropTexture = (file: string, wPx: number, hPx: number) => {
       setTexture(null);
       tex.dispose();
     };
-  }, [file, wPx, hPx]);
+  }, [texturePath, wPx, hPx]);
   return texture;
 };
 
@@ -181,42 +200,46 @@ const ToothedPlate = ({
 };
 
 /** 警示牌/拉桿盒的貼圖:plane UV 是 0..1,直接載入不做 UV 轉換 */
-const useFlatTexture = (file: string) => {
+const useFlatTexture = (texturePath: B10TexturePath) => {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   useEffect(() => {
     let alive = true;
+    const textureUrl = resolveB10TextureUrl(
+      import.meta.env.BASE_URL,
+      texturePath,
+    );
     const tex = new THREE.TextureLoader().load(
-      `${TEX_BASE}/${file}`,
+      textureUrl,
       () => {
         if (alive) setTexture(tex);
       },
       undefined,
       () => {
-        console.warn(`[poc-b10] 貼圖載入失敗:${TEX_BASE}/${file}`);
+        console.warn(`[poc-b10] 貼圖載入失敗:${textureUrl}`);
       }
     );
-    tex.colorSpace = THREE.SRGBColorSpace;
+    setTextureColorSpace(tex);
     return () => {
       alive = false;
       setTexture(null);
       tex.dispose();
     };
-  }, [file]);
+  }, [texturePath]);
   return texture;
 };
 
 const FlatReliefPart = ({
   rect,
   depth,
-  file,
+  texturePath,
   sideColor,
 }: {
   rect: { w: number; h: number; x: number; y: number };
   depth: number;
-  file: string;
+  texturePath: B10TexturePath;
   sideColor: string;
 }) => {
-  const tex = useFlatTexture(file);
+  const tex = useFlatTexture(texturePath);
   const { cx, cy } = rectToLocal(rect);
   return (
     <group position={[cx, cy, PLATE_DEPTH / 2 + depth / 2]}>
@@ -241,8 +264,16 @@ const B10Gate = ({ doorAngle }: { doorAngle: number }) => {
   const lowerRef = useRef<THREE.Group>(null);
   const gateShape = useMemo(buildGateShape, []);
   const lowerShape = useMemo(buildLowerShape, []);
-  const gateTex = useCropTexture("door.png", GATE_PX.w, GATE_PX.h);
-  const lowerTex = useCropTexture("lower.png", LOWER_PX.w, LOWER_PX.h);
+  const gateTex = useCropTexture(
+    B10_DOOR_TEXTURE_PATH,
+    GATE_PX.w,
+    GATE_PX.h,
+  );
+  const lowerTex = useCropTexture(
+    B10_LOWER_TEXTURE_PATH,
+    LOWER_PX.w,
+    LOWER_PX.h,
+  );
 
   // 下閘板閉合位置:齒尖(crop 第 2 列)對到影格 y=405,與上閘板齒互鎖
   const lowerClosedY =
@@ -270,8 +301,18 @@ const B10Gate = ({ doorAngle }: { doorAngle: number }) => {
             sideColor="#33281f"
           />
           {/* 門上拉桿盒 + 黃色警示牌(跟著上閘板一起升) */}
-          <FlatReliefPart rect={LEVER_SIGN} depth={8} file="lever-sign.png" sideColor="#6b6428" />
-          <FlatReliefPart rect={LEVER_BOX} depth={14} file="lever-box.png" sideColor="#3c3a2c" />
+          <FlatReliefPart
+            rect={LEVER_SIGN}
+            depth={8}
+            texturePath={B10_LEVER_SIGN_TEXTURE_PATH}
+            sideColor="#6b6428"
+          />
+          <FlatReliefPart
+            rect={LEVER_BOX}
+            depth={14}
+            texturePath={B10_LEVER_BOX_TEXTURE_PATH}
+            sideColor="#3c3a2c"
+          />
         </group>
 
         {/* 下閘板(下沉),微幅後移避免互鎖區 z-fighting;位差越小閉合越像一體 */}

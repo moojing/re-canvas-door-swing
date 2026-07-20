@@ -6,20 +6,22 @@ Make `moojing/re-door-gallery` discoverable from the main project, remove local 
 
 ## Ownership
 
-The main `re-canvas-door-swing` repository remains the source of truth for the in-progress evaluation:
+The sibling `re-door-gallery` repository is the source of truth for the in-progress evaluation
+and the published snapshot:
 
 - `docs/Doors-Difficulity-Estimation.xlsm.csv`
 - `docs/door-classifications.md`
 - `docs/door-classification-report.md`
-- gallery generation and consistency-check tooling
-
-The sibling `re-door-gallery` repository is the published snapshot:
-
 - `index.html`
 - `doors.json`
-- `docs/` copies of the evaluation documents
 - `stills/` and `gifs/`
 - local-only source videos under `materials/`
+
+The main `re-canvas-door-swing` repository keeps:
+
+- gallery generation and consistency-check tooling
+- workflow documentation and guardrails
+- migration and verification records
 
 The main README and agent instruction files will link to `https://github.com/moojing/re-door-gallery`, document the conventional local sibling path, and require a gallery consistency check whenever evaluation records change.
 
@@ -79,7 +81,7 @@ A tracked consistency checker in the main project will verify:
 
 - all 113 classification rows and relevant fields match `re-door-gallery/doors.json`;
 - all current notes appear in `re-door-gallery/index.html`;
-- the three published evaluation documents match the main source files;
+- the main repository does not track duplicate canonical evaluation docs;
 - still and GIF counts are 113 each;
 - `git ls-files -- materials` returns no tracked material files in either repository, and `/materials/` ignore coverage exists in both;
 - when their local roots are present, videos and frame extracts match every manifest path and hash, including exactly 318 videos, 12,332 frames, 10,982 unique frame hashes, and 1,350 repeated logical frames.

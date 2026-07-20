@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { doorEntrancePresets } from "door-entrance";
+import { Link } from "react-router-dom";
 
 const reactSnippet = `import { DoorEntrance } from 'door-entrance';
 
@@ -58,6 +59,68 @@ const Index = () => {
         </header>
 
         <ReactSample />
+
+        <section className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold">Door PoCs</h2>
+            <p className="max-w-3xl text-sm text-white/65">
+              針對原本被判不可做或高風險的門型，做最小可驗證原型。
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">
+              <CardHeader className="space-y-2">
+                <Badge variant="outline" className="w-fit border-amber-500/60 text-amber-200">
+                  1-2 a04
+                </Badge>
+                <CardTitle className="text-lg">單門-粗把手</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-white/70">
+                  共用單門骨架切換 s1 柵欄鐵門 / s2 目字鐵門，驗證兩者都可用低複雜度幾何成立。
+                </p>
+                <Button asChild variant="secondary" size="sm">
+                  <Link to="/poc/a04">開啟 POC</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">
+              <CardHeader className="space-y-2">
+                <Badge variant="outline" className="w-fit border-amber-500/60 text-amber-200">
+                  1-2 a11
+                </Badge>
+                <CardTitle className="text-lg">重型水門</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-white/70">
+                  Primitive 疊加 + 程序材質，驗證浮凸水門不需外找模型。
+                </p>
+                <Button asChild variant="secondary" size="sm">
+                  <Link to="/poc/a11">開啟 POC</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">
+              <CardHeader className="space-y-2">
+                <Badge variant="outline" className="w-fit border-amber-500/60 text-amber-200">
+                  1-2 b10
+                </Badge>
+                <CardTitle className="text-lg">下水道閘門</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-white/70">
+                  Shape 輪廓擠出 + 上下對開，驗證齒形閘門可用程式幾何製作。
+                </p>
+                <Button asChild variant="secondary" size="sm">
+                  <Link to="/poc/b10">開啟 POC</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">

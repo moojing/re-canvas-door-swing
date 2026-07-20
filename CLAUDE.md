@@ -69,9 +69,10 @@ bundler imports, so the library is self-contained; history and design in
 - Verification is manual — exercise the door animations and texture/sound loading in the sample app before opening a PR.
 # Evaluation gallery
 
-The source evaluation records are in `docs/`. Their published gallery is the sibling
-repository `../re-door-gallery` and the canonical remote is
-https://github.com/moojing/re-door-gallery. When classifications, the report, or the CSV
-change, update the gallery and run `npm run gallery:check`; the work is incomplete until
-that check passes. Local source videos and frame extracts belong only in the gallery's ignored
-`materials/door-transitions/` and `materials/frame-extracts/` directories and must never be committed.
+The sibling repository `../re-door-gallery` is the single source of truth for the evaluation
+records and its canonical remote is https://github.com/moojing/re-door-gallery. When
+classifications, the report, or the CSV change, edit `../re-door-gallery/docs/` directly and
+run `npm run gallery:check`; the work is incomplete until that check passes. This repository
+must not track duplicate copies of those three evaluation files. Local source videos and frame
+extracts belong only in the gallery's ignored `materials/door-transitions/` and
+`materials/frame-extracts/` directories and must never be committed.
