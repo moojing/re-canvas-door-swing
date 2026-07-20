@@ -2572,7 +2572,7 @@ test("B10 tracked textures exactly match the approved files and hashes", async (
 test("A04 and C06 tracked textures exactly match their approved files and hashes", async () => {
   const expectedTextureSets = {
     "packages/sample/public/textures/a04": {
-      "README.md": "5576af1501aab567d6e666436ff2d6c8ffe817d1295744c96150a13e9c8f3b64",
+      "README.md": "e76e1e7e33472adf63ad40a0eb4b3e0e40956240eb3a850bae238f5e9bd9d888",
       "green-metal-rust-diffuse.jpg": "4509ab0cb1cf6bf9b9f970450a41f83ebd9bff178006deae568ff34b404856fc",
       "green-metal-rust-roughness.jpg": "f214f22608dd75aa3e7b4da8bffac97c344cbacbc50f49ba0beb0236701a622c",
       "metal-plate-02-diffuse.jpg": "6e80877d0e9d5973d96298c6091df7ace906b0a6760afc4f3592e4855f3f1d4c",
