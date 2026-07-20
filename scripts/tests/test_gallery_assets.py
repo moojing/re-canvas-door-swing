@@ -491,7 +491,7 @@ class GalleryAssetTests(unittest.TestCase):
         main, gallery, _ = self._consistency_fixture()
         duplicate = main / "docs/door-classifications.md"
         duplicate.write_text("duplicate", encoding="utf-8")
-        subprocess.run(
+        subprocess.run(  # noqa: S603 - executable is resolved; arguments are fixed
             [self.git, "add", "docs/door-classifications.md"],
             cwd=main,
             check=True,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -44,7 +44,7 @@ const ValveHardware = ({
   wheelRef,
 }: {
   leaf: B06LeafDescriptor<THREE.MeshBasicMaterial>;
-  wheelRef: React.RefObject<THREE.Group>;
+  wheelRef: RefObject<THREE.Group>;
 }) => {
   if (!leaf.wheel || !leaf.wheelBacking) return null;
 
@@ -121,8 +121,8 @@ const DoorLeaf = ({
   wheelRef,
 }: {
   leaf: B06LeafDescriptor<THREE.MeshBasicMaterial>;
-  hingeRef: React.RefObject<THREE.Group>;
-  wheelRef: React.RefObject<THREE.Group>;
+  hingeRef: RefObject<THREE.Group>;
+  wheelRef: RefObject<THREE.Group>;
 }) => (
   <group ref={hingeRef} position={[leaf.hingeX, 0, 0]} scale={[...leaf.scale]}>
     <mesh position={[...leaf.box.position]}>
@@ -145,7 +145,8 @@ const HeavyWaterDoubleDoor = ({
   const [loadedFront, setLoadedFront] = useState<LoadedFront | null>(null);
   const leftHingeRef = useRef<THREE.Group>(null);
   const rightHingeRef = useRef<THREE.Group>(null);
-  const wheelRef = useRef<THREE.Group>(null);
+  const leftWheelRef = useRef<THREE.Group>(null);
+  const rightWheelRef = useRef<THREE.Group>(null);
   const motion = getB06MotionState(progress);
 
   useEffect(() => {
@@ -177,7 +178,8 @@ const HeavyWaterDoubleDoor = ({
   useFrame(() => {
     if (leftHingeRef.current) leftHingeRef.current.rotation.y = motion.leftAngle;
     if (rightHingeRef.current) rightHingeRef.current.rotation.y = motion.rightAngle;
-    if (wheelRef.current) wheelRef.current.rotation.z = motion.wheelAngle;
+    if (leftWheelRef.current) leftWheelRef.current.rotation.z = motion.wheelAngle;
+    if (rightWheelRef.current) rightWheelRef.current.rotation.z = motion.wheelAngle;
   });
 
   const activeResources = loadedFront?.variant === variant
@@ -190,12 +192,12 @@ const HeavyWaterDoubleDoor = ({
       <DoorLeaf
         leaf={scene.leaves[0]}
         hingeRef={leftHingeRef}
-        wheelRef={wheelRef}
+        wheelRef={leftWheelRef}
       />
       <DoorLeaf
         leaf={scene.leaves[1]}
         hingeRef={rightHingeRef}
-        wheelRef={wheelRef}
+        wheelRef={rightWheelRef}
       />
     </group>
   );

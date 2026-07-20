@@ -13,11 +13,11 @@
     "lint": "npm run lint --workspace door-entrance && npm run lint --workspace door-entrance-sample",
     "gallery:check": "if command -v python3.12 >/dev/null 2>&1; then exec python3.12 scripts/gallery_assets.py check; elif command -v python3.11 >/dev/null 2>&1; then exec python3.11 scripts/gallery_assets.py check; else exec python3 scripts/gallery_assets.py check; fi",
     "test:a11": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/a11ProceduralMaterials.test.ts",
-    "test:poc-gallery": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/pocProvenance.test.ts packages/sample/src/poc/pocGalleryData.test.ts packages/sample/src/poc/b10TextureUrls.test.ts",
-    "test:c03": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/c03Motion.test.ts packages/sample/src/poc/c03ProceduralMaterials.test.ts",
+    "test:poc-gallery": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/pocProvenance.test.ts packages/sample/src/poc/pocGalleryData.test.ts packages/sample/src/poc/PocGallery.test.ts packages/sample/src/poc/b10TextureUrls.test.ts packages/sample/src/poc/a04TextureUrls.test.ts packages/sample/src/poc/textureColorSpace.test.ts",
+    "test:c03": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/c03Motion.test.ts packages/sample/src/poc/c03ProceduralMaterials.test.ts packages/sample/src/poc/c03Playback.test.ts",
     "test:c06": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/c06SceneModel.test.ts",
     "test:b05": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/b05Motion.test.ts packages/sample/src/poc/b05Geometry.test.ts packages/sample/src/poc/b05ProceduralMaterials.test.ts packages/sample/src/poc/b05TextureMapping.test.ts packages/sample/src/poc/b05FrontImage.test.ts packages/sample/src/poc/b05FrontResources.test.ts packages/sample/src/poc/b05FrontLoader.test.ts packages/sample/src/poc/b05FrontScene.test.ts",
-    "test:b06": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/b06Assets.test.ts packages/sample/src/poc/b06Motion.test.ts packages/sample/src/poc/b06FrontResources.test.ts packages/sample/src/poc/b06FrontLoader.test.ts packages/sample/src/poc/b06Scene.test.ts"
+    "test:b06": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test packages/sample/src/poc/b06Assets.test.ts packages/sample/src/poc/b06Motion.test.ts packages/sample/src/poc/b06FrontResources.test.ts packages/sample/src/poc/b06FrontLoader.test.ts packages/sample/src/poc/b06Scene.test.ts packages/sample/src/poc/b06ComponentSource.test.ts"
   },
   "devDependencies": {
     "@types/three": "^0.160.0"

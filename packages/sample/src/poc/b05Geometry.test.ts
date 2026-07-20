@@ -163,6 +163,14 @@ test("vertical bars have positive height and stay inside leaf bounds", () => {
   }
 });
 
+test("places decorative collars on the bar they decorate", () => {
+  const leaf = createB05LeafGeometry();
+  const collarBar = leaf.bars[1];
+
+  assert.ok(collarBar);
+  assert.ok(leaf.barCollars.every((collar) => collar.position[0] === collarBar.x));
+});
+
 test("vertical bars terminate inside the semicircular arch", () => {
   const leaf = createB05LeafGeometry();
 

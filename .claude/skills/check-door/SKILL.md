@@ -1,6 +1,6 @@
 ---
 name: check-door
-description: 檢查 materials/ 底下的開門動畫轉場影片:抽出分鏡截圖(自動跳過黑幕)、依五軸(形式/動畫/配件/材質/聲音)分類判讀、對回 docs/Doors-Difficulity-Estimation.xlsm.csv 的評估項目,並記錄檢查進度。凡是使用者要「檢查門」「分類門動畫」「看某支開門影片」「抽分鏡」,或提到門型代碼(如 1-1 a02、b06 電梯拉門)、指到 materials/ 底下的 mp4 時,都應使用此 skill;不帶參數時自動挑下一個未檢查的門型。
+description: 檢查 materials/ 底下的開門動畫轉場影片:抽出分鏡截圖(自動跳過黑幕)、依五軸(形式/動畫/配件/材質/聲音)分類判讀、對回 ../re-door-gallery/docs/Doors-Difficulity-Estimation.xlsm.csv 的評估項目,並記錄檢查進度。凡是使用者要「檢查門」「分類門動畫」「看某支開門影片」「抽分鏡」,或提到門型代碼(如 1-1 a02、b06 電梯拉門)、指到 materials/ 底下的 mp4 時,都應使用此 skill;不帶參數時自動挑下一個未檢查的門型。
 ---
 
 # 檢查開門動畫影片(check-door)
@@ -17,7 +17,7 @@ description: 檢查 materials/ 底下的開門動畫轉場影片:抽出分鏡截
    - `1-1 1996 Biohazard` / `1-2 1998 Biohazard 2` / `1-3 1999 Biohazard 3` / `1-4 2000 Biohazard Gun Survivor` / `1-5 2000 Biohazard Code Veronica`
 
    作品資料夾內是以代碼開頭的門型資料夾(如 `a02單門-喇叭鎖/`),裡面常有多個變體影片(s1、s2…);挑**檢查紀錄中還沒出現的第一個變體**處理,並在報告結尾列出該資料夾剩餘未檢查的變體數。
-3. **無參數**:讀取檢查紀錄 `docs/door-classifications.md`,按 CSV 的順序(1-1 → 1-5)找出下一個尚未檢查的門型,從它的第一個變體開始。
+3. **無參數**:讀取檢查紀錄 `../re-door-gallery/docs/door-classifications.md`,按 CSV 的順序(1-1 → 1-5)找出下一個尚未檢查的門型,從它的第一個變體開始。
 
 ## 步驟 1:抽分鏡
 
@@ -50,7 +50,7 @@ description: 檢查 materials/ 底下的開門動畫轉場影片:抽出分鏡截
 
 ## 步驟 3:對照 CSV
 
-讀 `docs/Doors-Difficulity-Estimation.xlsm.csv`,找到對應作品區塊裡的該門型列,取出:是否重複(參照哪個門型)、製作難度、風險標記、預估時數、備註。
+讀 `../re-door-gallery/docs/Doors-Difficulity-Estimation.xlsm.csv`,找到對應作品區塊裡的該門型列,取出:是否重複(參照哪個門型)、製作難度、風險標記、預估時數、備註。
 
 風險標記圖例:⚠️ 有實作風險或需研究、❓ 有疑問、❌ 成本過高不推薦、＄ 需購買模型。
 
@@ -77,7 +77,7 @@ description: 檢查 materials/ 底下的開門動畫轉場影片:抽出分鏡截
 
 ## 步驟 5:記錄進度
 
-把結果追加到 `docs/door-classifications.md`(不存在就先建,含表頭)。
+把結果追加到 `../re-door-gallery/docs/door-classifications.md`(不存在就先建,含表頭)。
 **欄位順序是資料契約**:`build_gallery.py` 依「作品 `##` 區塊 + 固定十欄」解析,照抄勿改:
 
 ```markdown

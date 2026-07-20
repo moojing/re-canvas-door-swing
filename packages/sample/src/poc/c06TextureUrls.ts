@@ -1,3 +1,5 @@
+import { resolveTextureUrl } from "./textureUrls.ts";
+
 export const C06_TEXTURE_PATHS = Object.freeze([
   "textures/c06/aged-brick-albedo.png",
   "textures/c06/broken-brick-core-albedo.png",
@@ -9,6 +11,5 @@ export const resolveC06TextureUrl = (
   baseUrl: string,
   texturePath: C06TexturePath,
 ): string => {
-  const normalizedBase = baseUrl.split("/").filter(Boolean).join("/");
-  return `/${normalizedBase ? `${normalizedBase}/` : ""}${texturePath}`;
+  return resolveTextureUrl(baseUrl, texturePath);
 };

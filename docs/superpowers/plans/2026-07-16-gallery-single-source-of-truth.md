@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Lock The New Ownership Rules In Tests
+## Task 1: Lock The New Ownership Rules In Tests
 
 **Files:**
 - Modify: `scripts/tests/test_gallery_assets.py`
@@ -44,12 +44,12 @@ git add scripts/tests/test_gallery_assets.py scripts/gallery_assets.py
 git commit -m "test: cover gallery-owned evaluation records"
 ```
 
-### Task 2: Redirect Runtime Tooling To Gallery-Owned Records
+## Task 2: Redirect Runtime Tooling To Gallery-Owned Records
 
 **Files:**
 - Modify: `scripts/gallery_assets.py`
-- Modify: `.agents/skills/check-door/SKILL.md`
-- Modify: `.agents/skills/check-door/scripts/build_gallery.py`
+- Modify: `.claude/skills/check-door/SKILL.md`
+- Modify: `.claude/skills/check-door/scripts/build_gallery.py`
 
 - [ ] **Step 1: Update path-resolution behavior**
 
@@ -74,11 +74,11 @@ Expected: pass with gallery-owned doc paths
 - [ ] **Step 5: Commit checkpoint**
 
 ```bash
-git add scripts/gallery_assets.py .agents/skills/check-door/SKILL.md .agents/skills/check-door/scripts/build_gallery.py scripts/tests/test_gallery_assets.py
+git add scripts/gallery_assets.py .claude/skills/check-door/SKILL.md .claude/skills/check-door/scripts/build_gallery.py scripts/tests/test_gallery_assets.py
 git commit -m "feat: point evaluation tooling at gallery docs"
 ```
 
-### Task 3: Rewrite Repo Guidance And Remove Main-Repo Canonical Copies
+## Task 3: Rewrite Repo Guidance And Remove Main-Repo Canonical Copies
 
 **Files:**
 - Modify: `README.md`
@@ -110,7 +110,7 @@ git rm docs/door-classifications.md docs/door-classification-report.md docs/Door
 git commit -m "refactor: make gallery the evaluation source of truth"
 ```
 
-### Task 4: Full Verification
+## Task 4: Full Verification
 
 **Files:**
 - Verify only

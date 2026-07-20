@@ -146,8 +146,12 @@ const createPlaqueTrim = (): B05BoxMember[] => {
   });
 };
 
-export const createB05LeafGeometry = (): B05LeafGeometry => ({
-  bounds: {
+export const createB05LeafGeometry = (): B05LeafGeometry => {
+  const bars = createBars();
+  const collarBarX = bars[1].x;
+
+  return {
+    bounds: {
     minX: 0,
     maxX: B05_LEAF_WIDTH,
     minY: 0,
@@ -201,25 +205,26 @@ export const createB05LeafGeometry = (): B05LeafGeometry => ({
   ],
   barCollars: [
     {
-      position: [1.06, 3.72, 0],
+      position: [collarBarX, 3.72, 0],
       radius: 0.13,
       height: 0.1,
     },
     {
-      position: [1.06, 3.82, 0],
+      position: [collarBarX, 3.82, 0],
       radius: 0.105,
       height: 0.12,
     },
     {
-      position: [1.06, 3.92, 0],
+      position: [collarBarX, 3.92, 0],
       radius: 0.13,
       height: 0.1,
     },
   ],
   plaqueTrim: createPlaqueTrim(),
-  bars: createBars(),
+  bars,
   archPath: createArchPath(),
-});
+  };
+};
 
 export const createB05GateGeometry = (): B05GateGeometry => ({
   left: {

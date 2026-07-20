@@ -1,18 +1,26 @@
 import * as THREE from "three";
 
 type LegacyTexture = THREE.Texture & {
+  colorSpace?: string;
   encoding?: number;
 };
 
 type ModernThree = typeof THREE & {
-  SRGBColorSpace?: THREE.ColorSpace;
+  SRGBColorSpace?: string;
   sRGBEncoding?: number;
 };
 
-export const setTextureColorSpace = (texture: THREE.Texture) => {
-  const runtime = THREE as ModernThree;
+export type TextureColorSpaceRuntime = {
+  SRGBColorSpace?: string;
+  sRGBEncoding?: number;
+};
+
+export const setTextureColorSpace = (
+  texture: THREE.Texture,
+  runtime: TextureColorSpaceRuntime = THREE as ModernThree,
+) => {
   if (runtime.SRGBColorSpace) {
-    texture.colorSpace = runtime.SRGBColorSpace;
+    (texture as LegacyTexture).colorSpace = runtime.SRGBColorSpace;
     return;
   }
 

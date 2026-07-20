@@ -4,11 +4,12 @@
  * 驗證目標: 不依賴現成模型，以 primitive 建出平台、欄杆、網面與控制盒，
  * 所有表面材質皆由程式化像素生成，不引用原始遊戲影格或外部圖片。
  */
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { memo } from "react";
 import * as THREE from "three";
 
-import { C03_DURATION_MS, getC03MotionState } from "./c03Motion";
+import { getC03MotionState } from "./c03Motion";
+import { useC03Playback } from "./c03Playback";
 import {
   createGridPixels,
   createPlatePixels,
@@ -218,6 +219,8 @@ const LiftPlatform = () => {
   );
 };
 
+const MemoizedLiftPlatform = memo(LiftPlatform);
+
 const CameraRig = ({ progress }: { progress: number }) => {
   const state = getC03MotionState(progress);
 
@@ -230,31 +233,7 @@ const CameraRig = ({ progress }: { progress: number }) => {
 };
 
 const LiftPlatformC03 = () => {
-  const [progress, setProgress] = useState(0);
-  const frameRef = useRef<number | null>(null);
-
-  const stopPlayback = useCallback(() => {
-    if (frameRef.current !== null) {
-      cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
-    }
-  }, []);
-
-  const play = useCallback(() => {
-    stopPlayback();
-    const startTime = performance.now() - progress * C03_DURATION_MS;
-
-    const tick = (now: number) => {
-      const nextProgress = Math.min((now - startTime) / C03_DURATION_MS, 1);
-      setProgress(nextProgress);
-      if (nextProgress < 1) frameRef.current = requestAnimationFrame(tick);
-      else frameRef.current = null;
-    };
-
-    frameRef.current = requestAnimationFrame(tick);
-  }, [progress, stopPlayback]);
-
-  useEffect(() => stopPlayback, [stopPlayback]);
+  const { progress, play, reset, scrub } = useC03Playback();
 
   return (
     <div className="min-h-screen bg-black px-4 py-5 text-white sm:p-6">
@@ -279,7 +258,7 @@ const LiftPlatformC03 = () => {
             <directionalLight position={[2, 7, 5]} intensity={0.85} color="#ffb07c" />
             <directionalLight position={[-5, 4, -3]} intensity={0.4} color="#7fa5bc" />
             <pointLight position={[-2.5, 3, 1]} intensity={0.55} color="#e34a2a" />
-            <LiftPlatform />
+            <MemoizedLiftPlatform />
             <CameraRig progress={progress} />
           </Canvas>
         </div>
@@ -293,8 +272,7 @@ const LiftPlatformC03 = () => {
           </button>
           <button
             onClick={() => {
-              stopPlayback();
-              setProgress(0);
+              reset();
             }}
             className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/10"
           >
@@ -302,8 +280,7 @@ const LiftPlatformC03 = () => {
           </button>
           <button
             onClick={() => {
-              stopPlayback();
-              setProgress(0.5);
+              scrub(0.5);
             }}
             className="rounded-lg border border-amber-300/50 px-4 py-2 text-sm text-amber-200 hover:bg-amber-300/10"
           >
@@ -317,8 +294,7 @@ const LiftPlatformC03 = () => {
             step={0.001}
             value={progress}
             onChange={(event) => {
-              stopPlayback();
-              setProgress(Number(event.target.value));
+              scrub(Number(event.target.value));
             }}
             className="min-w-44 flex-1 accent-amber-300"
           />

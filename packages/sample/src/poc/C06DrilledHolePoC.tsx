@@ -243,11 +243,7 @@ const C06Scene = ({
   onComplete: () => void;
 }) => {
   const wallMap = useC06Texture("textures/c06/aged-brick-albedo.png", 1, 1);
-  const edgeFaceMap = useC06Texture(
-    "textures/c06/aged-brick-albedo.png",
-    0.16,
-    0.065,
-  );
+  const edgeFaceMap = useRepeatedTexture(wallMap, 0.16, 0.065);
   const coreMap = useC06Texture(
     "textures/c06/broken-brick-core-albedo.png",
     0.72,

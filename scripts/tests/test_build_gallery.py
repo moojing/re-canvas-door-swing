@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "check-door" / "scripts" / "build_gallery.py"
+SCRIPT = Path(__file__).resolve().parents[2] / ".claude" / "skills" / "check-door" / "scripts" / "build_gallery.py"
 
 
 def read_literal_assignment(name: str):

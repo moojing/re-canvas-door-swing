@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { doorEntrancePresets } from "door-entrance";
+import { Link } from "react-router-dom";
 
 const reactSnippet = `import { DoorEntrance } from 'door-entrance';
 
@@ -80,7 +81,7 @@ const Index = () => {
                   共用單門骨架切換 s1 柵欄鐵門 / s2 目字鐵門，驗證兩者都可用低複雜度幾何成立。
                 </p>
                 <Button asChild variant="secondary" size="sm">
-                  <a href="/poc/a04">開啟 POC</a>
+                  <Link to="/poc/a04">開啟 POC</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -94,10 +95,10 @@ const Index = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-white/70">
-                  Primitive 疊加 + 截圖貼圖，驗證浮凸水門不需外找模型。
+                  Primitive 疊加 + 程序材質，驗證浮凸水門不需外找模型。
                 </p>
                 <Button asChild variant="secondary" size="sm">
-                  <a href="/poc/a11">開啟 POC</a>
+                  <Link to="/poc/a11">開啟 POC</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -114,7 +115,7 @@ const Index = () => {
                   Shape 輪廓擠出 + 上下對開，驗證齒形閘門可用程式幾何製作。
                 </p>
                 <Button asChild variant="secondary" size="sm">
-                  <a href="/poc/b10">開啟 POC</a>
+                  <Link to="/poc/b10">開啟 POC</Link>
                 </Button>
               </CardContent>
             </Card>

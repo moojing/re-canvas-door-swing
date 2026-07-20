@@ -717,7 +717,7 @@ def gallery_consistency(main_root, gallery_root, expected_count=113):
     doors = json.loads((gallery_root / "doors.json").read_text(encoding="utf-8"))
     if len(rows) != expected_count or len(doors) != expected_count:
         raise AssetError(f"door count mismatch: docs={len(rows)}, gallery={len(doors)}")
-    for index, (expected, actual) in enumerate(zip(rows, doors)):
+    for index, (expected, actual) in enumerate(zip(rows, doors, strict=True)):
         for field in FIELDS:
             if expected[field] != actual.get(field):
                 raise AssetError(f"door mismatch at {index} {field}: {expected[field]!r} != {actual.get(field)!r}")

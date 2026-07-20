@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Lock Scene Behavior With Tests
+## Task 1: Lock Scene Behavior With Tests
 
 **Files:**
 - Create: `packages/sample/src/poc/c06SceneModel.test.ts`

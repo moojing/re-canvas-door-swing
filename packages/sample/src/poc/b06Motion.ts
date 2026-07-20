@@ -1,9 +1,13 @@
+import {
+  clampProgress,
+  segmentProgress,
+  type Vector3,
+} from "./pocMotionUtils.ts";
+
 export const B06_DURATION_MS = 6500;
 export const B06_CAMERA_START_Z = 8;
 export const B06_MAX_SWING_RADIANS = (85 * Math.PI) / 180;
 export const B06_WHEEL_MAX_RADIANS = -1.25 * Math.PI;
-
-type Vector3 = readonly [number, number, number];
 
 export type B06MotionState = Readonly<{
   progress: number;
@@ -21,19 +25,6 @@ const OPEN_START = 0.2;
 const OPEN_END = 0.65;
 const CAMERA_END = 0.92;
 const CAMERA_END_Z = -2.5;
-
-const clampProgress = (value: number): number => {
-  if (value === Number.POSITIVE_INFINITY) return 1;
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(Math.max(value, 0), 1);
-};
-
-const smoothstep = (value: number): number => value * value * (3 - 2 * value);
-
-const segmentProgress = (progress: number, start: number, end: number): number => {
-  const normalized = Math.min(Math.max((progress - start) / (end - start), 0), 1);
-  return smoothstep(normalized);
-};
 
 export const getB06MotionState = (rawProgress: number): B06MotionState => {
   const progress = clampProgress(rawProgress);

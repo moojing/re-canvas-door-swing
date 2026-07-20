@@ -9,7 +9,7 @@ GALLERY_ROOT = os.path.abspath(os.environ.get(
     "DOOR_GALLERY_ROOT", os.path.join(ROOT, "..", "re-door-gallery")))
 MAT = os.path.abspath(os.environ.get(
     "DOOR_VIDEO_ROOT", os.path.join(GALLERY_ROOT, "materials", "door-transitions")))
-MD = os.path.join(ROOT, "docs/door-classifications.md")
+MD = os.path.join(GALLERY_ROOT, "docs", "door-classifications.md")
 SKILL = os.path.join(ROOT, ".claude/skills/check-door/scripts")
 TMP = tempfile.mkdtemp(prefix="gallery2-")
 
@@ -32,11 +32,12 @@ OVERRIDE = {
     ("1-3","a04"): 3.5, ("1-3","a05"): 2.9, ("1-3","b02"): 3.1, ("1-3","b03"): 3.2,
     ("1-3","b07"): 2.2, ("1-3","c01"): 4.6, ("1-4","a05"): 4.6, ("1-4","b02"): 3.9,
     ("1-4","c01"): 5.0, ("1-5","a04"): 3.5, ("1-2","a04"): 5.0, ("1-5","c05"): 2.9,
-    ("1-5","c08"): 3.7, ("1-2","a14"): 7.5, ("1-2","b05"): 5.6, ("1-3","a12"): 4.3,
-    ("1-3","c03"): 1.8, ("1-4","c03"): 6.0,
+    ("1-5","c08"): 3.7, ("1-2","a14"): 7.5, ("1-2","b05"): 5.6, ("1-2","c06"): 1.0,
+    ("1-3","a12"): 4.3, ("1-3","c03"): 1.8, ("1-4","c03"): 6.0,
 }
 # GIF 時間窗手動指定 (start, dur):門動作離截圖點太遠、自動推導拍不到的片段
 GIF_OVERRIDE = {
+    ("1-2","c06"): (0.2, 1.7),    # 電梯門只保留前段柵欄拉門,避開後續搭乘段
     ("1-4","c03"): (21.8, 3.6),   # 電梯門到 21.5s 後才開
     ("1-4","c04"): (8.0, 3.6),    # 纜車門 8.5-10.4s 滑開
     ("1-4","c07"): (8.2, 3.2),    # 電車門 9.7-11.5s 滑開(提早起點減少黑尾)
@@ -199,6 +200,8 @@ for i, d in enumerate(doors):
     if not d["b64"]: print("  無縮圖:", d["game"], d["code"])
     if (i+1) % 20 == 0: print(f"  …{i+1}/{len(doors)}")
 cnt = Counter(vlabel(d["verdict"]) for d in doors)
+risk_count = sum(1 for d in doors if (d["game"], d["code"]) in OPTIMISM_RISK)
+csvno_count = sum(1 for d in doors if "❌" in d["csv"])
 
 # 寫出 doors.json 清單(供 local web 用):每門型的分類資料 + 本地資產相對路徑
 manifest = [{
@@ -226,7 +229,7 @@ for di, d in enumerate(doors):
     img = (f'<img class="thumb" data-idx="{di}" alt="{d["game"]} {d["code"]} {html.escape(d["name"])}">'
            if d["b64"] else '<div class="noimg">（無縮圖）</div>')
     rb = '<span class="risk-badge">⚠ 待驗證</span>' if risk else ''
-    excl_badge = '<span class="badge b-csvno">🚫 原評估不做</span>' if excl else ''
+    excl_badge = '<span class="badge b-csvno">🚫 CSV 不製作</span>' if excl else ''
     cards.append(f'''<figure class="card {filt}" data-game="{d['game']}" data-idx="{di}">
   <div class="imgwrap">{img}<span class="zoom">⤢</span></div>
   <figcaption class="body">
@@ -314,7 +317,7 @@ analysis_html = f'''
   <div class="abox opt"><b>{len(opt_ids)}</b><span>可救回(原❌)</span></div>
   <div class="abox warn"><b>{len(warn_ids)}</b><span>有出入/需重估</span></div>
   <div class="abox no"><b>{len(no_ids)}</b><span>無法製作</span></div>
-  <div class="abox no"><b>{len(excl_ids)}</b><span>🚫 原評估不做(❌)</span></div>
+  <div class="abox no"><b>{len(excl_ids)}</b><span>🚫 CSV 不製作(❌)</span></div>
   <div class="abox risk"><b>{len(risk_ids)}</b><span>樂觀待驗證</span></div>
 </div>
 <p class="atake">原 CSV 估 130h,但那已是「非❌」的既有範圍。實看後:22 個原標 ❌ 的門其實可做(平面貼圖/基本幾何可仿製,約可救回 60–85h);2 個原列工時的項目其實依賴環境做不了(應扣約 7h);另有電梯搭乘類嚴重低估。動畫骨架其實只有約 4 套,成本集中在配件模型與貼圖變體數。</p>
@@ -521,13 +524,13 @@ body = f"""<div class="wrap" translate="no">
 
 <div id="view-gallery">
 <div class="filters">
-  <button class="fbtn on" data-f="all">全部</button>
-  <button class="fbtn" data-f="v-ok">✅ 合理</button>
-  <button class="fbtn" data-f="v-opt">✅ 比評估樂觀</button>
-  <button class="fbtn" data-f="v-warn">⚠️ 有出入/需重估</button>
-  <button class="fbtn" data-f="v-no">❌ 無法製作</button>
-  <button class="fbtn" data-f="risk">⚠ 樂觀待驗證</button>
-  <button class="fbtn" data-f="csvno">🚫 原評估不做</button>
+  <button class="fbtn on" data-f="all">全部 ({len(doors)})</button>
+  <button class="fbtn" data-f="v-ok">✅ 合理 ({cnt['✅ 合理']})</button>
+  <button class="fbtn" data-f="v-opt">✅ 比評估樂觀 ({cnt['✅ 比評估樂觀']})</button>
+  <button class="fbtn" data-f="v-warn">⚠️ 有出入/需重估 ({cnt['⚠️ 有出入'] + cnt['⚠️ 需重估']})</button>
+  <button class="fbtn" data-f="v-no">❌ 無法製作 ({cnt['❌ 無法製作']})</button>
+  <button class="fbtn" data-f="risk">⚠ 樂觀待驗證 ({risk_count})</button>
+  <button class="fbtn" data-f="csvno">🚫 CSV 不製作 ({csvno_count})</button>
 </div>
 {"".join(sections)}
 </div>

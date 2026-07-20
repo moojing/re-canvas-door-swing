@@ -1,6 +1,6 @@
-export const C03_DURATION_MS = 6500;
+import { smoothstep, type Vector3 } from "./pocMotionUtils.ts";
 
-type Vector3 = readonly [number, number, number];
+export const C03_DURATION_MS = 6500;
 
 type MotionKeyframe = {
   progress: number;
@@ -46,8 +46,6 @@ const lerpVector = (from: Vector3, to: Vector3, amount: number): Vector3 => [
   from[1] + (to[1] - from[1]) * amount,
   from[2] + (to[2] - from[2]) * amount,
 ];
-
-const smoothstep = (value: number) => value * value * (3 - 2 * value);
 
 export const getC03MotionState = (rawProgress: number): C03MotionState => {
   const progress = Math.min(Math.max(rawProgress, 0), 1);

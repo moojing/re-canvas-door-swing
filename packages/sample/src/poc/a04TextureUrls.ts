@@ -1,3 +1,5 @@
+import { resolveTextureUrl } from "./textureUrls.ts";
+
 export const A04_TEXTURE_PATHS = Object.freeze([
   "textures/a04/sewer-gate-aged-albedo.png",
   "textures/a04/metal-plate-02-roughness.jpg",
@@ -10,6 +12,5 @@ export const resolveA04TextureUrl = (
   baseUrl: string,
   texturePath: A04TexturePath,
 ): string => {
-  const normalizedBase = baseUrl.split("/").filter(Boolean).join("/");
-  return `/${normalizedBase ? `${normalizedBase}/` : ""}${texturePath}`;
+  return resolveTextureUrl(baseUrl, texturePath);
 };
