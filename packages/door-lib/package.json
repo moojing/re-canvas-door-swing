@@ -25,7 +25,11 @@
   "scripts": {
     "build": "tsup",
     "dev": "npm run build -- --watch",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "npm run test:core && npm run test:package",
+    "test:core": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test src/core/__tests__/*.test.ts",
+    "test:package": "npm run build && node --disable-warning=ExperimentalWarning --experimental-strip-types --test src/__tests__/package-boundary.test.ts",
+    "test:browser": "npm run build && playwright test --config tests/browser/playwright.config.ts"
   },
   "peerDependencies": {
     "@react-three/fiber": "^8.0.0",
