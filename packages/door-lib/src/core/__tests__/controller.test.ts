@@ -71,4 +71,27 @@ describe("door entrance controller", () => {
 
     assert.equal(controller.getSnapshot().isPlaying, false);
   });
+
+  it("restarts playback from the beginning after completion", () => {
+    let completeCount = 0;
+    const controller = createDoorEntranceController({
+      preset: "door-single",
+      onComplete: () => {
+        completeCount += 1;
+      },
+    });
+
+    controller.seek(1);
+    controller.play();
+
+    const replaySnapshot = controller.getSnapshot();
+
+    assert.equal(replaySnapshot.progress, 0);
+    assert.equal(replaySnapshot.isPlaying, true);
+
+    controller.seek(1);
+
+    assert.equal(completeCount, 2);
+    assert.equal(controller.getSnapshot().isPlaying, false);
+  });
 });

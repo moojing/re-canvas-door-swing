@@ -94,6 +94,11 @@ export const createDoorEntranceController = (
   };
 
   const play = () => {
+    if (progress >= 1) {
+      progress = 0;
+      didComplete = false;
+    }
+
     isPlaying = true;
   };
 
