@@ -107,6 +107,42 @@ export type AnimationModule = {
 - 預載：在進入門動畫前，先用 TextureLoader/GLTFLoader 預取並快取；失敗時 fallback 到簡化貼圖或純色材質。
 - 時間：單段動畫建議 4–7 秒，結尾可用 `fadeOut` 遮罩與主站銜接。
 
+## Testing Strategy
+The library is guarded by layered tests so the core animation contract can stay
+vanilla-first while React integration evolves separately.
+
+### Core Tests
+Run `npm run test:lib:core` to cover framework-free behavior: animation state,
+presets, sound scheduling, and controller lifecycle logic. These tests should
+not require React, React DOM, R3F, or a browser runtime.
+
+`npm run verify:lib` and `npm run verify:lib:core` currently run the green core
+verification path: library typecheck, library build, and core tests.
+
+### Package Boundary Tests
+Run `npm run test:lib:package` to build the package and inspect the published
+entrypoints. The boundary tests protect the public export surface and require
+the `door-entrance/vanilla` output graph to stay React-free.
+
+`npm run verify:lib:boundary` currently runs this package-boundary layer. It is
+expected to fail at this stage because `door-entrance/vanilla` is still backed
+by the React renderer. This command should become green only after the separate
+React-free vanilla renderer migration lands.
+
+### Browser Smoke Tests
+Run `npm run test:lib:browser` to exercise the plain HTML sample in a browser:
+the vanilla sample must mount, render a canvas, respond to controls, and clean
+up through its lifecycle.
+
+`npm run verify:lib:browser` runs the core verification path first, then the
+browser smoke tests. It requires local dev server binding and an installed
+Playwright browser runtime.
+
+### React Adapter Tests
+Vanilla tests must not require React. React support should be tested in a
+separate layer when a React adapter exists, so failures in React-specific
+mounting or R3F behavior do not weaken the vanilla boundary signal.
+
 ## 待辦 / 下一步（可選）
 - 實作 `AnimationModule` adapter，讓 `DoorEntrance` 可以同時吃老式 `DoorAnimationConfig` 與新式 `AnimationModule`。
 - 建立 `assets/manifest.ts`（列出門/把手/音效 URL + 尺寸）與 `ASSET_SPEC.md`（給美術的素材規格）。

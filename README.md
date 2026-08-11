@@ -20,6 +20,32 @@ Useful scripts:
 - `npm run lint` (sample app lint)
 - `npm run gallery:check` (verify the published evaluation gallery is internally consistent and the main repo has not reintroduced duplicate evaluation docs)
 
+## Library testing
+
+The door library uses layered tests to keep the core animation package
+vanilla-first while React support remains separate:
+
+- `npm run test:lib:core` covers framework-free animation state, presets, sound,
+  and controller behavior.
+- `npm run test:lib:package` checks public package exports and verifies the
+  `door-entrance/vanilla` output graph is React-free.
+- `npm run test:lib:browser` runs a browser smoke test for the plain HTML sample:
+  mount, canvas rendering, controls, and lifecycle cleanup.
+- `npm run verify:lib` / `npm run verify:lib:core` run the current green core
+  verification path: library typecheck, build, and core tests.
+- `npm run verify:lib:boundary` runs the package-boundary layer.
+- `npm run verify:lib:browser` runs core verification plus the browser smoke
+  tests.
+
+Current expected status: `npm run verify:lib:core` passes now. Browser
+verification requires local dev server binding and a Playwright browser runtime.
+Boundary verification is expected to fail until the separate React-free vanilla
+renderer migration is complete, because the current `door-entrance/vanilla`
+entry is still React-backed.
+
+React behavior should be tested separately when a React adapter exists. Vanilla
+tests must not require React, React DOM, or R3F.
+
 ## Evaluation gallery
 
 The ongoing door-video evaluation lives at
