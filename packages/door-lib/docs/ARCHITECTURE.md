@@ -29,7 +29,7 @@ packages/door-lib/
       index.ts                # 蒐集/匯出 configs + renderers
       shared.ts               # 共用 easing/clamp/lerp
     types.ts                  # 型別 + variant union
-    vanilla.tsx               # 非 React 掛載 helper
+    vanilla.tsx               # vanilla API wrapper around the current React-backed renderer
   templates/                  # 額外 scaffold（保留）
   docs/ARCHITECTURE.md        # 本檔
 ```
@@ -54,7 +54,8 @@ export interface DoorAnimationConfig {
   getState: (progress: number) => DoorAnimationState;
 }
 ```
-- `DoorEntrance`/`vanilla` 只依賴這層，適合時間軸驅動的開門動畫。
+- 目標契約：`DoorEntrance` 與未來 React-free `vanilla` renderer 應只依賴這層，適合時間軸驅動的開門動畫。
+- 目前狀態：`door-entrance/vanilla` 已提供 vanilla mount API，但仍包在 React-backed `DoorEntrance` renderer 上；React-free vanilla renderer migration 完成前，不應把它視為非 React 實作。
 
 ### 2) 擴充版契約（預留，未接線）
 適用你列出的「singleSwing / doubleSwing / stairTransition…」：
