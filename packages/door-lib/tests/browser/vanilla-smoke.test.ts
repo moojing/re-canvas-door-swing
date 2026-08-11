@@ -11,12 +11,19 @@ type DoorEntranceTestApi = {
 declare global {
   interface Window {
     __doorEntranceTestApi__?: DoorEntranceTestApi;
+    $RefreshReg$?: () => void;
+    $RefreshSig$?: () => <T>(type: T) => T;
   }
 }
 
 test("vanilla sample renders and responds to playback controls", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    window.$RefreshReg$ = () => undefined;
+    window.$RefreshSig$ = () => (type) => type;
+  });
+
   await page.goto("/samples/vanilla.html?testMode");
 
   await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
