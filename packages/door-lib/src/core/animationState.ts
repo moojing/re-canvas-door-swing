@@ -22,6 +22,16 @@ const easeOutBack = (t: number, overshoot = 1.2) => {
   return 1 + x * x * ((overshoot + 1) * x + overshoot);
 };
 
+const lerp = (
+  from: [number, number, number],
+  to: [number, number, number],
+  t: number
+): [number, number, number] => [
+  from[0] + (to[0] - from[0]) * t,
+  from[1] + (to[1] - from[1]) * t,
+  from[2] + (to[2] - from[2]) * t,
+];
+
 const getHandlePressWithBounce = (
   progress: number,
   options: {
@@ -191,23 +201,6 @@ const getHandlePressAngle = ({
   return normalized * ((profile.maxPressAngleDeg * Math.PI) / 180);
 };
 
-const createClosedState = (
-  variant: DoorAnimationVariant,
-  progress: number,
-  context?: { linearProgress: number; handleProfileId?: HandleProfileId }
-): DoorAnimationState => ({
-  doorAngle: 0,
-  rightDoorAngle: variant === "double-swing" ? 0 : undefined,
-  handleAngle: getHandlePressAngle({
-    profileId: context?.handleProfileId,
-    variant,
-    progress: clamp(context?.linearProgress ?? progress, 0, 1),
-  }),
-  cameraPosition: [0, 0, 8],
-  cameraTarget: [0, 0, 0],
-  fadeOut: 0,
-});
-
 export const directEntryConfig: DoorAnimationConfig = {
   id: "direct-entry",
   label: "Direct Entry",
@@ -261,20 +254,116 @@ export const directEntryConfig: DoorAnimationConfig = {
 
 export const singleTopDownConfig: DoorAnimationConfig = {
   id: "single-top-down-entry",
-  label: "Single Top Down Entry",
-  duration: 5000,
-  progressMarkers: [0, 0.25, 0.5, 0.75, 1],
-  getState: (progress, context) =>
-    createClosedState("single-top-down-entry", progress, context),
+  label: "Overhead Entry",
+  duration: 6500,
+  progressMarkers: [0, 0.2, 0.35, 0.6, 0.85, 1],
+  soundStartProgress: 0.5,
+  soundEndProgress: 0.88,
+  soundSourceStartProgress: 0.06,
+  easing: easeInOutCubic,
+  getState: (rawProgress, context) => {
+    const progress = clamp(rawProgress, 0, 1);
+    const handleProgress = clamp(context?.linearProgress ?? rawProgress, 0, 1);
+    let doorAngle = 0;
+    let fadeOut = 0;
+    const handleAngle = getHandlePressAngle({
+      profileId: context?.handleProfileId,
+      variant: "single-top-down-entry",
+      progress: handleProgress,
+    });
+
+    const startPosition: [number, number, number] = [-3.8, 6, 5.2];
+    const midHoverPosition: [number, number, number] = [-2.6, 3.8, 5];
+    const frontPrepPosition: [number, number, number] = [-1.2, 2, 4.6];
+    const closeApproachPosition: [number, number, number] = [-0.4, 0.8, 3.4];
+    const finalFadePosition: [number, number, number] = [0, 0, -1.2];
+
+    let cameraPosition: [number, number, number] = [...startPosition];
+
+    if (progress <= 0.35) {
+      const t = progress / 0.35;
+      cameraPosition = lerp(startPosition, midHoverPosition, t);
+      doorAngle = 0;
+    } else if (progress <= 0.62) {
+      const t = (progress - 0.35) / 0.27;
+      cameraPosition = lerp(midHoverPosition, frontPrepPosition, t);
+      doorAngle = 0;
+    } else if (progress <= 0.87) {
+      const t = (progress - 0.62) / 0.25;
+      doorAngle = t;
+      cameraPosition = lerp(frontPrepPosition, closeApproachPosition, t);
+    } else {
+      const t = (progress - 0.87) / 0.13;
+      doorAngle = 1;
+      cameraPosition = lerp(closeApproachPosition, finalFadePosition, t);
+      fadeOut = clamp(t, 0, 1);
+    }
+
+    return {
+      doorAngle,
+      handleAngle,
+      cameraPosition,
+      cameraTarget: [0, 0, 0],
+      fadeOut,
+    };
+  },
 };
 
 export const doubleSwingConfig: DoorAnimationConfig = {
   id: "double-swing",
   label: "Double Swing",
-  duration: 5000,
-  progressMarkers: [0, 0.25, 0.5, 0.75, 1],
-  getState: (progress, context) =>
-    createClosedState("double-swing", progress, context),
+  duration: 5500,
+  progressMarkers: [0, 0.2, 0.4, 0.6, 0.8, 1],
+  soundStartProgress: 0.27,
+  soundEndProgress: 1,
+  soundSourceStartProgress: 0.06,
+  easing: easeInOutCubic,
+  getState: (rawProgress, context) => {
+    const progress = clamp(rawProgress, 0, 1);
+    const handleProgress = clamp(context?.linearProgress ?? rawProgress, 0, 1);
+    let left = 0;
+    let right = 0;
+    let cameraDistance = 1;
+    let fadeOut = 0;
+    const handleAngle = getHandlePressAngle({
+      profileId: context?.handleProfileId,
+      variant: "double-swing",
+      progress: handleProgress,
+    });
+
+    if (progress <= 0.18) {
+      left = 0;
+      right = 0;
+      cameraDistance = 1;
+    } else if (progress <= 0.68) {
+      const doorProgress = (progress - 0.18) / 0.5;
+      left = doorProgress;
+      right = doorProgress;
+      cameraDistance = 1 + doorProgress * 0.35;
+    } else if (progress <= 0.9) {
+      const forward = (progress - 0.68) / 0.22;
+      left = 1;
+      right = 1;
+      cameraDistance = 1.35 + forward * 1.1;
+    } else {
+      const fadeProgress = (progress - 0.9) / 0.1;
+      left = 1;
+      right = 1;
+      cameraDistance = 2.45;
+      fadeOut = clamp(fadeProgress, 0, 1);
+    }
+
+    const cameraZ = 8 - (cameraDistance - 1) * 5.2;
+
+    return {
+      doorAngle: left,
+      rightDoorAngle: right,
+      handleAngle,
+      cameraPosition: [0, 0, cameraZ],
+      cameraTarget: [0, 0, 0],
+      fadeOut,
+    };
+  },
 };
 
 export const doorAnimationConfigs: DoorAnimationConfig[] = [
