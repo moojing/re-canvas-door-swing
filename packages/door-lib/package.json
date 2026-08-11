@@ -38,6 +38,7 @@
     "three": "^0.133.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/react": "^18.3.23",
     "@types/three": "^0.160.0",
     "tsup": "^8.3.5",
