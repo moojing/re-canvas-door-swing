@@ -6,65 +6,13 @@ import {
   DoorAnimationConfig,
   DoorAnimationRenderer,
 } from "../../types";
-import { clamp, easeInOutCubic } from "../shared";
+import { directEntryConfig as coreDirectEntryConfig } from "../../../core/animationState.ts";
 import { DoorHandleModel } from "../HandleModel";
-import { getHandlePressAngle } from "../../handles/motion";
 
 const MAX_DOOR_SWING_RADIANS = Math.PI / 2;
 const SINGLE_HANDLE_POSITION: [number, number, number] = [2.26, -0.02, 0.32];
 
-export const directEntryConfig: DoorAnimationConfig = {
-  id: "direct-entry",
-  label: "Direct Entry",
-  description: "正面開門並往前推進",
-  duration: 5000,
-  progressMarkers: [0, 0.2, 0.4, 0.6, 0.8, 1],
-  soundStartProgress: 0.37,
-  soundEndProgress: 0.88,
-  soundSourceStartProgress: 0.06,
-  easing: easeInOutCubic,
-  getState: (rawProgress: number, context) => {
-    const progress = clamp(rawProgress, 0, 1);
-    const handleProgress = clamp(context?.linearProgress ?? rawProgress, 0, 1);
-    const handleProfileId = context?.handleProfileId;
-    let doorAngle = 0;
-    let cameraDistance = 1;
-    let fadeOut = 0;
-    const handleAngle = getHandlePressAngle({
-      profileId: handleProfileId,
-      variant: "direct-entry",
-      progress: handleProgress,
-    });
-
-    if (progress <= 0.18) {
-      doorAngle = 0;
-      cameraDistance = 1;
-    } else if (progress <= 0.62) {
-      const doorProgress = (progress - 0.18) / 0.44;
-      doorAngle = doorProgress;
-      cameraDistance = 1 + doorProgress * 0.3;
-    } else if (progress <= 0.9) {
-      const forwardProgress = (progress - 0.62) / 0.28;
-      doorAngle = 1;
-      cameraDistance = 1.3 + forwardProgress * 1.2;
-    } else {
-      const fadeProgress = (progress - 0.9) / 0.1;
-      doorAngle = 1;
-      cameraDistance = 2.5;
-      fadeOut = clamp(fadeProgress, 0, 1);
-    }
-
-    const cameraZ = 8 - (cameraDistance - 1) * 5;
-
-    return {
-      doorAngle,
-      handleAngle,
-      cameraPosition: [0, 0, cameraZ],
-      cameraTarget: [0, 0, 0],
-      fadeOut,
-    };
-  },
-};
+export const directEntryConfig: DoorAnimationConfig = coreDirectEntryConfig;
 
 const SingleDoor = ({
   doorAngle,

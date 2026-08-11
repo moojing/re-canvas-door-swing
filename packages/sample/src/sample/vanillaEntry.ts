@@ -9,6 +9,7 @@ type DoorEntranceTestApi = {
   seek: (progress: number) => void;
   unmount: () => void;
   ready: () => boolean;
+  progress: () => number;
 };
 
 const target = document.getElementById("door-root");
@@ -18,6 +19,7 @@ const presetSelect = document.getElementById(
 ) as HTMLSelectElement | null;
 const playButton = document.getElementById("door-play");
 let ready = false;
+let animationProgress = 0;
 const testMode = new URLSearchParams(window.location.search).has("testMode");
 
 declare global {
@@ -39,6 +41,7 @@ const boot = () => {
 
   const mountApp = (preset: DoorEntrancePresetId) => {
     ready = false;
+    animationProgress = 0;
     return mountDoorEntrance({
       target,
       preset,
@@ -49,6 +52,9 @@ const boot = () => {
       onReady: () => {
         ready = true;
         setStatus("等待播放");
+      },
+      onProgress: (progress) => {
+        animationProgress = progress;
       },
     });
   };
@@ -92,6 +98,7 @@ const boot = () => {
         setStatus("已卸載");
       },
       ready: () => ready,
+      progress: () => animationProgress,
     };
   }
 };

@@ -204,6 +204,7 @@ const getHandlePressAngle = ({
 export const directEntryConfig: DoorAnimationConfig = {
   id: "direct-entry",
   label: "Direct Entry",
+  description: "正面開門並往前推進",
   duration: 5000,
   progressMarkers: [0, 0.2, 0.4, 0.6, 0.8, 1],
   soundStartProgress: 0.37,
@@ -255,6 +256,7 @@ export const directEntryConfig: DoorAnimationConfig = {
 export const singleTopDownConfig: DoorAnimationConfig = {
   id: "single-top-down-entry",
   label: "Overhead Entry",
+  description: "俯視下降後靠近門再淡出",
   duration: 6500,
   progressMarkers: [0, 0.2, 0.35, 0.6, 0.85, 1],
   soundStartProgress: 0.5,
@@ -312,6 +314,7 @@ export const singleTopDownConfig: DoorAnimationConfig = {
 export const doubleSwingConfig: DoorAnimationConfig = {
   id: "double-swing",
   label: "Double Swing",
+  description: "雙扇門同步向外開啟",
   duration: 5500,
   progressMarkers: [0, 0.2, 0.4, 0.6, 0.8, 1],
   soundStartProgress: 0.27,

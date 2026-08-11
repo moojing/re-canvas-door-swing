@@ -11,7 +11,7 @@
     "build:lib": "npm run build --workspace door-entrance",
     "build:sample": "npm run build --workspace door-entrance-sample",
     "lint": "npm run lint --workspace door-entrance && npm run lint --workspace door-entrance-sample",
-    "test:lib": "npm run test --workspace door-entrance",
+    "test:lib": "npm run test:lib:core",
     "test:lib:core": "npm run test:core --workspace door-entrance",
     "test:lib:package": "npm run test:package --workspace door-entrance",
     "test:lib:browser": "npm run test:browser --workspace door-entrance",

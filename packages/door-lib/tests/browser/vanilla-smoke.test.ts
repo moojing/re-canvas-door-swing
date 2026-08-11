@@ -6,6 +6,7 @@ type DoorEntranceTestApi = {
   seek: (progress: number) => void;
   unmount: () => void;
   ready: () => boolean;
+  progress: () => number;
 };
 
 declare global {
@@ -34,17 +35,24 @@ test("vanilla sample renders and responds to playback controls", async ({
   const initialBox = await canvas.boundingBox();
   expect(initialBox?.width).toBeGreaterThan(100);
   expect(initialBox?.height).toBeGreaterThan(100);
+  const initialScreenshot = await canvas.screenshot();
 
   await page.evaluate(() => window.__doorEntranceTestApi__?.seek(0.45));
+  await page.waitForFunction(
+    () => window.__doorEntranceTestApi__?.progress() === 0.45
+  );
+  const seekScreenshot = await canvas.screenshot();
+  expect(Buffer.compare(initialScreenshot, seekScreenshot)).not.toBe(0);
+
   await page.evaluate(() => window.__doorEntranceTestApi__?.play());
+  await expect(page.locator("#door-status")).toHaveText("播放中...");
+
   await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
+  await page.waitForFunction(
+    () => window.__doorEntranceTestApi__?.progress() === 0
+  );
 
-  const stableBox = await canvas.boundingBox();
-  expect(stableBox?.width).toBeCloseTo(initialBox?.width ?? 0, 0);
-  expect(stableBox?.height).toBeCloseTo(initialBox?.height ?? 0, 0);
-
-  const screenshot = await canvas.screenshot();
-  expect(screenshot.length).toBeGreaterThan(1_000);
+  expect(seekScreenshot.length).toBeGreaterThan(1_000);
 
   await page.evaluate(() => window.__doorEntranceTestApi__?.unmount());
   await expect(canvas).toHaveCount(0);

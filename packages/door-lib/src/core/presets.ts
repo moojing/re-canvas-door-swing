@@ -8,16 +8,19 @@ export const doorEntrancePresetMap: Record<
     id: "door-single",
     label: "Door Single",
     variant: "direct-entry",
+    handleProfileId: "lever-l",
   },
   "door-single-overhead": {
     id: "door-single-overhead",
     label: "Door Single Overhead",
     variant: "single-top-down-entry",
+    handleProfileId: "lever-l",
   },
   "door-double": {
     id: "door-double",
     label: "Door Double",
     variant: "double-swing",
+    handleProfileId: "lever-l",
   },
 };
 
