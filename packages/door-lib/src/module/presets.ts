@@ -3,6 +3,7 @@ import {
   DEFAULT_HANDLE_PROFILE_ID,
   getHandleProfile,
 } from "./handles/profiles";
+import { doorEntrancePresets as coreDoorEntrancePresets } from "../core/presets.ts";
 import { doorWood } from "../assets/textures";
 import { doorOpenClose } from "../assets/sounds";
 
@@ -15,35 +16,18 @@ const DEFAULT_SINGLE_DOOR_SOUND = doorOpenClose;
 export const doorEntrancePresetMap: Record<
   DoorEntrancePresetId,
   DoorEntrancePreset
-> = {
-  "door-single": {
-    id: "door-single",
-    label: "Door Single",
-    variant: "direct-entry",
-    textureUrl: DEFAULT_DOOR_TEXTURE,
-    handleModelUrl: DEFAULT_HANDLE_MODEL,
-    handleProfileId: DEFAULT_HANDLE_PROFILE_ID,
-    soundUrl: DEFAULT_SINGLE_DOOR_SOUND,
-  },
-  "door-single-overhead": {
-    id: "door-single-overhead",
-    label: "Door Single Overhead",
-    variant: "single-top-down-entry",
-    textureUrl: DEFAULT_DOOR_TEXTURE,
-    handleModelUrl: DEFAULT_HANDLE_MODEL,
-    handleProfileId: DEFAULT_HANDLE_PROFILE_ID,
-    soundUrl: DEFAULT_SINGLE_DOOR_SOUND,
-  },
-  "door-double": {
-    id: "door-double",
-    label: "Door Double",
-    variant: "double-swing",
-    textureUrl: DEFAULT_DOOR_TEXTURE,
-    handleModelUrl: DEFAULT_HANDLE_MODEL,
-    handleProfileId: DEFAULT_HANDLE_PROFILE_ID,
-    soundUrl: DEFAULT_SINGLE_DOOR_SOUND,
-  },
-};
+> = Object.fromEntries(
+  coreDoorEntrancePresets.map((preset) => [
+    preset.id,
+    {
+      ...preset,
+      textureUrl: preset.textureUrl ?? DEFAULT_DOOR_TEXTURE,
+      handleModelUrl: preset.handleModelUrl ?? DEFAULT_HANDLE_MODEL,
+      handleProfileId: preset.handleProfileId ?? DEFAULT_HANDLE_PROFILE_ID,
+      soundUrl: preset.soundUrl ?? DEFAULT_SINGLE_DOOR_SOUND,
+    },
+  ])
+) as Record<DoorEntrancePresetId, DoorEntrancePreset>;
 
 export const doorEntrancePresets: DoorEntrancePreset[] = Object.values(
   doorEntrancePresetMap

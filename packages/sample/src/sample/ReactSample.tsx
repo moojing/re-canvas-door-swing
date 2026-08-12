@@ -13,7 +13,7 @@ import {
   getDoorEntrancePreset,
   type DoorEntrancePresetId,
   type DoorEntranceHandle,
-} from "door-entrance";
+} from "retro-horror-door/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -24,7 +24,7 @@ const MAX_ZOOM = 3;
 const CAMERA_PAN_PER_PIXEL = 0.01;
 const MAX_CAMERA_PAN_X = 1.9;
 const MAX_CAMERA_PAN_Y = 1.6;
-const WAVESURFER_SCRIPT_ID = "door-entrance-wavesurfer";
+const WAVESURFER_SCRIPT_ID = "retro-horror-door-wavesurfer";
 const WAVESURFER_CDN_URL =
   "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js";
 

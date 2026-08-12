@@ -1,5 +1,5 @@
 {
-  "name": "door-entrance",
+  "name": "retro-horror-door",
   "version": "0.1.0",
   "private": false,
   "type": "module",
@@ -16,6 +16,11 @@
       "types": "./dist/vanilla.d.ts",
       "import": "./dist/vanilla.js",
       "require": "./dist/vanilla.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
     }
   },
   "files": [
@@ -25,7 +30,11 @@
   "scripts": {
     "build": "tsup",
     "dev": "npm run build -- --watch",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "npm run test:core",
+    "test:core": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test src/core/__tests__/*.test.ts",
+    "test:package": "npm run build && node --disable-warning=ExperimentalWarning --experimental-strip-types --test src/__tests__/package-boundary.test.ts",
+    "test:browser": "npm run build && playwright test --config tests/browser/playwright.config.ts"
   },
   "peerDependencies": {
     "@react-three/fiber": "^8.0.0",
@@ -33,7 +42,19 @@
     "react-dom": "^18.0.0",
     "three": "^0.133.1"
   },
+  "peerDependenciesMeta": {
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/react": "^18.3.23",
     "@types/three": "^0.160.0",
     "tsup": "^8.3.5",

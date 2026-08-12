@@ -11,12 +11,12 @@
  * (對照用的遊戲截圖版仍可由 scripts/poc/extract-b10-textures.sh 產生於
  *  textures/poc-b10/,該目錄維持 gitignored。)
  *
- * 動畫沿用 door-entrance 的 direct-entry 時間軸(doorAngle 改驅動「上升量」),不動 lib。
+ * 動畫沿用 retro-horror-door 的 direct-entry 時間軸(doorAngle 改驅動「上升量」),不動 lib。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { getDoorAnimationConfig, easeInOutCubic } from "door-entrance";
+import { getDoorAnimationConfig, easeInOutCubic } from "retro-horror-door";
 import { setTextureColorSpace } from "./textureColorSpace";
 import {
   B10_TEXTURE_PATHS,

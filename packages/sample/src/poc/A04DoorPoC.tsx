@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { easeInOutCubic, getDoorAnimationConfig } from "door-entrance";
+import { easeInOutCubic, getDoorAnimationConfig } from "retro-horror-door";
 import { setTextureColorSpace } from "./textureColorSpace";
 import {
   resolveA04TextureUrl,

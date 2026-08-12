@@ -6,73 +6,15 @@ import {
   DoorAnimationConfig,
   DoorAnimationRenderer,
 } from "../../types";
-import { clamp, easeInOutCubic } from "../shared";
+import { doubleSwingConfig as coreDoubleSwingConfig } from "../../../core/animationState.ts";
 import { DoorHandleModel } from "../HandleModel";
-import { getHandlePressAngle } from "../../handles/motion";
 
 const MAX_DOOR_SWING_RADIANS = Math.PI / 2;
 const DOUBLE_HANDLE_Y = -0.02;
 const DOUBLE_HANDLE_Z = 0.32;
 const DOUBLE_HANDLE_X = 2.26;
 
-export const doubleSwingConfig: DoorAnimationConfig = {
-  id: "double-swing",
-  label: "Double Swing",
-  description: "雙扇門同步向外開啟",
-  duration: 5500,
-  progressMarkers: [0, 0.2, 0.4, 0.6, 0.8, 1],
-  soundStartProgress: 0.27,
-  soundEndProgress: 1,
-  soundSourceStartProgress: 0.06,
-  easing: easeInOutCubic,
-  getState: (rawProgress: number, context) => {
-    const progress = clamp(rawProgress, 0, 1);
-    const handleProgress = clamp(context?.linearProgress ?? rawProgress, 0, 1);
-    const handleProfileId = context?.handleProfileId;
-    let left = 0;
-    let right = 0;
-    let cameraDistance = 1;
-    let fadeOut = 0;
-    const handleAngle = getHandlePressAngle({
-      profileId: handleProfileId,
-      variant: "double-swing",
-      progress: handleProgress,
-    });
-
-    if (progress <= 0.18) {
-      left = 0;
-      right = 0;
-      cameraDistance = 1;
-    } else if (progress <= 0.68) {
-      const doorProgress = (progress - 0.18) / 0.5;
-      left = doorProgress;
-      right = doorProgress;
-      cameraDistance = 1 + doorProgress * 0.35;
-    } else if (progress <= 0.9) {
-      const forward = (progress - 0.68) / 0.22;
-      left = 1;
-      right = 1;
-      cameraDistance = 1.35 + forward * 1.1;
-    } else {
-      const fadeProgress = (progress - 0.9) / 0.1;
-      left = 1;
-      right = 1;
-      cameraDistance = 2.45;
-      fadeOut = clamp(fadeProgress, 0, 1);
-    }
-
-    const cameraZ = 8 - (cameraDistance - 1) * 5.2;
-
-    return {
-      doorAngle: left,
-      rightDoorAngle: right,
-      handleAngle,
-      cameraPosition: [0, 0, cameraZ],
-      cameraTarget: [0, 0, 0],
-      fadeOut,
-    };
-  },
-};
+export const doubleSwingConfig: DoorAnimationConfig = coreDoubleSwingConfig;
 
 const DoubleDoor = ({
   leftAngle,

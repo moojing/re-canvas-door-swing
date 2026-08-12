@@ -6,71 +6,14 @@ import {
   DoorAnimationConfig,
   DoorAnimationRenderer,
 } from "../../types";
-import { clamp, easeInOutCubic, lerp } from "../shared";
+import { singleTopDownConfig as coreSingleTopDownConfig } from "../../../core/animationState.ts";
 import { DoorHandleModel } from "../HandleModel";
-import { getHandlePressAngle } from "../../handles/motion";
 
 const MAX_DOOR_SWING_RADIANS = Math.PI / 2;
 const SINGLE_HANDLE_POSITION: [number, number, number] = [2.26, -0.02, 0.32];
 
-export const singleTopDownConfig: DoorAnimationConfig = {
-  id: "single-top-down-entry",
-  label: "Overhead Entry",
-  description: "俯視下降後靠近門再淡出",
-  duration: 6500,
-  progressMarkers: [0, 0.2, 0.35, 0.6, 0.85, 1],
-  soundStartProgress: 0.5,
-  soundEndProgress: 0.88,
-  soundSourceStartProgress: 0.06,
-  easing: easeInOutCubic,
-  getState: (rawProgress: number, context) => {
-    const progress = clamp(rawProgress, 0, 1);
-    const handleProgress = clamp(context?.linearProgress ?? rawProgress, 0, 1);
-    const handleProfileId = context?.handleProfileId;
-    let doorAngle = 0;
-    let fadeOut = 0;
-    const handleAngle = getHandlePressAngle({
-      profileId: handleProfileId,
-      variant: "single-top-down-entry",
-      progress: handleProgress,
-    });
-
-    const startPosition: [number, number, number] = [-3.8, 6, 5.2];
-    const midHoverPosition: [number, number, number] = [-2.6, 3.8, 5];
-    const frontPrepPosition: [number, number, number] = [-1.2, 2, 4.6];
-    const closeApproachPosition: [number, number, number] = [-0.4, 0.8, 3.4];
-    const finalFadePosition: [number, number, number] = [0, 0, -1.2];
-
-    let cameraPosition: [number, number, number] = [...startPosition];
-
-    if (progress <= 0.35) {
-      const t = progress / 0.35;
-      cameraPosition = lerp(startPosition, midHoverPosition, t);
-      doorAngle = 0;
-    } else if (progress <= 0.62) {
-      const t = (progress - 0.35) / 0.27;
-      cameraPosition = lerp(midHoverPosition, frontPrepPosition, t);
-      doorAngle = 0;
-    } else if (progress <= 0.87) {
-      const t = (progress - 0.62) / 0.25;
-      doorAngle = t;
-      cameraPosition = lerp(frontPrepPosition, closeApproachPosition, t);
-    } else {
-      const t = (progress - 0.87) / 0.13;
-      doorAngle = 1;
-      cameraPosition = lerp(closeApproachPosition, finalFadePosition, t);
-      fadeOut = clamp(t, 0, 1);
-    }
-
-    return {
-      doorAngle,
-      handleAngle,
-      cameraPosition,
-      cameraTarget: [0, 0, 0],
-      fadeOut,
-    };
-  },
-};
+export const singleTopDownConfig: DoorAnimationConfig =
+  coreSingleTopDownConfig;
 
 const SingleDoor = ({
   doorAngle,

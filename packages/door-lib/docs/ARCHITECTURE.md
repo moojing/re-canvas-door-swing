@@ -16,8 +16,13 @@
 ## 檔案與資料夾（建議映射到現有結構）
 ```
 packages/door-lib/
+  src/core/
+    animationState.ts         # framework-free timeline -> state configs
+    controller.ts             # framework-free playback lifecycle
+    presets.ts                # framework-free preset metadata
+    types.ts                  # shared vanilla/core types
   src/module/
-    DoorEntrance.tsx          # React 入口（既有）
+    DoorEntrance.tsx          # React adapter component
     animations/               # 每個動畫獨立目錄 (config + renderer)
       direct-entry/
         index.tsx
@@ -28,8 +33,11 @@ packages/door-lib/
       animation.template.ts   # 新動畫 scaffold
       index.ts                # 蒐集/匯出 configs + renderers
       shared.ts               # 共用 easing/clamp/lerp
-    types.ts                  # 型別 + variant union
-    vanilla.tsx               # 非 React 掛載 helper
+    types.ts                  # React-facing 型別 + variant union
+    vanilla.tsx               # legacy React-backed mount helper for the React module surface
+  src/index.ts                # default public entry; React-free vanilla API + core exports
+  src/vanilla.ts              # React-free vanilla mount API + Three.js renderer
+  src/react.ts                # React adapter public entry (`retro-horror-door/react`)
   templates/                  # 額外 scaffold（保留）
   docs/ARCHITECTURE.md        # 本檔
 ```
@@ -54,7 +62,8 @@ export interface DoorAnimationConfig {
   getState: (progress: number) => DoorAnimationState;
 }
 ```
-- `DoorEntrance`/`vanilla` 只依賴這層，適合時間軸驅動的開門動畫。
+- 目標契約：`DoorEntrance` 與 React-free `vanilla` renderer 應只依賴這層，適合時間軸驅動的開門動畫。
+- 目前狀態：`retro-horror-door` 預設匯出 DOM + Three.js 的 vanilla renderer；`retro-horror-door/vanilla` 保留為相容別名。兩者都不透過 React、React DOM 或 R3F 掛載；React support 應留在 `retro-horror-door/react` adapter surface。
 
 ### 2) 擴充版契約（預留，未接線）
 適用你列出的「singleSwing / doubleSwing / stairTransition…」：
@@ -106,6 +115,44 @@ export type AnimationModule = {
 - 紋理：優先使用壓縮圖（webp/avif），目標單張 <300KB；模型用低 poly glTF/GLB。
 - 預載：在進入門動畫前，先用 TextureLoader/GLTFLoader 預取並快取；失敗時 fallback 到簡化貼圖或純色材質。
 - 時間：單段動畫建議 4–7 秒，結尾可用 `fadeOut` 遮罩與主站銜接。
+
+## Testing Strategy
+The library is guarded by layered tests so the core animation contract can stay
+vanilla-first while React integration evolves separately.
+
+### Core Tests
+Run `npm run test:lib:core` to cover framework-free behavior: animation state,
+presets, sound scheduling, and controller lifecycle logic. These tests should
+not require React, React DOM, R3F, or a browser runtime.
+
+`npm run verify:lib` and `npm run verify:lib:core` currently run the green core
+verification path: library typecheck, library build, and core tests.
+
+### Package Boundary Tests
+Run `npm run test:lib:package` to build the package and inspect the published
+entrypoints. The boundary tests protect the public export surface and require
+the default `retro-horror-door` entry plus `retro-horror-door/vanilla` output graphs to
+stay React-free.
+
+`npm run verify:lib:boundary` currently runs this package-boundary layer and
+must stay green. A failure here means the vanilla package output has regressed
+by pulling React, React DOM, or R3F back into the vanilla graph.
+React-related peer dependencies must remain optional so vanilla consumers only
+need the framework-free dependency set.
+
+### Browser Smoke Tests
+Run `npm run test:lib:browser` to exercise the plain HTML sample in a browser:
+the vanilla sample must mount, render a canvas, respond to controls, and clean
+up through its lifecycle.
+
+`npm run verify:lib:browser` runs the core verification path first, then the
+browser smoke tests. It requires local dev server binding and an installed
+Playwright browser runtime.
+
+### React Adapter Tests
+Vanilla tests must not require React. React support should be tested in a
+separate layer when a React adapter exists, so failures in React-specific
+mounting or R3F behavior do not weaken the vanilla boundary signal.
 
 ## 待辦 / 下一步（可選）
 - 實作 `AnimationModule` adapter，讓 `DoorEntrance` 可以同時吃老式 `DoorAnimationConfig` 與新式 `AnimationModule`。
