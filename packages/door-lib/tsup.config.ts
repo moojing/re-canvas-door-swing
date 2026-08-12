@@ -1,11 +1,9 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig({
-  entry: ["src/index.ts", "src/vanilla.ts"],
-  format: ["esm", "cjs"],
+const sharedOptions = {
+  format: ["esm", "cjs"] as const,
   dts: true,
   sourcemap: true,
-  clean: true,
   // Assets are copied into dist/ and the import statements are preserved in
   // the output, so the consumer's bundler resolves them to final URLs
   // (see docs/technical-debt/door-texture-asset-ownership.md).
@@ -14,4 +12,22 @@ export default defineConfig({
     ".mp3": "copy",
     ".glb": "copy",
   },
-});
+};
+
+export default defineConfig([
+  {
+    ...sharedOptions,
+    entry: ["src/index.ts"],
+    clean: true,
+  },
+  {
+    ...sharedOptions,
+    entry: ["src/vanilla.ts"],
+    clean: false,
+  },
+  {
+    ...sharedOptions,
+    entry: ["src/react.ts"],
+    clean: false,
+  },
+]);

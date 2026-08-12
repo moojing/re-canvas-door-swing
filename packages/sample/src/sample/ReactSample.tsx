@@ -13,7 +13,7 @@ import {
   getDoorEntrancePreset,
   type DoorEntrancePresetId,
   type DoorEntranceHandle,
-} from "door-entrance";
+} from "door-entrance/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 

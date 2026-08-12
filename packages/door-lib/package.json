@@ -16,6 +16,11 @@
       "types": "./dist/vanilla.d.ts",
       "import": "./dist/vanilla.js",
       "require": "./dist/vanilla.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
     }
   },
   "files": [
@@ -36,6 +41,17 @@
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "three": "^0.133.1"
+  },
+  "peerDependenciesMeta": {
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

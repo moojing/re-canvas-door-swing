@@ -48,3 +48,11 @@ export interface DoorAnimationConfig {
     context?: { linearProgress: number; handleProfileId?: HandleProfileId }
   ) => DoorAnimationState;
 }
+
+export interface DoorEntranceSoundState {
+  enabled: boolean;
+  ready: boolean;
+  currentTimeMs: number;
+  durationMs: number;
+  progress: number;
+}

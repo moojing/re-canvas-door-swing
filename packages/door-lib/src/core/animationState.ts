@@ -8,7 +8,7 @@ import type {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const easeInOutCubic = (t: number) =>
+export const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
 
 const easeOutExpo = (t: number) => {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { doorEntrancePresets } from "door-entrance";
 import { Link } from "react-router-dom";
 
-const reactSnippet = `import { DoorEntrance } from 'door-entrance';
+const reactSnippet = `import { DoorEntrance } from 'door-entrance/react';
 
 export const LandingGate = () => (
   <DoorEntrance
@@ -16,7 +16,7 @@ export const LandingGate = () => (
 
 const htmlSnippet = `<div id="door-root"></div>
 <script type="module">
-  import { mountDoorEntrance } from 'door-entrance/vanilla';
+  import { mountDoorEntrance } from 'door-entrance';
 
   mountDoorEntrance({
     target: document.getElementById('door-root'),
@@ -44,7 +44,7 @@ const Index = () => {
           </h1>
           <p className="max-w-3xl text-lg text-white/70">
             兩款動畫都抽成 module：direct-entry（正面開門推進）與
-            single-top-down-entry（俯視降落後開門）。React 可直接引用元件，純 HTML 可透過 mount helper 動態掛載。
+            single-top-down-entry（俯視降落後開門）。預設入口提供 vanilla mount helper；React adapter 會放在獨立入口。
           </p>
           <div className="flex flex-wrap gap-2 text-sm text-white/60">
             {doorEntrancePresets.map((preset) => (
@@ -146,7 +146,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-white/70">
-                使用 `mountDoorEntrance` 將 React 元件掛在任意 DOM 節點。Sample 頁面在
+                使用 `mountDoorEntrance` 將 vanilla renderer 掛在任意 DOM 節點。Sample 頁面在
                 <code className="mx-1 rounded bg-white/10 px-1 py-0.5 text-xs">public/samples/vanilla.html</code>，啟動 `npm run dev` 後可直接開啟。
               </p>
               <CodeBlock code={htmlSnippet} />

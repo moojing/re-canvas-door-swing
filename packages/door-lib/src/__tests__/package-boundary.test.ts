@@ -13,6 +13,8 @@ import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 
 type PackageJson = {
+  peerDependencies?: Record<string, string>;
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
   exports?: {
     [path: string]:
       | string
@@ -124,7 +126,80 @@ const collectBannedReferences = (file: string) => {
   );
 };
 
+const assertOutputGraphReactFree = ({
+  label,
+  entries,
+}: {
+  label: string;
+  entries: string[];
+}) => {
+  const outputGraph = new Set<string>();
+
+  for (const entry of entries) {
+    assert.equal(
+      existsSync(entry),
+      true,
+      `Expected fresh package build output: ${formatOutputPath(entry)}`
+    );
+    collectOutputGraph(entry, outputGraph);
+  }
+
+  const bannedReferences = Array.from(
+    new Map(
+      Array.from(outputGraph)
+        .flatMap(collectBannedReferences)
+        .map((reference) => [
+          `${reference.file}:${reference.packageName}:${reference.specifier}`,
+          reference,
+        ])
+    ).values()
+  )
+    .sort((left, right) =>
+      `${left.file}:${left.specifier}`.localeCompare(
+        `${right.file}:${right.specifier}`
+      )
+    );
+
+  assert.equal(
+    bannedReferences.length,
+    0,
+    [
+      `Expected the ${label} output graph to be React-free, but found package references:`,
+      ...bannedReferences.map(
+        ({ file, packageName, specifier }) =>
+          `- ${file} imports ${specifier} (${packageName})`
+      ),
+    ].join("\n")
+  );
+};
+
 describe("package boundary", () => {
+  it("keeps React peers optional while the default entry is vanilla", () => {
+    const manifest = packageJson();
+
+    for (const packageName of bannedPackages) {
+      if (!manifest.peerDependencies?.[packageName]) continue;
+
+      assert.equal(
+        manifest.peerDependenciesMeta?.[packageName]?.optional,
+        true,
+        `Expected ${packageName} to be an optional peer dependency for the React adapter`
+      );
+    }
+  });
+
+  it("keeps the root package entry React-free by default", () => {
+    assertOutputGraphReactFree({
+      label: "root package entry",
+      entries: [
+        dist("index.js"),
+        dist("index.cjs"),
+        dist("index.d.ts"),
+        dist("index.d.cts"),
+      ],
+    });
+  });
+
   it("publishes the vanilla entry", () => {
     const vanillaExport = packageJson().exports?.["./vanilla"];
 
@@ -137,49 +212,14 @@ describe("package boundary", () => {
   });
 
   it("keeps the full vanilla output graph React-free", () => {
-    const vanillaEntries = [
-      dist("vanilla.js"),
-      dist("vanilla.cjs"),
-      dist("vanilla.d.ts"),
-      dist("vanilla.d.cts"),
-    ];
-    const outputGraph = new Set<string>();
-
-    for (const entry of vanillaEntries) {
-      assert.equal(
-        existsSync(entry),
-        true,
-        `Expected fresh package build output: ${formatOutputPath(entry)}`
-      );
-      collectOutputGraph(entry, outputGraph);
-    }
-
-    const bannedReferences = Array.from(
-      new Map(
-        Array.from(outputGraph)
-          .flatMap(collectBannedReferences)
-          .map((reference) => [
-            `${reference.file}:${reference.packageName}:${reference.specifier}`,
-            reference,
-          ])
-      ).values()
-    )
-      .sort((left, right) =>
-        `${left.file}:${left.specifier}`.localeCompare(
-          `${right.file}:${right.specifier}`
-        )
-      );
-
-    assert.equal(
-      bannedReferences.length,
-      0,
-      [
-        "Expected the vanilla output graph to be React-free, but found package references:",
-        ...bannedReferences.map(
-          ({ file, packageName, specifier }) =>
-            `- ${file} imports ${specifier} (${packageName})`
-        ),
-      ].join("\n")
-    );
+    assertOutputGraphReactFree({
+      label: "vanilla",
+      entries: [
+        dist("vanilla.js"),
+        dist("vanilla.cjs"),
+        dist("vanilla.d.ts"),
+        dist("vanilla.d.cts"),
+      ],
+    });
   });
 });
