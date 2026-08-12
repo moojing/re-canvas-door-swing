@@ -1,9 +1,17 @@
-import { DoorEntrancePreset, DoorEntrancePresetId } from "./types";
+import {
+  DoorEntrancePreset,
+  DoorEntrancePresetId,
+  DoorEntranceVariantId,
+} from "./types";
 import {
   DEFAULT_HANDLE_PROFILE_ID,
   getHandleProfile,
 } from "./handles/profiles";
 import { doorEntrancePresets as coreDoorEntrancePresets } from "../core/presets.ts";
+import {
+  legacyDoorEntrancePresetAliasMap,
+  resolveDoorEntrancePresetId,
+} from "../core/variants.ts";
 import { doorWood } from "../assets/textures";
 import { doorOpenClose } from "../assets/sounds";
 
@@ -13,8 +21,8 @@ const DEFAULT_HANDLE_MODEL = getHandleProfile(
 ).defaultModelUrl;
 const DEFAULT_SINGLE_DOOR_SOUND = doorOpenClose;
 
-export const doorEntrancePresetMap: Record<
-  DoorEntrancePresetId,
+const doorEntranceVariantPresetMap: Record<
+  DoorEntranceVariantId,
   DoorEntrancePreset
 > = Object.fromEntries(
   coreDoorEntrancePresets.map((preset) => [
@@ -27,12 +35,30 @@ export const doorEntrancePresetMap: Record<
       soundUrl: preset.soundUrl ?? DEFAULT_SINGLE_DOOR_SOUND,
     },
   ])
-) as Record<DoorEntrancePresetId, DoorEntrancePreset>;
+) as Record<DoorEntranceVariantId, DoorEntrancePreset>;
+
+export const doorEntrancePresetMap: Record<
+  DoorEntrancePresetId,
+  DoorEntrancePreset
+> = {
+  ...doorEntranceVariantPresetMap,
+  "door-single":
+    doorEntranceVariantPresetMap[legacyDoorEntrancePresetAliasMap["door-single"]],
+  "door-single-overhead":
+    doorEntranceVariantPresetMap[
+      legacyDoorEntrancePresetAliasMap["door-single-overhead"]
+    ],
+  "door-double":
+    doorEntranceVariantPresetMap[legacyDoorEntrancePresetAliasMap["door-double"]],
+};
 
 export const doorEntrancePresets: DoorEntrancePreset[] = Object.values(
-  doorEntrancePresetMap
+  doorEntranceVariantPresetMap
 );
 
 export const getDoorEntrancePreset = (
-  preset: DoorEntrancePresetId = "door-single"
-) => doorEntrancePresetMap[preset] ?? doorEntrancePresets[0];
+  preset: DoorEntrancePresetId = "single-lever-wood"
+) =>
+  doorEntrancePresetMap[
+    resolveDoorEntrancePresetId(preset) as DoorEntranceVariantId
+  ] ?? doorEntrancePresets[0];

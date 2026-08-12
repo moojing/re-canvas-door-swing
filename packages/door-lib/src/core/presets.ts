@@ -1,33 +1,31 @@
+import {
+  doorEntranceVariantMap,
+  doorEntranceVariants,
+  getDoorEntranceVariant,
+  legacyDoorEntrancePresetAliasMap,
+  resolveDoorEntrancePresetId,
+} from "./variants.ts";
 import type { DoorEntrancePreset, DoorEntrancePresetId } from "./types.ts";
 
+/** @deprecated Use doorEntranceVariantMap. */
 export const doorEntrancePresetMap: Record<
   DoorEntrancePresetId,
   DoorEntrancePreset
 > = {
-  "door-single": {
-    id: "door-single",
-    label: "Door Single",
-    variant: "direct-entry",
-    handleProfileId: "lever-l",
-  },
-  "door-single-overhead": {
-    id: "door-single-overhead",
-    label: "Door Single Overhead",
-    variant: "single-top-down-entry",
-    handleProfileId: "lever-l",
-  },
-  "door-double": {
-    id: "door-double",
-    label: "Door Double",
-    variant: "double-swing",
-    handleProfileId: "lever-l",
-  },
+  ...doorEntranceVariantMap,
+  "door-single":
+    doorEntranceVariantMap[legacyDoorEntrancePresetAliasMap["door-single"]],
+  "door-single-overhead":
+    doorEntranceVariantMap[
+      legacyDoorEntrancePresetAliasMap["door-single-overhead"]
+    ],
+  "door-double":
+    doorEntranceVariantMap[legacyDoorEntrancePresetAliasMap["door-double"]],
 };
 
-export const doorEntrancePresets: DoorEntrancePreset[] = Object.values(
-  doorEntrancePresetMap
-);
+/** @deprecated Use doorEntranceVariants. */
+export const doorEntrancePresets = doorEntranceVariants;
 
-export const getDoorEntrancePreset = (
-  preset: DoorEntrancePresetId = "door-single"
-) => doorEntrancePresetMap[preset] ?? doorEntrancePresets[0];
+/** @deprecated Use getDoorEntranceVariant. */
+export const getDoorEntrancePreset = (preset?: DoorEntrancePresetId) =>
+  getDoorEntranceVariant(resolveDoorEntrancePresetId(preset));

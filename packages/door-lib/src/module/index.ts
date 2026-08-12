@@ -5,7 +5,12 @@ export type {
   DoorAnimationConfig,
   DoorEntrancePreset,
   DoorEntrancePresetId,
+  DoorEntranceMotion,
+  DoorEntranceType,
+  DoorEntranceVariant,
+  DoorEntranceVariantId,
   DoorEntranceSoundState,
+  DoorMaterialId,
   HandleProfileId,
 } from "./types";
 export type { DoorEntranceProps } from "./DoorEntrance";
@@ -20,6 +25,11 @@ export {
   doorEntrancePresets,
   doorEntrancePresetMap,
   getDoorEntrancePreset,
+} from "./presets";
+export {
+  doorEntrancePresets as doorEntranceVariants,
+  doorEntrancePresetMap as doorEntranceVariantMap,
+  getDoorEntrancePreset as getDoorEntranceVariant,
 } from "./presets";
 export {
   textureManifest,

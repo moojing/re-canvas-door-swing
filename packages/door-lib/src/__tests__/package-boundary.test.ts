@@ -211,6 +211,15 @@ describe("package boundary", () => {
     assert.equal(vanillaExport?.require, "./dist/vanilla.cjs");
   });
 
+  it("publishes the variant registry from the root entry", () => {
+    const declaration = readFileSync(dist("index.d.ts"), "utf8");
+
+    assert.match(declaration, /doorEntranceVariants/);
+    assert.match(declaration, /getDoorEntranceVariant/);
+    assert.match(declaration, /resolveDoorEntranceVariantSelection/);
+    assert.match(declaration, /DoorEntranceVariantId/);
+  });
+
   it("keeps the full vanilla output graph React-free", () => {
     assertOutputGraphReactFree({
       label: "vanilla",

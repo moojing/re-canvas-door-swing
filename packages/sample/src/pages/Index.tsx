@@ -2,14 +2,14 @@ import ReactSample from "@/sample/ReactSample";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { doorEntrancePresets } from "retro-horror-door";
+import { doorEntranceVariants } from "retro-horror-door";
 import { Link } from "react-router-dom";
 
 const reactSnippet = `import { DoorEntrance } from 'retro-horror-door/react';
 
 export const LandingGate = () => (
   <DoorEntrance
-    preset="door-single"
+    variant="single-lever-wood"
     onComplete={() => console.log('done')}
   />
 );`;
@@ -20,7 +20,7 @@ const htmlSnippet = `<div id="door-root"></div>
 
   mountDoorEntrance({
     target: document.getElementById('door-root'),
-    preset: 'door-single',
+    variant: 'single-lever-wood',
     autoPlay: true,
   });
 </script>`;
@@ -43,16 +43,16 @@ const Index = () => {
             門入場動畫 Library
           </h1>
           <p className="max-w-3xl text-lg text-white/70">
-            兩款動畫都抽成 module：direct-entry（正面開門推進）與
-            single-top-down-entry（俯視降落後開門）。預設入口提供 vanilla mount helper；React adapter 會放在獨立入口。
+            門動畫以可播放 variant 封裝；預設入口提供 vanilla mount
+            helper，React adapter 則放在獨立入口。
           </p>
           <div className="flex flex-wrap gap-2 text-sm text-white/60">
-            {doorEntrancePresets.map((preset) => (
+            {doorEntranceVariants.map((variant) => (
               <span
-                key={preset.id}
+                key={variant.id}
                 className="rounded-full border border-white/10 px-3 py-1"
               >
-                {preset.id}
+                {variant.id}
               </span>
             ))}
           </div>
@@ -129,7 +129,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-white/70">
-                導入 `DoorEntrance`，指定 preset（例如 `door-single`）。`onComplete` 會在動畫結束後觸發。
+                導入 `DoorEntrance`，指定 variant（例如 `single-lever-wood`）。`onComplete` 會在動畫結束後觸發。
               </p>
               <CodeBlock code={reactSnippet} />
             </CardContent>

@@ -1,8 +1,8 @@
 import { createRoot, Root } from "react-dom/client";
 import DoorEntrance from "./DoorEntrance";
 import {
+  DoorEntranceVariantId,
   DoorEntrancePresetId,
-  DoorAnimationVariant,
   DoorEntranceHandle,
   DoorEntranceSoundState,
   HandleProfileId,
@@ -10,8 +10,9 @@ import {
 
 interface MountDoorEntranceOptions {
   target: HTMLElement | null;
+  /** @deprecated Use variant. */
   preset?: DoorEntrancePresetId;
-  variant?: DoorAnimationVariant;
+  variant?: DoorEntranceVariantId;
   autoPlay?: boolean;
   className?: string;
   onComplete?: () => void;

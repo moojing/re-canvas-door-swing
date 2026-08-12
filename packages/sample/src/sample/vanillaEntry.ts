@@ -1,5 +1,5 @@
 import "../index.css";
-import { mountDoorEntrance, type DoorEntrancePresetId } from "retro-horror-door";
+import { mountDoorEntrance, type DoorEntranceVariantId } from "retro-horror-door";
 
 type MountedDoorEntrance = ReturnType<typeof mountDoorEntrance>;
 type DoorEntranceTestApi = {
@@ -13,8 +13,8 @@ type DoorEntranceTestApi = {
 
 const target = document.getElementById("door-root");
 const statusEl = document.getElementById("door-status");
-const presetSelect = document.getElementById(
-  "door-preset"
+const variantSelect = document.getElementById(
+  "door-variant"
 ) as HTMLSelectElement | null;
 const playButton = document.getElementById("door-play");
 let ready = false;
@@ -35,15 +35,15 @@ const setStatus = (text: string) => {
 
 const boot = () => {
   if (!target) return;
-  const getSelectedPreset = (): DoorEntrancePresetId =>
-    (presetSelect?.value as DoorEntrancePresetId) ?? "door-single";
+  const getSelectedVariant = (): DoorEntranceVariantId =>
+    (variantSelect?.value as DoorEntranceVariantId) ?? "single-lever-wood";
 
-  const mountApp = (preset: DoorEntrancePresetId) => {
+  const mountApp = (variant: DoorEntranceVariantId) => {
     ready = false;
     animationProgress = 0;
     return mountDoorEntrance({
       target,
-      preset,
+      variant,
       autoPlay: false,
       className:
         "h-[420px] w-full rounded-xl border border-white/10 bg-black",
@@ -58,7 +58,7 @@ const boot = () => {
     });
   };
 
-  let app: MountedDoorEntrance | null = mountApp(getSelectedPreset());
+  let app: MountedDoorEntrance | null = mountApp(getSelectedVariant());
 
   const play = () => {
     if (!ready) {
@@ -66,21 +66,21 @@ const boot = () => {
       return;
     }
     setStatus("播放中...");
-    const preset = getSelectedPreset();
-    app?.reset(preset);
-    requestAnimationFrame(() => app?.play(preset));
+    const variant = getSelectedVariant();
+    app?.reset(variant);
+    requestAnimationFrame(() => app?.play(variant));
   };
 
   if (playButton) {
     playButton.addEventListener("click", play);
   }
 
-  if (presetSelect) {
-    presetSelect.addEventListener("change", (event) => {
-      const nextPreset = (event.target as HTMLSelectElement)
-        .value as DoorEntrancePresetId;
+  if (variantSelect) {
+    variantSelect.addEventListener("change", (event) => {
+      const nextVariant = (event.target as HTMLSelectElement)
+        .value as DoorEntranceVariantId;
       app?.unmount();
-      app = mountApp(nextPreset);
+      app = mountApp(nextVariant);
       setStatus("準備中...");
     });
   }
@@ -88,8 +88,8 @@ const boot = () => {
   if (testMode) {
     window.__doorEntranceTestApi__ = {
       play,
-      reset: () => app?.reset(getSelectedPreset()),
-      seek: (progress) => app?.seek(progress, getSelectedPreset()),
+      reset: () => app?.reset(getSelectedVariant()),
+      seek: (progress) => app?.seek(progress, getSelectedVariant()),
       unmount: () => {
         app?.unmount();
         app = null;
