@@ -35,6 +35,7 @@ packages/sample/public/textures/poc-b10/
 # Claude Code 平行作業的暫存 worktree
 .claude/worktrees/
 *.tsbuildinfo
+test-results/
 __pycache__/
 # Codex CLI 本地工作目錄
 .codex/

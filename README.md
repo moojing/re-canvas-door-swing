@@ -25,7 +25,7 @@ Useful scripts:
 The door library uses layered tests to keep the core animation package
 vanilla-first while React support remains separate:
 
-- `npm run test:lib:core` covers framework-free animation state, presets, sound,
+- `npm run test:lib:core` covers framework-free animation state, variants, sound,
   and controller behavior.
 - `npm run test:lib:package` checks public package exports and verifies the
   default `retro-horror-door` entry and `retro-horror-door/vanilla` output graphs are React-free.
@@ -64,7 +64,18 @@ import { mountDoorEntrance } from "retro-horror-door";
 
 mountDoorEntrance({
   target: document.getElementById("door-root"),
-  variant: "direct-entry",
+  variant: "single-lever-wood",
+});
+```
+
+Random selection chooses from available runtime variants; it does not mix door
+parts manually:
+
+```tsx
+mountDoorEntrance({
+  target: document.getElementById("door-root"),
+  random: true,
+  type: "single",
 });
 ```
 
@@ -74,9 +85,8 @@ React adapter:
 import { DoorEntrance } from "retro-horror-door/react";
 
 <DoorEntrance
-  variant="single-top-down-entry"    // or "direct-entry"
+  variant="single-overhead-lever-wood"
   autoPlay
-  textureUrl="/textures/door-1.png"
   onComplete={() => console.log("done")}
 />;
 ```
@@ -87,6 +97,14 @@ Plain HTML:
 <div id="door-root"></div>
 <script type="module">
   import { mountDoorEntrance } from "retro-horror-door";
-  mountDoorEntrance({ target: document.getElementById("door-root"), variant: "direct-entry" });
+  mountDoorEntrance({
+    target: document.getElementById("door-root"),
+    variant: "single-lever-wood"
+  });
 </script>
 ```
+
+Runtime variant entries contain only playable library settings such as type,
+motion, handle, material, sound, and camera behavior. Source videos,
+classification notes, and thumbnail references belong in development tracking
+docs and are not shipped in the npm package.

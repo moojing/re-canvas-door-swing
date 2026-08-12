@@ -19,7 +19,8 @@ packages/door-lib/
   src/core/
     animationState.ts         # framework-free timeline -> state configs
     controller.ts             # framework-free playback lifecycle
-    presets.ts                # framework-free preset metadata
+    variants.ts               # framework-free playable variant registry
+    presets.ts                # deprecated compatibility alias for variants
     types.ts                  # shared vanilla/core types
   src/module/
     DoorEntrance.tsx          # React adapter component
@@ -64,6 +65,9 @@ export interface DoorAnimationConfig {
 ```
 - 目標契約：`DoorEntrance` 與 React-free `vanilla` renderer 應只依賴這層，適合時間軸驅動的開門動畫。
 - 目前狀態：`retro-horror-door` 預設匯出 DOM + Three.js 的 vanilla renderer；`retro-horror-door/vanilla` 保留為相容別名。兩者都不透過 React、React DOM 或 R3F 掛載；React support 應留在 `retro-horror-door/react` adapter surface。
+- 公開選門 API 使用 `variant`，例如 `single-lever-wood`。`variant` 是一個可播放門變體，內部固定 `type`、`motion`、`handleProfileId`、`material`、animation config、聲音與鏡頭行為。
+- `random: true` 只從可用 runtime variants 中挑選；`type`、`motion`、`handle`、`material` 只在 random mode 作為篩選條件。有明確 `variant` 時不能再混用這些欄位。
+- Runtime variant registry 不包含來源影片、縮圖或分類筆記。這些只存在於 Notion / gallery / dev tracking metadata，不能進 npm package。
 
 ### 2) 擴充版契約（預留，未接線）
 適用你列出的「singleSwing / doubleSwing / stairTransition…」：
@@ -108,8 +112,8 @@ export type AnimationModule = {
 ## 新增動畫的操作流程
 1) **複製 scaffold**：`src/module/animations/animation.template.ts` → 改檔名（例 `doubleSwing.ts`），填入 `id/label/description/duration/getState`。
 2) **登錄**：在 `src/module/animations/index.ts` import 並 push 到 `doorAnimationConfigs`；在 `types.ts` 的 `DoorAnimationVariant` union 加上新 id。
-3) **素材差異**：若需要不同門面/把手，透過 `DoorEntrance` 的 `textureUrl` prop 或未來的資產注入（可擴充 props）。
-4) **隨機/Seed**：在 sample 或呼叫端寫一個 picker（如 `pickVariant(seed?, blacklist?)`），選完 variant 後塞給 `DoorEntrance`。
+3) **素材差異**：新增 project-owned 或 generated asset，掛到新的 runtime variant；不要讓 runtime registry 指向來源影片、擷取影格或 gallery thumbnails。
+4) **隨機**：由 library 從 `doorEntranceVariants` 中挑選。呼叫端只能用 `random: true` 搭配分類 filter，不直接任意組合動畫、配件與材質。
 
 ## 資產與效能建議
 - 紋理：優先使用壓縮圖（webp/avif），目標單張 <300KB；模型用低 poly glTF/GLB。
@@ -122,7 +126,7 @@ vanilla-first while React integration evolves separately.
 
 ### Core Tests
 Run `npm run test:lib:core` to cover framework-free behavior: animation state,
-presets, sound scheduling, and controller lifecycle logic. These tests should
+variants, sound scheduling, and controller lifecycle logic. These tests should
 not require React, React DOM, R3F, or a browser runtime.
 
 `npm run verify:lib` and `npm run verify:lib:core` currently run the green core

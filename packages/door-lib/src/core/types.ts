@@ -7,20 +7,54 @@ export type DoorAnimationVariant =
 
 export type HandleProfileId = "lever-l" | "knob-round";
 
-export type DoorEntrancePresetId =
+export type DoorEntranceType = "single" | "double";
+
+export type DoorEntranceMotion =
+  | "hinge-single"
+  | "hinge-single-overhead"
+  | "hinge-double";
+
+export type DoorMaterialId = "wood-panel-aged";
+
+export type DoorEntranceVariantId =
+  | "single-lever-wood"
+  | "single-overhead-lever-wood"
+  | "double-lever-wood";
+
+export type LegacyDoorEntrancePresetId =
   | "door-single"
   | "door-single-overhead"
   | "door-double";
 
-export interface DoorEntrancePreset {
-  id: DoorEntrancePresetId;
+export interface DoorEntranceVariant {
+  id: DoorEntranceVariantId;
   label: string;
+  type: DoorEntranceType;
+  motion: DoorEntranceMotion;
+  material: DoorMaterialId;
+  animation: DoorAnimationVariant;
+  /** @deprecated Use animation. Kept for preset compatibility only. */
   variant: DoorAnimationVariant;
   textureUrl?: string;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
   soundUrl?: string;
   className?: string;
+}
+
+/** @deprecated Use DoorEntranceVariantId. */
+export type DoorEntrancePresetId = DoorEntranceVariantId | LegacyDoorEntrancePresetId;
+
+/** @deprecated Use DoorEntranceVariant. */
+export type DoorEntrancePreset = DoorEntranceVariant;
+
+export interface DoorEntranceVariantSelection {
+  variant?: DoorEntranceVariantId | LegacyDoorEntrancePresetId;
+  random?: boolean;
+  type?: DoorEntranceType;
+  motion?: DoorEntranceMotion;
+  handle?: HandleProfileId;
+  material?: DoorMaterialId;
 }
 
 export interface DoorAnimationState {

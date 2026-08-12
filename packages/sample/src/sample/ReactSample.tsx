@@ -112,7 +112,8 @@ const loadWaveSurfer = (): Promise<WaveSurferFactory> => {
 };
 
 const ReactSample = () => {
-  const [preset, setPreset] = useState<DoorEntrancePresetId>("door-single");
+  const [preset, setPreset] =
+    useState<DoorEntrancePresetId>("single-lever-wood");
   const [status, setStatus] = useState("等待播放");
   const [ready, setReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -163,7 +164,7 @@ const ReactSample = () => {
     [selectedPresetMeta]
   );
   const config = useMemo(
-    () => getDoorAnimationConfig(getDoorEntrancePreset(preset).variant),
+    () => getDoorAnimationConfig(getDoorEntrancePreset(preset).animation),
     [preset]
   );
   const progressMarkers = config.progressMarkers;
@@ -549,7 +550,7 @@ const ReactSample = () => {
         >
           <DoorEntrance
             ref={ref}
-            preset={preset}
+            variant={preset}
             autoPlay={false}
             cameraPanX={cameraPanX}
             cameraPanY={cameraPanY}
@@ -719,7 +720,7 @@ const ReactSample = () => {
                     : audioReady
                       ? "等待 WaveSurfer 載入"
                       : "等待音檔 metadata"
-                : "Only door-single has sound"}
+                : "Only single-lever-wood has sound"}
             </span>
           </div>
         </div>

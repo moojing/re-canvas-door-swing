@@ -20,7 +20,6 @@ import {
   DoorAnimationRenderer,
   DoorAnimationState,
   DoorEntrancePresetId,
-  DoorAnimationVariant,
   DoorEntranceHandle,
   DoorEntranceSoundState,
   HandleProfileId,
@@ -29,8 +28,9 @@ import { getHandleProfile } from "./handles/profiles";
 import { doorWood } from "../assets/textures";
 
 interface DoorEntranceProps {
+  /** @deprecated Use variant. */
   preset?: DoorEntrancePresetId;
-  variant?: DoorAnimationVariant;
+  variant?: DoorEntrancePresetId;
   autoPlay?: boolean;
   className?: string;
   onComplete?: () => void;
@@ -142,7 +142,7 @@ const Scene = ({
 const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
   (
     {
-      preset = "door-single",
+      preset,
       variant,
       autoPlay = true,
       className,
@@ -159,18 +159,18 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
     },
     ref
   ) => {
-    const [activePreset, setActivePreset] = useState<DoorEntrancePresetId>(
-      preset
-    );
+    const selectedVariantId = variant ?? preset ?? "single-lever-wood";
+    const [activePreset, setActivePreset] =
+      useState<DoorEntrancePresetId>(selectedVariantId);
     useEffect(() => {
-      setActivePreset(preset);
-    }, [preset]);
+      setActivePreset(selectedVariantId);
+    }, [selectedVariantId]);
 
     const selectedPreset = useMemo(
       () => getDoorEntrancePreset(activePreset),
       [activePreset]
     );
-    const resolvedVariant = variant ?? selectedPreset.variant;
+    const resolvedAnimation = selectedPreset.animation;
     const resolvedTextureUrl =
       textureUrl ?? selectedPreset.textureUrl ?? DEFAULT_TEXTURE_URL;
     const resolvedHandleProfileId =
@@ -187,8 +187,8 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       className ?? selectedPreset.className ?? DEFAULT_CLASS_NAME;
 
     const selectedConfig = useMemo(
-      () => getDoorAnimationConfig(resolvedVariant),
-      [resolvedVariant]
+      () => getDoorAnimationConfig(resolvedAnimation),
+      [resolvedAnimation]
     );
     const Renderer =
       doorAnimationRenderers[selectedConfig.id] ??
@@ -460,9 +460,9 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
     const resolveConfig = useCallback(
       (nextPreset?: DoorEntrancePresetId) =>
         getDoorAnimationConfig(
-          variant ?? getDoorEntrancePreset(nextPreset ?? activePreset).variant
+          getDoorEntrancePreset(nextPreset ?? activePreset).animation
         ),
-      [activePreset, variant]
+      [activePreset]
     );
 
     const applyProgress = useCallback(
@@ -679,7 +679,7 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
         </Canvas>
 
         <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.08em] text-white/70 backdrop-blur">
-          {doorAnimationConfigs.find((c) => c.id === resolvedVariant)?.label ??
+          {doorAnimationConfigs.find((c) => c.id === resolvedAnimation)?.label ??
             "Door"}
         </div>
 

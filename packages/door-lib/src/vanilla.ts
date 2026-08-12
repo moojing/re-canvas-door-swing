@@ -1,21 +1,24 @@
 import * as THREE from "three";
 import { getDoorAnimationConfig } from "./core/animationState.ts";
-import { getDoorEntrancePreset } from "./core/presets.ts";
+import { resolveDoorEntranceVariantSelection } from "./core/variants.ts";
 import type {
   DoorAnimationState,
   DoorAnimationConfig,
   DoorAnimationVariant,
-  DoorEntrancePresetId,
+  DoorEntranceMotion,
   DoorEntranceSoundState,
+  DoorEntranceType,
+  DoorEntranceVariant,
+  DoorEntranceVariantId,
+  DoorEntranceVariantSelection,
+  DoorMaterialId,
   HandleProfileId,
 } from "./core/types.ts";
 import { doorWood } from "./assets/textures";
 import { doorOpenClose } from "./assets/sounds";
 
-interface MountDoorEntranceOptions {
+interface MountDoorEntranceOptions extends DoorEntranceVariantSelection {
   target: HTMLElement | null;
-  preset?: DoorEntrancePresetId;
-  variant?: DoorAnimationVariant;
   autoPlay?: boolean;
   className?: string;
   onComplete?: () => void;
@@ -24,17 +27,16 @@ interface MountDoorEntranceOptions {
   onReady?: () => void;
   textureUrl?: string;
   handleModelUrl?: string;
-  handleProfileId?: HandleProfileId;
   soundUrl?: string;
   cameraPanX?: number;
   cameraPanY?: number;
 }
 
 interface MountedDoorEntrance {
-  play: (preset?: DoorEntrancePresetId) => void;
+  play: (variant?: DoorEntranceVariantId) => void;
   stop: () => void;
-  reset: (preset?: DoorEntrancePresetId) => void;
-  seek: (progress: number, preset?: DoorEntrancePresetId) => void;
+  reset: (variant?: DoorEntranceVariantId) => void;
+  seek: (progress: number, variant?: DoorEntranceVariantId) => void;
   seekSound: (progress: number) => void;
   unmount: () => void;
 }
@@ -396,8 +398,8 @@ export const mountDoorEntrance = (
     throw new Error("mountDoorEntrance: target element is required");
   }
 
-  let activePreset = getDoorEntrancePreset(options.preset);
-  let activeConfig = getDoorAnimationConfig(options.variant ?? activePreset.variant);
+  let activeDoorVariant = resolveDoorEntranceVariantSelection(options);
+  let activeConfig = getDoorAnimationConfig(activeDoorVariant.animation);
   let progress = 0;
   let isAnimating = false;
   let didComplete = false;
@@ -408,15 +410,15 @@ export const mountDoorEntrance = (
   let disposed = false;
 
   const scene = new VanillaDoorScene(
-    options.className ?? activePreset.className ?? DEFAULT_CLASS_NAME
+    options.className ?? activeDoorVariant.className ?? DEFAULT_CLASS_NAME
   );
   target.append(scene.element);
 
   const audio = document.createElement("audio");
   let resolvedTextureUrl =
-    options.textureUrl ?? activePreset.textureUrl ?? DEFAULT_TEXTURE_URL;
+    options.textureUrl ?? activeDoorVariant.textureUrl ?? DEFAULT_TEXTURE_URL;
   let resolvedSoundUrl = toPublicAssetUrl(
-    options.soundUrl ?? activePreset.soundUrl ?? DEFAULT_SOUND_URL
+    options.soundUrl ?? activeDoorVariant.soundUrl ?? DEFAULT_SOUND_URL
   );
 
   if (resolvedSoundUrl) {
@@ -557,7 +559,7 @@ export const mountDoorEntrance = (
     const state = config.getState(easedProgress, {
       linearProgress: progress,
       handleProfileId:
-        options.handleProfileId ?? activePreset.handleProfileId ?? "lever-l",
+        activeDoorVariant.handleProfileId ?? "lever-l",
     });
     scene.render({
       state,
@@ -583,13 +585,15 @@ export const mountDoorEntrance = (
     }
   };
 
-  const resolvePreset = (nextPreset?: DoorEntrancePresetId) => {
-    activePreset = getDoorEntrancePreset(nextPreset ?? activePreset.id);
-    activeConfig = getDoorAnimationConfig(options.variant ?? activePreset.variant);
+  const resolveVariant = (nextVariant?: DoorEntranceVariantId) => {
+    activeDoorVariant = nextVariant
+      ? resolveDoorEntranceVariantSelection({ variant: nextVariant })
+      : activeDoorVariant;
+    activeConfig = getDoorAnimationConfig(activeDoorVariant.animation);
     resolvedTextureUrl =
-      options.textureUrl ?? activePreset.textureUrl ?? DEFAULT_TEXTURE_URL;
+      options.textureUrl ?? activeDoorVariant.textureUrl ?? DEFAULT_TEXTURE_URL;
     resolvedSoundUrl = toPublicAssetUrl(
-      options.soundUrl ?? activePreset.soundUrl ?? DEFAULT_SOUND_URL
+      options.soundUrl ?? activeDoorVariant.soundUrl ?? DEFAULT_SOUND_URL
     );
     if (resolvedSoundUrl && audio.src !== resolvedSoundUrl) {
       audio.src = resolvedSoundUrl;
@@ -637,10 +641,10 @@ export const mountDoorEntrance = (
   };
 
   const api: MountedDoorEntrance = {
-    play: (preset) => {
+    play: (variant) => {
       if (disposed || isAnimating) return;
 
-      const config = resolvePreset(preset);
+      const config = resolveVariant(variant);
       const startProgress = progress >= 1 ? 0 : progress;
       if (startProgress !== progress) {
         renderProgress(startProgress, config);
@@ -685,23 +689,23 @@ export const mountDoorEntrance = (
       pauseSound();
       emitSoundProgress();
     },
-    reset: (preset) => {
+    reset: (variant) => {
       if (disposed) return;
       cancelAnimationLoop();
       isAnimating = false;
       clearAudioDelayTimer();
       resetSound();
-      const config = resolvePreset(preset);
+      const config = resolveVariant(variant);
       didComplete = false;
       renderProgress(0, config);
     },
-    seek: (nextProgress, preset) => {
+    seek: (nextProgress, variant) => {
       if (disposed) return;
       cancelAnimationLoop();
       isAnimating = false;
       clearAudioDelayTimer();
       pauseSound();
-      const config = resolvePreset(preset);
+      const config = resolveVariant(variant);
       renderProgress(nextProgress, config);
       syncSoundToTimelineProgress(clampProgress(nextProgress), config);
     },

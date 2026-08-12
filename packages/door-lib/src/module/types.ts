@@ -8,14 +8,33 @@ export type DoorAnimationVariant =
 
 export type HandleProfileId = "lever-l" | "knob-round";
 
-export type DoorEntrancePresetId =
+export type DoorEntranceType = "single" | "double";
+
+export type DoorEntranceMotion =
+  | "hinge-single"
+  | "hinge-single-overhead"
+  | "hinge-double";
+
+export type DoorMaterialId = "wood-panel-aged";
+
+export type DoorEntranceVariantId =
+  | "single-lever-wood"
+  | "single-overhead-lever-wood"
+  | "double-lever-wood";
+
+export type LegacyDoorEntrancePresetId =
   | "door-single"
   | "door-single-overhead"
   | "door-double";
 
-export interface DoorEntrancePreset {
-  id: DoorEntrancePresetId;
+export interface DoorEntranceVariant {
+  id: DoorEntranceVariantId;
   label: string;
+  type: DoorEntranceType;
+  motion: DoorEntranceMotion;
+  material: DoorMaterialId;
+  animation: DoorAnimationVariant;
+  /** @deprecated Use animation. Kept for preset compatibility only. */
   variant: DoorAnimationVariant;
   textureUrl?: string;
   handleModelUrl?: string;
@@ -23,6 +42,12 @@ export interface DoorEntrancePreset {
   soundUrl?: string;
   className?: string;
 }
+
+/** @deprecated Use DoorEntranceVariantId. */
+export type DoorEntrancePresetId = DoorEntranceVariantId | LegacyDoorEntrancePresetId;
+
+/** @deprecated Use DoorEntranceVariant. */
+export type DoorEntrancePreset = DoorEntranceVariant;
 
 export interface DoorAnimationState {
   doorAngle: number;
@@ -66,10 +91,10 @@ export interface DoorEntranceSoundState {
 }
 
 export interface DoorEntranceHandle {
-  play: (preset?: DoorEntrancePresetId) => void;
+  play: (variant?: DoorEntrancePresetId) => void;
   stop: () => void;
-  reset: (preset?: DoorEntrancePresetId) => void;
-  seek: (progress: number, preset?: DoorEntrancePresetId) => void;
+  reset: (variant?: DoorEntrancePresetId) => void;
+  seek: (progress: number, variant?: DoorEntrancePresetId) => void;
   seekSound: (progress: number) => void;
 }
 

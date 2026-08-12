@@ -1,26 +1,27 @@
 import { getDoorAnimationConfig } from "./animationState.ts";
-import { getDoorEntrancePreset } from "./presets.ts";
+import { resolveDoorEntranceVariantSelection } from "./variants.ts";
 import type {
   DoorAnimationConfig,
   DoorAnimationState,
-  DoorEntrancePreset,
-  DoorEntrancePresetId,
+  DoorEntranceVariant,
+  DoorEntranceVariantId,
+  DoorEntranceVariantSelection,
 } from "./types.ts";
 
-export interface DoorEntranceControllerOptions {
-  preset?: DoorEntrancePresetId;
+export interface DoorEntranceControllerOptions
+  extends DoorEntranceVariantSelection {
   progress?: number;
   onProgress?: (progress: number) => void;
   onComplete?: () => void;
 }
 
 export interface DoorEntranceControllerResetOptions {
-  preset?: DoorEntrancePresetId;
+  variant?: DoorEntranceVariantId;
   progress?: number;
 }
 
 export interface DoorEntranceControllerSnapshot {
-  preset: DoorEntrancePreset;
+  variant: DoorEntranceVariant;
   animation: DoorAnimationConfig;
   progress: number;
   isPlaying: boolean;
@@ -44,28 +45,30 @@ const clampProgress = (progress: number) => {
 export const createDoorEntranceController = (
   options: DoorEntranceControllerOptions = {}
 ): DoorEntranceController => {
-  let preset = getDoorEntrancePreset(options.preset);
-  let animation = getDoorAnimationConfig(preset.variant);
+  let variant = resolveDoorEntranceVariantSelection(options);
+  let animation = getDoorAnimationConfig(variant.animation);
   let progress = clampProgress(options.progress ?? 0);
   let isPlaying = false;
   let didComplete = progress >= 1;
 
-  const syncPreset = (nextPresetId?: DoorEntrancePresetId) => {
-    preset = getDoorEntrancePreset(nextPresetId);
-    animation = getDoorAnimationConfig(preset.variant);
+  const syncVariant = (nextVariantId?: DoorEntranceVariantId) => {
+    variant = nextVariantId
+      ? resolveDoorEntranceVariantSelection({ variant: nextVariantId })
+      : variant;
+    animation = getDoorAnimationConfig(variant.animation);
   };
 
   const getSnapshot = (): DoorEntranceControllerSnapshot => {
     const easedProgress = clampProgress(animation.easing?.(progress) ?? progress);
 
     return {
-      preset,
+      variant,
       animation,
       progress,
       isPlaying,
       state: animation.getState(easedProgress, {
         linearProgress: progress,
-        handleProfileId: preset.handleProfileId,
+        handleProfileId: variant.handleProfileId,
       }),
     };
   };
@@ -87,7 +90,7 @@ export const createDoorEntranceController = (
   };
 
   const reset = (resetOptions: DoorEntranceControllerResetOptions = {}) => {
-    syncPreset(resetOptions.preset ?? preset.id);
+    syncVariant(resetOptions.variant);
     progress = clampProgress(resetOptions.progress ?? 0);
     isPlaying = false;
     didComplete = progress >= 1;

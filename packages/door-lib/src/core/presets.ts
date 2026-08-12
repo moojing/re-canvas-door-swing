@@ -1,33 +1,14 @@
-import type { DoorEntrancePreset, DoorEntrancePresetId } from "./types.ts";
+import {
+  doorEntranceVariantMap,
+  doorEntranceVariants,
+  getDoorEntranceVariant,
+} from "./variants.ts";
 
-export const doorEntrancePresetMap: Record<
-  DoorEntrancePresetId,
-  DoorEntrancePreset
-> = {
-  "door-single": {
-    id: "door-single",
-    label: "Door Single",
-    variant: "direct-entry",
-    handleProfileId: "lever-l",
-  },
-  "door-single-overhead": {
-    id: "door-single-overhead",
-    label: "Door Single Overhead",
-    variant: "single-top-down-entry",
-    handleProfileId: "lever-l",
-  },
-  "door-double": {
-    id: "door-double",
-    label: "Door Double",
-    variant: "double-swing",
-    handleProfileId: "lever-l",
-  },
-};
+/** @deprecated Use doorEntranceVariantMap. */
+export const doorEntrancePresetMap = doorEntranceVariantMap;
 
-export const doorEntrancePresets: DoorEntrancePreset[] = Object.values(
-  doorEntrancePresetMap
-);
+/** @deprecated Use doorEntranceVariants. */
+export const doorEntrancePresets = doorEntranceVariants;
 
-export const getDoorEntrancePreset = (
-  preset: DoorEntrancePresetId = "door-single"
-) => doorEntrancePresetMap[preset] ?? doorEntrancePresets[0];
+/** @deprecated Use getDoorEntranceVariant. */
+export const getDoorEntrancePreset = getDoorEntranceVariant;
