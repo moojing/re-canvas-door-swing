@@ -1,4 +1,5 @@
 import type {
+  DoorEntrancePresetId,
   DoorEntranceVariant,
   DoorEntranceVariantId,
   DoorEntranceVariantSelection,
@@ -43,7 +44,10 @@ export const doorEntranceVariantMap: Record<
   },
 };
 
-const legacyPresetAliasMap: Record<LegacyDoorEntrancePresetId, DoorEntranceVariantId> = {
+export const legacyDoorEntrancePresetAliasMap: Record<
+  LegacyDoorEntrancePresetId,
+  DoorEntranceVariantId
+> = {
   "door-single": "single-lever-wood",
   "door-single-overhead": "single-overhead-lever-wood",
   "door-double": "double-lever-wood",
@@ -54,19 +58,34 @@ export const doorEntranceVariants: DoorEntranceVariant[] = Object.values(
 );
 
 export const resolveDoorEntranceVariantId = (
-  variant?: DoorEntranceVariantId | LegacyDoorEntrancePresetId
+  variant?: DoorEntranceVariantId
 ): DoorEntranceVariantId => {
   if (!variant) return DEFAULT_VARIANT_ID;
 
-  return (
-    doorEntranceVariantMap[variant as DoorEntranceVariantId]?.id ??
-    legacyPresetAliasMap[variant as LegacyDoorEntrancePresetId] ??
-    DEFAULT_VARIANT_ID
-  );
+  if (doorEntranceVariantMap[variant]) return variant;
+
+  throw new Error(`Unknown door entrance variant: ${variant}`);
+};
+
+export const resolveDoorEntrancePresetId = (
+  preset?: DoorEntrancePresetId
+): DoorEntranceVariantId => {
+  if (!preset) return DEFAULT_VARIANT_ID;
+
+  if (doorEntranceVariantMap[preset as DoorEntranceVariantId]) {
+    return preset as DoorEntranceVariantId;
+  }
+
+  const variant = legacyDoorEntrancePresetAliasMap[
+    preset as LegacyDoorEntrancePresetId
+  ];
+  if (variant) return variant;
+
+  throw new Error(`Unknown door entrance preset: ${preset}`);
 };
 
 export const getDoorEntranceVariant = (
-  variant?: DoorEntranceVariantId | LegacyDoorEntrancePresetId
+  variant?: DoorEntranceVariantId
 ) => doorEntranceVariantMap[resolveDoorEntranceVariantId(variant)];
 
 const hasFilterFields = (selection: DoorEntranceVariantSelection) =>
@@ -79,6 +98,10 @@ export const resolveDoorEntranceVariantSelection = (
   selection: DoorEntranceVariantSelection = {},
   random = Math.random
 ): DoorEntranceVariant => {
+  if (selection.variant && selection.preset) {
+    throw new Error("Use variant or preset, not both.");
+  }
+
   if (selection.variant) {
     if (hasFilterFields(selection)) {
       throw new Error(
@@ -87,6 +110,16 @@ export const resolveDoorEntranceVariantSelection = (
     }
 
     return getDoorEntranceVariant(selection.variant);
+  }
+
+  if (selection.preset) {
+    if (hasFilterFields(selection)) {
+      throw new Error(
+        "preset already defines type, motion, handle, and material. Remove filter fields or use random selection."
+      );
+    }
+
+    return doorEntranceVariantMap[resolveDoorEntrancePresetId(selection.preset)];
   }
 
   if (!selection.random) {

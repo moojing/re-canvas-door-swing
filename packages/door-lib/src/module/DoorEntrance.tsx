@@ -20,6 +20,7 @@ import {
   DoorAnimationRenderer,
   DoorAnimationState,
   DoorEntrancePresetId,
+  DoorEntranceVariantId,
   DoorEntranceHandle,
   DoorEntranceSoundState,
   HandleProfileId,
@@ -30,7 +31,7 @@ import { doorWood } from "../assets/textures";
 interface DoorEntranceProps {
   /** @deprecated Use variant. */
   preset?: DoorEntrancePresetId;
-  variant?: DoorEntrancePresetId;
+  variant?: DoorEntranceVariantId;
   autoPlay?: boolean;
   className?: string;
   onComplete?: () => void;

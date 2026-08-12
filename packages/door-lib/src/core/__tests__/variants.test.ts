@@ -45,4 +45,29 @@ describe("core door entrance variants", () => {
       /variant already defines type/
     );
   });
+
+  it("maps deprecated preset selection without treating it as a variant", () => {
+    const variant = resolveDoorEntranceVariantSelection({
+      preset: "door-double",
+    });
+
+    assert.equal(variant.id, "double-lever-wood");
+  });
+
+  it("rejects legacy preset aliases passed through variant", () => {
+    assert.throws(
+      () =>
+        resolveDoorEntranceVariantSelection({
+          variant: "door-single" as never,
+        }),
+      /Unknown door entrance variant/
+    );
+  });
+
+  it("rejects unknown variant values instead of falling back", () => {
+    assert.throws(
+      () => getDoorEntranceVariant("missing" as never),
+      /Unknown door entrance variant/
+    );
+  });
 });

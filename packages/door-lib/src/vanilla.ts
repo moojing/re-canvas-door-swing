@@ -6,10 +6,10 @@ import type {
   DoorAnimationConfig,
   DoorAnimationVariant,
   DoorEntranceMotion,
+  DoorEntrancePresetId,
   DoorEntranceSoundState,
   DoorEntranceType,
   DoorEntranceVariant,
-  DoorEntranceVariantId,
   DoorEntranceVariantSelection,
   DoorMaterialId,
   HandleProfileId,
@@ -33,10 +33,10 @@ interface MountDoorEntranceOptions extends DoorEntranceVariantSelection {
 }
 
 interface MountedDoorEntrance {
-  play: (variant?: DoorEntranceVariantId) => void;
+  play: (variant?: DoorEntrancePresetId) => void;
   stop: () => void;
-  reset: (variant?: DoorEntranceVariantId) => void;
-  seek: (progress: number, variant?: DoorEntranceVariantId) => void;
+  reset: (variant?: DoorEntrancePresetId) => void;
+  seek: (progress: number, variant?: DoorEntrancePresetId) => void;
   seekSound: (progress: number) => void;
   unmount: () => void;
 }
@@ -585,9 +585,9 @@ export const mountDoorEntrance = (
     }
   };
 
-  const resolveVariant = (nextVariant?: DoorEntranceVariantId) => {
+  const resolveVariant = (nextVariant?: DoorEntrancePresetId) => {
     activeDoorVariant = nextVariant
-      ? resolveDoorEntranceVariantSelection({ variant: nextVariant })
+      ? resolveDoorEntranceVariantSelection({ preset: nextVariant })
       : activeDoorVariant;
     activeConfig = getDoorAnimationConfig(activeDoorVariant.animation);
     resolvedTextureUrl =

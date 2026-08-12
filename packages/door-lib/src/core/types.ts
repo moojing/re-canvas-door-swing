@@ -49,7 +49,9 @@ export type DoorEntrancePresetId = DoorEntranceVariantId | LegacyDoorEntrancePre
 export type DoorEntrancePreset = DoorEntranceVariant;
 
 export interface DoorEntranceVariantSelection {
-  variant?: DoorEntranceVariantId | LegacyDoorEntrancePresetId;
+  variant?: DoorEntranceVariantId;
+  /** @deprecated Use variant. */
+  preset?: DoorEntrancePresetId;
   random?: boolean;
   type?: DoorEntranceType;
   motion?: DoorEntranceMotion;

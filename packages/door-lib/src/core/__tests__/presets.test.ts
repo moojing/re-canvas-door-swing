@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getDoorEntrancePreset } from "../presets.ts";
+import { doorEntrancePresetMap, getDoorEntrancePreset } from "../presets.ts";
 
 describe("core presets", () => {
   it("maps the legacy single door preset to the default variant", () => {
@@ -10,9 +10,14 @@ describe("core presets", () => {
     assert.equal(preset.variant, "direct-entry");
   });
 
-  it("falls back to the default variant for unknown legacy values", () => {
-    const preset = getDoorEntrancePreset("missing" as never);
+  it("exposes legacy preset aliases from the compatibility map", () => {
+    assert.equal(doorEntrancePresetMap["door-double"].id, "double-lever-wood");
+  });
 
-    assert.equal(preset.id, "single-lever-wood");
+  it("rejects unknown legacy preset values instead of falling back", () => {
+    assert.throws(
+      () => getDoorEntrancePreset("missing" as never),
+      /Unknown door entrance preset/
+    );
   });
 });
