@@ -2,7 +2,7 @@
  * PoC:1-2 a11 重型水門
  *
  * 門體由門板、上下橫樑、中央凸板、閥輪座與閥輪等 primitive 組成。
- * 動畫沿用 door-entrance 的 direct-entry 時間軸(開門 → 前推 → 淡出),不動 lib。
+ * 動畫沿用 retro-horror-door 的 direct-entry 時間軸(開門 → 前推 → 淡出),不動 lib。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -10,7 +10,7 @@ import * as THREE from "three";
 import {
   getDoorAnimationConfig,
   easeInOutCubic,
-} from "door-entrance";
+} from "retro-horror-door";
 import {
   createA11MaterialPixels as generateA11ProceduralMaterials,
 } from "./a11ProceduralMaterials";

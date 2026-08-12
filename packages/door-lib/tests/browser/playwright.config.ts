@@ -3,7 +3,8 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: ".",
   webServer: {
-    command: "npm run dev --workspace door-entrance-sample -- --host 127.0.0.1",
+    command:
+      "npm run dev --workspace retro-horror-door-sample -- --host 127.0.0.1",
     url: "http://127.0.0.1:5173",
     reuseExistingServer: true,
     timeout: 120_000,

@@ -1,5 +1,5 @@
 import "../index.css";
-import { mountDoorEntrance, type DoorEntrancePresetId } from "door-entrance";
+import { mountDoorEntrance, type DoorEntrancePresetId } from "retro-horror-door";
 
 type MountedDoorEntrance = ReturnType<typeof mountDoorEntrance>;
 type DoorEntranceTestApi = {

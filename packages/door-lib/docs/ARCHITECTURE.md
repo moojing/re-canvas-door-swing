@@ -37,7 +37,7 @@ packages/door-lib/
     vanilla.tsx               # legacy React-backed mount helper for the React module surface
   src/index.ts                # default public entry; React-free vanilla API + core exports
   src/vanilla.ts              # React-free vanilla mount API + Three.js renderer
-  src/react.ts                # React adapter public entry (`door-entrance/react`)
+  src/react.ts                # React adapter public entry (`retro-horror-door/react`)
   templates/                  # 額外 scaffold（保留）
   docs/ARCHITECTURE.md        # 本檔
 ```
@@ -63,7 +63,7 @@ export interface DoorAnimationConfig {
 }
 ```
 - 目標契約：`DoorEntrance` 與 React-free `vanilla` renderer 應只依賴這層，適合時間軸驅動的開門動畫。
-- 目前狀態：`door-entrance` 預設匯出 DOM + Three.js 的 vanilla renderer；`door-entrance/vanilla` 保留為相容別名。兩者都不透過 React、React DOM 或 R3F 掛載；React support 應留在 `door-entrance/react` adapter surface。
+- 目前狀態：`retro-horror-door` 預設匯出 DOM + Three.js 的 vanilla renderer；`retro-horror-door/vanilla` 保留為相容別名。兩者都不透過 React、React DOM 或 R3F 掛載；React support 應留在 `retro-horror-door/react` adapter surface。
 
 ### 2) 擴充版契約（預留，未接線）
 適用你列出的「singleSwing / doubleSwing / stairTransition…」：
@@ -131,7 +131,7 @@ verification path: library typecheck, library build, and core tests.
 ### Package Boundary Tests
 Run `npm run test:lib:package` to build the package and inspect the published
 entrypoints. The boundary tests protect the public export surface and require
-the default `door-entrance` entry plus `door-entrance/vanilla` output graphs to
+the default `retro-horror-door` entry plus `retro-horror-door/vanilla` output graphs to
 stay React-free.
 
 `npm run verify:lib:boundary` currently runs this package-boundary layer and

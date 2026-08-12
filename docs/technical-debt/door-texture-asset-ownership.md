@@ -6,7 +6,7 @@ Status: **Implemented** (see Implementation Notes below)
 
 ## Summary
 
-The `door-entrance` library currently defaults to a texture path of
+The `retro-horror-door` library currently defaults to a texture path of
 `textures/door-1.png`, but the actual file is hosted by the sample app at
 `packages/sample/public/textures/door-1.png`.
 

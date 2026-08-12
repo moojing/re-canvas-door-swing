@@ -2,10 +2,10 @@ import ReactSample from "@/sample/ReactSample";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { doorEntrancePresets } from "door-entrance";
+import { doorEntrancePresets } from "retro-horror-door";
 import { Link } from "react-router-dom";
 
-const reactSnippet = `import { DoorEntrance } from 'door-entrance/react';
+const reactSnippet = `import { DoorEntrance } from 'retro-horror-door/react';
 
 export const LandingGate = () => (
   <DoorEntrance
@@ -16,7 +16,7 @@ export const LandingGate = () => (
 
 const htmlSnippet = `<div id="door-root"></div>
 <script type="module">
-  import { mountDoorEntrance } from 'door-entrance';
+  import { mountDoorEntrance } from 'retro-horror-door';
 
   mountDoorEntrance({
     target: document.getElementById('door-root'),

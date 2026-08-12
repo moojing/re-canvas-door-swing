@@ -1,9 +1,9 @@
-# Door Entrance Monorepo
+# Retro Horror Door Monorepo
 
 Two-package workspace:
 
-- `packages/door-lib` (`door-entrance`): reusable React/R3F door entrance animations (`direct-entry`, `top-down-entry`) plus a vanilla mount helper.
-- `packages/sample` (`door-entrance-sample`): Vite app showcasing React integration and a plain HTML sample at `/samples/vanilla.html`.
+- `packages/door-lib` (`retro-horror-door`): reusable retro horror door transitions. The default package entry is vanilla JS with a React adapter at `retro-horror-door/react`.
+- `packages/sample` (`retro-horror-door-sample`): Vite app showcasing React integration and a plain HTML sample at `/samples/vanilla.html`.
 
 ## Quick start
 
@@ -28,7 +28,7 @@ vanilla-first while React support remains separate:
 - `npm run test:lib:core` covers framework-free animation state, presets, sound,
   and controller behavior.
 - `npm run test:lib:package` checks public package exports and verifies the
-  `door-entrance/vanilla` output graph is React-free.
+  default `retro-horror-door` entry and `retro-horror-door/vanilla` output graphs are React-free.
 - `npm run test:lib:browser` runs a browser smoke test for the plain HTML sample:
   mount, canvas rendering, controls, and lifecycle cleanup.
 - `npm run verify:lib` / `npm run verify:lib:core` run the current green core
@@ -37,11 +37,9 @@ vanilla-first while React support remains separate:
 - `npm run verify:lib:browser` runs core verification plus the browser smoke
   tests.
 
-Current expected status: `npm run verify:lib:core` passes now. Browser
-verification requires local dev server binding and a Playwright browser runtime.
-Boundary verification is expected to fail until the separate React-free vanilla
-renderer migration is complete, because the current `door-entrance/vanilla`
-entry is still React-backed.
+Current expected status: `npm run verify:lib:core` and
+`npm run verify:lib:boundary` pass. Browser verification requires local dev
+server binding and a Playwright browser runtime.
 
 React behavior should be tested separately when a React adapter exists. Vanilla
 tests must not require React, React DOM, or R3F.
@@ -62,10 +60,21 @@ check is stale.
 ## Using the library
 
 ```tsx
-import { DoorEntrance } from "door-entrance";
+import { mountDoorEntrance } from "retro-horror-door";
+
+mountDoorEntrance({
+  target: document.getElementById("door-root"),
+  variant: "direct-entry",
+});
+```
+
+React adapter:
+
+```tsx
+import { DoorEntrance } from "retro-horror-door/react";
 
 <DoorEntrance
-  variant="top-down-entry"    // or "direct-entry"
+  variant="single-top-down-entry"    // or "direct-entry"
   autoPlay
   textureUrl="/textures/door-1.png"
   onComplete={() => console.log("done")}
@@ -77,7 +86,7 @@ Plain HTML:
 ```html
 <div id="door-root"></div>
 <script type="module">
-  import { mountDoorEntrance } from "door-entrance/vanilla";
+  import { mountDoorEntrance } from "retro-horror-door";
   mountDoorEntrance({ target: document.getElementById("door-root"), variant: "direct-entry" });
 </script>
 ```

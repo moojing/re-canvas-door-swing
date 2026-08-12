@@ -1546,7 +1546,7 @@ test("dependency collection recognizes every supported local import form", async
         'export { value } from "./exported";',
         "void import(`./dynamic`);",
         'import "@/aliased";',
-        'import "door-entrance";',
+        'import "retro-horror-door";',
         'import "third-party";',
       ].join("\n"),
     ),
