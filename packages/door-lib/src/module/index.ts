@@ -10,6 +10,7 @@ export type {
   DoorEntranceVariant,
   DoorEntranceVariantId,
   DoorEntranceSoundState,
+  DoorSurfaceTextureUrls,
   DoorMaterialId,
   HandleProfileId,
 } from "./types";

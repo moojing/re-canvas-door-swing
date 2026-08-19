@@ -27,6 +27,7 @@ import {
 } from "./types";
 import { getHandleProfile } from "./handles/profiles";
 import { doorWood } from "../assets/textures";
+import { resolveDoorSurfaceTextureUrls } from "../core/surfaceTextures.ts";
 
 interface DoorEntranceProps {
   /** @deprecated Use variant. */
@@ -104,7 +105,9 @@ const CameraController = ({
 
 const Scene = ({
   state,
-  textureUrl,
+  frontTextureUrl,
+  edgeTextureUrl,
+  backTextureUrl,
   handleModelUrl,
   handleProfileId,
   cameraPanX,
@@ -112,7 +115,9 @@ const Scene = ({
   Renderer,
 }: {
   state: DoorAnimationState;
-  textureUrl: string;
+  frontTextureUrl: string;
+  edgeTextureUrl: string;
+  backTextureUrl: string;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
   cameraPanX: number;
@@ -126,7 +131,9 @@ const Scene = ({
     <pointLight position={[0, 2, 3]} intensity={0.5} color="#ff8844" />
     <Renderer
       state={state}
-      textureUrl={textureUrl}
+      frontTextureUrl={frontTextureUrl}
+      edgeTextureUrl={edgeTextureUrl}
+      backTextureUrl={backTextureUrl}
       handleModelUrl={handleModelUrl}
       handleProfileId={handleProfileId}
     />
@@ -172,8 +179,13 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
       [activePreset]
     );
     const resolvedAnimation = selectedPreset.animation;
-    const resolvedTextureUrl =
-      textureUrl ?? selectedPreset.textureUrl ?? DEFAULT_TEXTURE_URL;
+    const resolvedSurfaceTextureUrls = textureUrl
+      ? {
+          frontTextureUrl: textureUrl,
+          edgeTextureUrl: textureUrl,
+          backTextureUrl: textureUrl,
+        }
+      : resolveDoorSurfaceTextureUrls(selectedPreset, DEFAULT_TEXTURE_URL);
     const resolvedHandleProfileId =
       handleProfileId ?? selectedPreset.handleProfileId ?? "lever-l";
     const resolvedHandleProfile = getHandleProfile(resolvedHandleProfileId);
@@ -197,7 +209,9 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
         state: _state,
       }: {
         state: DoorAnimationState;
-        textureUrl: string;
+        frontTextureUrl: string;
+        edgeTextureUrl: string;
+        backTextureUrl: string;
       }) => (
         <mesh position={[0, 0, 0]}>
           <boxGeometry args={[3, 6, 0.15]} />
@@ -670,7 +684,9 @@ const DoorEntrance = forwardRef<DoorEntranceHandle, DoorEntranceProps>(
         >
           <Scene
             state={state}
-            textureUrl={resolvedTextureUrl}
+            frontTextureUrl={resolvedSurfaceTextureUrls.frontTextureUrl}
+            edgeTextureUrl={resolvedSurfaceTextureUrls.edgeTextureUrl}
+            backTextureUrl={resolvedSurfaceTextureUrls.backTextureUrl}
             handleModelUrl={resolvedHandleModelUrl}
             handleProfileId={resolvedHandleProfileId}
             cameraPanX={cameraPanX}

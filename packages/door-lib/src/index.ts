@@ -21,6 +21,7 @@ export {
   getDoorEntranceVariant,
   resolveDoorEntranceVariantSelection,
 } from "./core/variants.ts";
+export { resolveDoorSurfaceTextureUrls } from "./core/surfaceTextures.ts";
 export type {
   DoorAnimationConfig,
   DoorAnimationState,
@@ -33,6 +34,8 @@ export type {
   DoorEntranceVariantId,
   DoorEntranceVariantSelection,
   DoorEntranceSoundState,
+  DoorSurfaceTextureUrls,
+  ResolvedDoorSurfaceTextureUrls,
   DoorMaterialId,
   HandleProfileId,
   Vector3Tuple,
