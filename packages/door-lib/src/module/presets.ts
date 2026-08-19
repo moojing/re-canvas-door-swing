@@ -12,6 +12,7 @@ import {
   legacyDoorEntrancePresetAliasMap,
   resolveDoorEntrancePresetId,
 } from "../core/variants.ts";
+import { resolveDoorSurfaceTextureUrls } from "../core/surfaceTextures.ts";
 import { doorWood } from "../assets/textures";
 import { doorOpenClose } from "../assets/sounds";
 
@@ -29,7 +30,9 @@ const doorEntranceVariantPresetMap: Record<
     preset.id,
     {
       ...preset,
-      textureUrl: preset.textureUrl ?? DEFAULT_DOOR_TEXTURE,
+      ...resolveDoorSurfaceTextureUrls(preset, DEFAULT_DOOR_TEXTURE),
+      textureUrl:
+        preset.frontTextureUrl ?? preset.textureUrl ?? DEFAULT_DOOR_TEXTURE,
       handleModelUrl: preset.handleModelUrl ?? DEFAULT_HANDLE_MODEL,
       handleProfileId: preset.handleProfileId ?? DEFAULT_HANDLE_PROFILE_ID,
       soundUrl: preset.soundUrl ?? DEFAULT_SINGLE_DOOR_SOUND,

@@ -27,7 +27,15 @@ export type LegacyDoorEntrancePresetId =
   | "door-single-overhead"
   | "door-double";
 
-export interface DoorEntranceVariant {
+export interface DoorSurfaceTextureUrls {
+  frontTextureUrl?: string;
+  edgeTextureUrl?: string;
+  backTextureUrl?: string;
+  /** @deprecated Use frontTextureUrl, edgeTextureUrl, and backTextureUrl. */
+  textureUrl?: string;
+}
+
+export interface DoorEntranceVariant extends DoorSurfaceTextureUrls {
   id: DoorEntranceVariantId;
   label: string;
   type: DoorEntranceType;
@@ -36,7 +44,6 @@ export interface DoorEntranceVariant {
   animation: DoorAnimationVariant;
   /** @deprecated Use animation. Kept for preset compatibility only. */
   variant: DoorAnimationVariant;
-  textureUrl?: string;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
   soundUrl?: string;
@@ -60,7 +67,9 @@ export interface DoorAnimationState {
 
 export type DoorAnimationRenderer = (props: {
   state: DoorAnimationState;
-  textureUrl: string;
+  frontTextureUrl: string;
+  edgeTextureUrl: string;
+  backTextureUrl: string;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
 }) => JSX.Element;

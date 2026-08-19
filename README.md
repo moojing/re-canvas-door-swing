@@ -105,6 +105,10 @@ Plain HTML:
 ```
 
 Runtime variant entries contain only playable library settings such as type,
-motion, handle, material, sound, and camera behavior. Source videos,
+motion, handle, material, sound, and camera behavior. A variant can also
+provide `frontTextureUrl`, `edgeTextureUrl`, and `backTextureUrl`: when edge
+or back is absent it inherits the front texture. The legacy `textureUrl`
+field remains supported and applies the same texture to all three surfaces.
+Source videos,
 classification notes, and thumbnail references belong in development tracking
 docs and are not shipped in the npm package.

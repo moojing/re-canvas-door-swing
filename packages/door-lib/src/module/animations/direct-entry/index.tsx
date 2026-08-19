@@ -17,31 +17,36 @@ export const directEntryConfig: DoorAnimationConfig = coreDirectEntryConfig;
 const SingleDoor = ({
   doorAngle,
   handleAngle,
-  textureUrl,
+  frontTextureUrl,
+  edgeTextureUrl,
+  backTextureUrl,
   handleModelUrl,
   handleProfileId,
 }: {
   doorAngle: number;
   handleAngle: number;
-  textureUrl: string;
+  frontTextureUrl: string;
+  edgeTextureUrl: string;
+  backTextureUrl: string;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
 }) => {
   const doorGroupRef = useRef<any>(null);
-  const doorTexture = (useLoader as unknown as any)(
+  const [frontTexture, edgeTexture, backTexture] = (useLoader as unknown as any)(
     THREE.TextureLoader,
-    textureUrl,
-  ) as any;
+    [frontTextureUrl, edgeTextureUrl, backTextureUrl],
+  ) as any[];
 
   useEffect(() => {
-    if (doorTexture) {
-      doorTexture.wrapS = doorTexture.wrapT = THREE.ClampToEdgeWrapping;
-      doorTexture.repeat.set(1, 1);
-      doorTexture.offset.set(0, 0);
-      doorTexture.flipY = false;
-      doorTexture.needsUpdate = true;
-    }
-  }, [doorTexture]);
+    [frontTexture, edgeTexture, backTexture].forEach((texture) => {
+      if (!texture) return;
+      texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.repeat.set(1, 1);
+      texture.offset.set(0, 0);
+      texture.flipY = false;
+      texture.needsUpdate = true;
+    });
+  }, [backTexture, edgeTexture, frontTexture]);
 
   useFrame(() => {
     if (doorGroupRef.current) {
@@ -64,16 +69,16 @@ const SingleDoor = ({
       <group ref={doorGroupRef} position={[-1.5, 0, 0]}>
         <mesh position={[1.5, 0, 0.08]}>
           <boxGeometry args={[3, 6, 0.15]} />
-          <meshLambertMaterial color="#8B4513" />
+          <meshLambertMaterial map={edgeTexture} />
         </mesh>
 
         <mesh position={[1.5, 0, 0.16]}>
           <planeGeometry args={[3, 6]} />
-          <meshLambertMaterial map={doorTexture} />
+          <meshLambertMaterial map={frontTexture} />
         </mesh>
         <mesh position={[1.5, 0, 0]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[3, 6]} />
-          <meshLambertMaterial map={doorTexture} />
+          <meshLambertMaterial map={backTexture} />
         </mesh>
 
         {handleModelUrl ? (
@@ -96,7 +101,9 @@ const SingleDoor = ({
 
 export const DirectEntryRenderer: DoorAnimationRenderer = ({
   state,
-  textureUrl,
+  frontTextureUrl,
+  edgeTextureUrl,
+  backTextureUrl,
   handleModelUrl,
   handleProfileId,
 }) => {
@@ -104,7 +111,9 @@ export const DirectEntryRenderer: DoorAnimationRenderer = ({
     <SingleDoor
       doorAngle={state.doorAngle}
       handleAngle={state.handleAngle ?? 0}
-      textureUrl={textureUrl}
+      frontTextureUrl={frontTextureUrl}
+      edgeTextureUrl={edgeTextureUrl}
+      backTextureUrl={backTextureUrl}
       handleModelUrl={handleModelUrl}
       handleProfileId={handleProfileId}
     />

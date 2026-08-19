@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { getDoorAnimationConfig } from "./core/animationState.ts";
 import { resolveDoorEntranceVariantSelection } from "./core/variants.ts";
+import { resolveDoorSurfaceTextureUrls } from "./core/surfaceTextures.ts";
 import type {
   DoorAnimationState,
   DoorAnimationConfig,
@@ -13,6 +14,7 @@ import type {
   DoorEntranceVariantSelection,
   DoorMaterialId,
   HandleProfileId,
+  ResolvedDoorSurfaceTextureUrls,
 } from "./core/types.ts";
 import { doorWood } from "./assets/textures";
 import { doorOpenClose } from "./assets/sounds";
@@ -92,6 +94,16 @@ const createDoorMaterial = () =>
     metalness: 0.12,
   });
 
+const createDoorMaterials = () =>
+  Array.from({ length: 6 }, () => createDoorMaterial()) as [
+    THREE.MeshStandardMaterial,
+    THREE.MeshStandardMaterial,
+    THREE.MeshStandardMaterial,
+    THREE.MeshStandardMaterial,
+    THREE.MeshStandardMaterial,
+    THREE.MeshStandardMaterial,
+  ];
+
 const createHandleMaterial = () =>
   new THREE.MeshStandardMaterial({
     color: "#74685c",
@@ -110,10 +122,10 @@ class VanillaDoorScene {
   private readonly label = document.createElement("div");
   private readonly resizeObserver?: ResizeObserver;
   private doorRoot = new THREE.Group();
-  private activeTextureUrl?: string;
+  private activeSurfaceTextureKey?: string;
   private activeVariant?: DoorAnimationVariant;
   private activeHandleGroup?: THREE.Group;
-  private baseDoorMaterial = createDoorMaterial();
+  private doorMaterials = createDoorMaterials();
   private handleMaterial = createHandleMaterial();
 
   constructor(className: string) {
@@ -171,23 +183,32 @@ class VanillaDoorScene {
   render({
     state,
     config,
-    textureUrl,
+    surfaceTextureUrls,
     cameraPanX,
     cameraPanY,
   }: {
     state: DoorAnimationState;
     config: DoorAnimationConfig;
-    textureUrl: string;
+    surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls;
     cameraPanX: number;
     cameraPanY: number;
   }) {
     if (
       this.activeVariant !== config.id ||
-      this.activeTextureUrl !== textureUrl
+      this.activeSurfaceTextureKey !==
+        [
+          surfaceTextureUrls.frontTextureUrl,
+          surfaceTextureUrls.edgeTextureUrl,
+          surfaceTextureUrls.backTextureUrl,
+        ].join("|")
     ) {
-      this.rebuildDoor(config.id, textureUrl);
+      this.rebuildDoor(config.id, surfaceTextureUrls);
       this.activeVariant = config.id;
-      this.activeTextureUrl = textureUrl;
+      this.activeSurfaceTextureKey = [
+        surfaceTextureUrls.frontTextureUrl,
+        surfaceTextureUrls.edgeTextureUrl,
+        surfaceTextureUrls.backTextureUrl,
+      ].join("|");
     }
 
     this.applyDoorState(config.id, state);
@@ -202,7 +223,7 @@ class VanillaDoorScene {
     this.resizeObserver?.disconnect();
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
-    this.baseDoorMaterial.dispose();
+    this.doorMaterials.forEach((material) => material.dispose());
     this.handleMaterial.dispose();
     this.renderer.dispose();
     this.element.remove();
@@ -224,21 +245,22 @@ class VanillaDoorScene {
     }
   }
 
-  private rebuildDoor(variant: DoorAnimationVariant, textureUrl: string) {
+  private rebuildDoor(
+    variant: DoorAnimationVariant,
+    surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls
+  ) {
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
     this.doorRoot = new THREE.Group();
     this.scene.add(this.doorRoot);
     this.activeHandleGroup = undefined;
 
-    this.baseDoorMaterial = createDoorMaterial();
+    this.doorMaterials = createDoorMaterials();
     this.handleMaterial = createHandleMaterial();
-    this.textureLoader.load(textureUrl, (texture) => {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      this.baseDoorMaterial.map = texture;
-      this.baseDoorMaterial.needsUpdate = true;
-    });
+    const doorMaterials = this.doorMaterials;
+    this.loadTexture(surfaceTextureUrls.frontTextureUrl, [4], doorMaterials);
+    this.loadTexture(surfaceTextureUrls.edgeTextureUrl, [0, 1, 2, 3], doorMaterials);
+    this.loadTexture(surfaceTextureUrls.backTextureUrl, [5], doorMaterials);
 
     this.addFrame();
 
@@ -273,6 +295,22 @@ class VanillaDoorScene {
     });
     single.name = "single-door";
     this.doorRoot.add(single);
+  }
+
+  private loadTexture(
+    url: string,
+    materialIndexes: number[],
+    materials: typeof this.doorMaterials
+  ) {
+    this.textureLoader.load(url, (texture) => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      materialIndexes.forEach((index) => {
+        const material = materials[index];
+        material.map = texture;
+        material.needsUpdate = true;
+      });
+    });
   }
 
   private addFrame() {
@@ -315,7 +353,7 @@ class VanillaDoorScene {
 
     const door = new THREE.Mesh(
       new THREE.BoxGeometry(width, height, 0.16),
-      this.baseDoorMaterial
+      this.doorMaterials
     );
     const doorOffset = side === "right" ? width / 2 : -pivotX + width / 2 - 1.5;
     door.position.set(side === "left" ? -width / 2 : doorOffset, 0, 0);
@@ -415,8 +453,13 @@ export const mountDoorEntrance = (
   target.append(scene.element);
 
   const audio = document.createElement("audio");
-  let resolvedTextureUrl =
-    options.textureUrl ?? activeDoorVariant.textureUrl ?? DEFAULT_TEXTURE_URL;
+  let resolvedSurfaceTextureUrls = options.textureUrl
+    ? {
+        frontTextureUrl: options.textureUrl,
+        edgeTextureUrl: options.textureUrl,
+        backTextureUrl: options.textureUrl,
+      }
+    : resolveDoorSurfaceTextureUrls(activeDoorVariant, DEFAULT_TEXTURE_URL);
   let resolvedSoundUrl = toPublicAssetUrl(
     options.soundUrl ?? activeDoorVariant.soundUrl ?? DEFAULT_SOUND_URL
   );
@@ -564,7 +607,7 @@ export const mountDoorEntrance = (
     scene.render({
       state,
       config,
-      textureUrl: resolvedTextureUrl,
+      surfaceTextureUrls: resolvedSurfaceTextureUrls,
       cameraPanX: options.cameraPanX ?? 0,
       cameraPanY: options.cameraPanY ?? 0,
     });
@@ -590,8 +633,13 @@ export const mountDoorEntrance = (
       ? resolveDoorEntranceVariantSelection({ preset: nextVariant })
       : activeDoorVariant;
     activeConfig = getDoorAnimationConfig(activeDoorVariant.animation);
-    resolvedTextureUrl =
-      options.textureUrl ?? activeDoorVariant.textureUrl ?? DEFAULT_TEXTURE_URL;
+    resolvedSurfaceTextureUrls = options.textureUrl
+      ? {
+          frontTextureUrl: options.textureUrl,
+          edgeTextureUrl: options.textureUrl,
+          backTextureUrl: options.textureUrl,
+        }
+      : resolveDoorSurfaceTextureUrls(activeDoorVariant, DEFAULT_TEXTURE_URL);
     resolvedSoundUrl = toPublicAssetUrl(
       options.soundUrl ?? activeDoorVariant.soundUrl ?? DEFAULT_SOUND_URL
     );

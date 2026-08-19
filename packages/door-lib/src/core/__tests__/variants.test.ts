@@ -5,6 +5,7 @@ import {
   getDoorEntranceVariant,
   resolveDoorEntranceVariantSelection,
 } from "../variants.ts";
+import { resolveDoorSurfaceTextureUrls } from "../surfaceTextures.ts";
 
 describe("core door entrance variants", () => {
   it("returns a complete playable variant by id", () => {
@@ -23,6 +24,35 @@ describe("core door entrance variants", () => {
       assert.equal("sourceRefs" in variant, false);
       assert.equal("thumbnailRefs" in variant, false);
     }
+  });
+
+  it("resolves missing back and edge textures from the front texture", () => {
+    const textures = resolveDoorSurfaceTextureUrls(
+      {
+        frontTextureUrl: "/textures/door-front.png",
+        edgeTextureUrl: "/textures/door-edge.png",
+      },
+      "/textures/default-door.png"
+    );
+
+    assert.deepEqual(textures, {
+      frontTextureUrl: "/textures/door-front.png",
+      edgeTextureUrl: "/textures/door-edge.png",
+      backTextureUrl: "/textures/door-front.png",
+    });
+  });
+
+  it("keeps the legacy texture URL as the fallback for every door surface", () => {
+    const textures = resolveDoorSurfaceTextureUrls(
+      { textureUrl: "/textures/legacy-door.png" },
+      "/textures/default-door.png"
+    );
+
+    assert.deepEqual(textures, {
+      frontTextureUrl: "/textures/legacy-door.png",
+      edgeTextureUrl: "/textures/legacy-door.png",
+      backTextureUrl: "/textures/legacy-door.png",
+    });
   });
 
   it("resolves random selection from variants matching the requested type", () => {

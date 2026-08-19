@@ -66,6 +66,7 @@ export interface DoorAnimationConfig {
 - 目標契約：`DoorEntrance` 與 React-free `vanilla` renderer 應只依賴這層，適合時間軸驅動的開門動畫。
 - 目前狀態：`retro-horror-door` 預設匯出 DOM + Three.js 的 vanilla renderer；`retro-horror-door/vanilla` 保留為相容別名。兩者都不透過 React、React DOM 或 R3F 掛載；React support 應留在 `retro-horror-door/react` adapter surface。
 - 公開選門 API 使用 `variant`，例如 `single-lever-wood`。`variant` 是一個可播放門變體，內部固定 `type`、`motion`、`handleProfileId`、`material`、animation config、聲音與鏡頭行為。
+- 每個 runtime variant 可指定 `frontTextureUrl`、`edgeTextureUrl`、`backTextureUrl`。未指定側邊或背面時，renderer 會使用正面貼圖；`textureUrl` 僅保留給舊版相容，等同三個面皆使用同一張圖。這些欄位屬於 variant，不提供新的 per-mount 客製欄位。
 - `random: true` 只從可用 runtime variants 中挑選；`type`、`motion`、`handle`、`material` 只在 random mode 作為篩選條件。有明確 `variant` 時不能再混用這些欄位。
 - Runtime variant registry 不包含來源影片、縮圖或分類筆記。這些只存在於 Notion / gallery / dev tracking metadata，不能進 npm package。
 
