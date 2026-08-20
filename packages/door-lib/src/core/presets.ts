@@ -3,6 +3,7 @@ import type {
   DoorEntrancePresetId,
   DoorEntrancePresetSelection,
 } from "./types.ts";
+import { doorWood } from "../assets/textures";
 
 const DEFAULT_PRESET_ID: DoorEntrancePresetId = "single-lever-wood";
 
@@ -16,6 +17,7 @@ export const doorEntrancePresetMap: Record<
     type: "single",
     motion: "hinge-single",
     material: "wood-panel-aged",
+    frontTextureUrl: doorWood,
     animation: "direct-entry",
     handleProfileId: "lever-l",
   },
@@ -25,6 +27,7 @@ export const doorEntrancePresetMap: Record<
     type: "single",
     motion: "hinge-single-overhead",
     material: "wood-panel-aged",
+    frontTextureUrl: doorWood,
     animation: "single-top-down-entry",
     handleProfileId: "lever-l",
   },
@@ -34,6 +37,7 @@ export const doorEntrancePresetMap: Record<
     type: "double",
     motion: "hinge-double",
     material: "wood-panel-aged",
+    frontTextureUrl: doorWood,
     animation: "double-swing",
     handleProfileId: "lever-l",
   },

@@ -104,6 +104,13 @@ const createDoorMaterials = () =>
     THREE.MeshStandardMaterial,
   ];
 
+const createDoorFaceMaterial = () =>
+  new THREE.MeshStandardMaterial({
+    color: "#ffffff",
+    roughness: 0.7,
+    metalness: 0.12,
+  });
+
 const createHandleMaterial = () =>
   new THREE.MeshStandardMaterial({
     color: "#74685c",
@@ -124,9 +131,15 @@ class VanillaDoorScene {
   private doorRoot = new THREE.Group();
   private activeSurfaceTextureKey?: string;
   private activeAnimation?: DoorAnimationId;
-  private activeHandleGroup?: THREE.Group;
+  private activeHandleGroups: Array<{
+    group: THREE.Group;
+    rotationMultiplier: number;
+  }> = [];
   private doorMaterials = createDoorMaterials();
+  private frontDoorMaterial = createDoorFaceMaterial();
+  private backDoorMaterial = createDoorFaceMaterial();
   private handleMaterial = createHandleMaterial();
+  private disposed = false;
 
   constructor(className: string) {
     this.element = document.createElement("div");
@@ -220,10 +233,13 @@ class VanillaDoorScene {
   }
 
   dispose() {
+    this.disposed = true;
     this.resizeObserver?.disconnect();
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
     this.doorMaterials.forEach((material) => material.dispose());
+    this.frontDoorMaterial.dispose();
+    this.backDoorMaterial.dispose();
     this.handleMaterial.dispose();
     this.renderer.dispose();
     this.element.remove();
@@ -253,44 +269,48 @@ class VanillaDoorScene {
     this.scene.remove(this.doorRoot);
     this.doorRoot = new THREE.Group();
     this.scene.add(this.doorRoot);
-    this.activeHandleGroup = undefined;
+    this.activeHandleGroups = [];
 
     this.doorMaterials = createDoorMaterials();
+    this.frontDoorMaterial = createDoorFaceMaterial();
+    this.backDoorMaterial = createDoorFaceMaterial();
     this.handleMaterial = createHandleMaterial();
     const doorMaterials = this.doorMaterials;
-    this.loadTexture(surfaceTextureUrls.frontTextureUrl, [4], doorMaterials);
-    this.loadTexture(surfaceTextureUrls.edgeTextureUrl, [0, 1, 2, 3], doorMaterials);
-    this.loadTexture(surfaceTextureUrls.backTextureUrl, [5], doorMaterials);
-
-    this.addFrame();
+    this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4));
+    this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial]);
+    this.loadTexture(surfaceTextureUrls.backTextureUrl, [this.backDoorMaterial]);
 
     if (animation === "double-swing") {
       const left = this.createDoorLeaf({
-        width: 1.48,
-        height: 5.2,
-        pivotX: 0,
+        width: 3,
+        height: 6,
+        pivotX: -3,
+        doorCenterX: 1.5,
+        handleX: 2.26,
         side: "left",
       });
       left.name = "left-door";
-      left.position.x = -0.02;
       this.doorRoot.add(left);
 
       const right = this.createDoorLeaf({
-        width: 1.48,
-        height: 5.2,
-        pivotX: 0,
+        width: 3,
+        height: 6,
+        pivotX: 3,
+        doorCenterX: -1.5,
+        handleX: -2.26,
         side: "right",
       });
       right.name = "right-door";
-      right.position.x = 0.02;
       this.doorRoot.add(right);
       return;
     }
 
     const single = this.createDoorLeaf({
       width: 3,
-      height: 5.2,
+      height: 6,
       pivotX: -1.5,
+      doorCenterX: 1.5,
+      handleX: 2.26,
       side: "single",
     });
     single.name = "single-door";
@@ -299,53 +319,39 @@ class VanillaDoorScene {
 
   private loadTexture(
     url: string,
-    materialIndexes: number[],
-    materials: typeof this.doorMaterials
+    materials: THREE.MeshStandardMaterial[]
   ) {
     this.textureLoader.load(url, (texture) => {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      materialIndexes.forEach((index) => {
-        const material = materials[index];
+      if (this.disposed) {
+        texture.dispose();
+        return;
+      }
+
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.flipY = false;
+      texture.needsUpdate = true;
+      materials.forEach((material) => {
         material.map = texture;
         material.needsUpdate = true;
       });
+      this.renderer.render(this.scene, this.camera);
     });
-  }
-
-  private addFrame() {
-    const frameMaterial = new THREE.MeshStandardMaterial({
-      color: "#171717",
-      roughness: 0.85,
-      metalness: 0.15,
-    });
-    const top = new THREE.Mesh(new THREE.BoxGeometry(3.55, 0.28, 0.28), frameMaterial);
-    top.position.set(0, 2.75, -0.08);
-    const left = new THREE.Mesh(new THREE.BoxGeometry(0.28, 5.6, 0.28), frameMaterial);
-    left.position.set(-1.78, 0, -0.08);
-    const right = new THREE.Mesh(new THREE.BoxGeometry(0.28, 5.6, 0.28), frameMaterial);
-    right.position.set(1.78, 0, -0.08);
-    const floor = new THREE.Mesh(
-      new THREE.BoxGeometry(5.2, 0.08, 4),
-      new THREE.MeshStandardMaterial({
-        color: "#24211e",
-        roughness: 0.8,
-        metalness: 0.08,
-      })
-    );
-    floor.position.set(0, -2.72, 0.8);
-    this.doorRoot.add(top, left, right, floor);
   }
 
   private createDoorLeaf({
     width,
     height,
     pivotX,
+    doorCenterX,
+    handleX,
     side,
   }: {
     width: number;
     height: number;
     pivotX: number;
+    doorCenterX: number;
+    handleX: number;
     side: "single" | "left" | "right";
   }) {
     const pivot = new THREE.Group();
@@ -355,27 +361,26 @@ class VanillaDoorScene {
       new THREE.BoxGeometry(width, height, 0.16),
       this.doorMaterials
     );
-    const doorOffset = side === "right" ? width / 2 : -pivotX + width / 2 - 1.5;
-    door.position.set(side === "left" ? -width / 2 : doorOffset, 0, 0);
+    door.position.set(doorCenterX, 0, 0.08);
     pivot.add(door);
 
-    const bevel = new THREE.Mesh(
-      new THREE.BoxGeometry(width * 0.82, height * 0.72, 0.04),
-      new THREE.MeshStandardMaterial({
-        color: "#000000",
-        roughness: 0.85,
-        metalness: 0.05,
-        transparent: true,
-        opacity: 0.22,
-      })
+    const front = new THREE.Mesh(
+      new THREE.PlaneGeometry(width, height),
+      this.frontDoorMaterial
     );
-    bevel.position.set(door.position.x, 0, 0.105);
-    pivot.add(bevel);
+    front.position.set(doorCenterX, 0, 0.161);
+    pivot.add(front);
+
+    const back = new THREE.Mesh(
+      new THREE.PlaneGeometry(width, height),
+      this.backDoorMaterial
+    );
+    back.position.set(doorCenterX, 0, -0.001);
+    back.rotation.y = Math.PI;
+    pivot.add(back);
 
     const handleGroup = new THREE.Group();
-    const handleX =
-      side === "left" ? -width + 0.32 : side === "right" ? width - 0.32 : 1.08;
-    handleGroup.position.set(handleX, -0.1, 0.22);
+    handleGroup.position.set(handleX, -0.02, 0.22);
     const stem = new THREE.Mesh(
       new THREE.CylinderGeometry(0.08, 0.08, 0.12, 24),
       this.handleMaterial
@@ -389,29 +394,30 @@ class VanillaDoorScene {
     handleGroup.add(stem, lever);
     pivot.add(handleGroup);
 
-    if (side === "single" || side === "right") {
-      this.activeHandleGroup = handleGroup;
-    }
+    this.activeHandleGroups.push({
+      group: handleGroup,
+      rotationMultiplier: side === "left" ? 1 : -1,
+    });
 
     return pivot;
   }
 
   private applyDoorState(animation: DoorAnimationId, state: DoorAnimationState) {
-    const maxAngle = Math.PI * 0.58;
+    const maxAngle = Math.PI / 2;
     const left = this.doorRoot.getObjectByName("left-door");
     const right = this.doorRoot.getObjectByName("right-door");
     const single = this.doorRoot.getObjectByName("single-door");
 
     if (animation === "double-swing") {
-      if (left) left.rotation.y = state.doorAngle * maxAngle;
-      if (right) right.rotation.y = -(state.rightDoorAngle ?? state.doorAngle) * maxAngle;
+      if (left) left.rotation.y = -state.doorAngle * maxAngle;
+      if (right) right.rotation.y = (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
     } else if (single) {
       single.rotation.y = -state.doorAngle * maxAngle;
     }
 
-    if (this.activeHandleGroup) {
-      this.activeHandleGroup.rotation.z = -(state.handleAngle ?? 0);
-    }
+    this.activeHandleGroups.forEach(({ group, rotationMultiplier }) => {
+      group.rotation.z = (state.handleAngle ?? 0) * rotationMultiplier;
+    });
   }
 
   private applyCameraState(
@@ -445,6 +451,8 @@ export const mountDoorEntrance = (
   let soundFrame: number | null = null;
   let audioDelayTimer: number | null = null;
   let soundStarted = false;
+  let soundUnlocked = false;
+  let soundUnlocking: Promise<boolean> | null = null;
   let disposed = false;
 
   const scene = new VanillaDoorScene(
@@ -587,6 +595,35 @@ export const mountDoorEntrance = (
     soundStarted = false;
   };
 
+  const unlockSound = () => {
+    if (!resolvedSoundUrl || soundUnlocked) {
+      return Promise.resolve(soundUnlocked);
+    }
+
+    if (soundUnlocking) return soundUnlocking;
+
+    const wasMuted = audio.muted;
+    audio.muted = true;
+    soundUnlocking = audio
+      .play()
+      .then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = wasMuted;
+        soundUnlocked = true;
+        return true;
+      })
+      .catch(() => {
+        audio.muted = wasMuted;
+        return false;
+      })
+      .finally(() => {
+        soundUnlocking = null;
+      });
+
+    return soundUnlocking;
+  };
+
   const resetSound = () => {
     audio.pause();
     if (Number.isFinite(audio.duration) && audio.duration > 0) {
@@ -646,6 +683,7 @@ export const mountDoorEntrance = (
     if (resolvedSoundUrl && audio.src !== resolvedSoundUrl) {
       audio.src = resolvedSoundUrl;
       audio.preload = "auto";
+      soundUnlocked = false;
     }
     return activeConfig;
   };
@@ -654,26 +692,38 @@ export const mountDoorEntrance = (
     clearAudioDelayTimer();
     soundStarted = false;
 
-    if (!resolvedSoundUrl || !Number.isFinite(audio.duration) || audio.duration <= 0) {
+    if (!resolvedSoundUrl) {
       emitSoundProgress();
       return;
     }
 
     const { startProgress: soundStartProgress } = getSoundWindow(config);
     const playNow = () => {
-      syncSoundToTimelineProgress(
-        Math.max(startProgress, soundStartProgress),
-        config
-      );
-      void audio
-        .play()
-        .then(() => {
-          soundStarted = true;
-          startSoundLoop();
-        })
-        .catch(() => {
-          soundStarted = false;
+      const startPlayback = () => {
+        syncSoundToTimelineProgress(
+          Math.max(startProgress, soundStartProgress),
+          config
+        );
+        void audio
+          .play()
+          .then(() => {
+            syncSoundToTimelineProgress(progress, config);
+            soundStarted = true;
+            startSoundLoop();
+          })
+          .catch(() => {
+            soundStarted = false;
+          });
+      };
+
+      if (!soundUnlocked) {
+        void unlockSound().then((unlocked) => {
+          if (unlocked && !disposed && isAnimating) startPlayback();
         });
+        return;
+      }
+
+      startPlayback();
     };
 
     if (startProgress >= soundStartProgress) {
@@ -698,6 +748,7 @@ export const mountDoorEntrance = (
         renderProgress(startProgress, config);
       }
 
+      void unlockSound();
       playSoundForTimeline(startProgress, config);
       const duration = Math.max(config.duration * (1 - startProgress), 1);
       const startTime = performance.now();

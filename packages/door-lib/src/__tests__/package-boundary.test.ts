@@ -224,6 +224,24 @@ describe("package boundary", () => {
     assert.doesNotMatch(declaration, /getDoorEntranceVariant/);
   });
 
+  it("keeps the vanilla renderer limited to the door and its handle", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.doesNotMatch(source, /addFrame/);
+    assert.doesNotMatch(source, /new THREE\.BoxGeometry\(5\.2, 0\.08, 4\)/);
+  });
+
+  it("keeps vanilla hinge geometry aligned with the original door behavior", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.match(source, /width: 3,\s+height: 6,\s+pivotX: -1\.5/);
+    assert.match(source, /width: 3,\s+height: 6,\s+pivotX: -3/);
+    assert.match(source, /width: 3,\s+height: 6,\s+pivotX: 3/);
+    assert.match(source, /const maxAngle = Math\.PI \/ 2/);
+    assert.match(source, /new THREE\.PlaneGeometry\(width, height\)/);
+    assert.doesNotMatch(source, /width: 1\.48/);
+  });
+
   it("keeps the full vanilla output graph React-free", () => {
     assertOutputGraphReactFree({
       label: "vanilla",

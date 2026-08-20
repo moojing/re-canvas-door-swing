@@ -57,3 +57,18 @@ test("vanilla sample renders and responds to playback controls", async ({
   await page.evaluate(() => window.__doorEntranceTestApi__?.unmount());
   await expect(canvas).toHaveCount(0);
 });
+
+test("vanilla sample starts the door sound after a user plays the animation", async ({
+  page,
+}) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+
+  await page.locator("#door-play").click();
+
+  await expect
+    .poll(async () =>
+      page.locator("audio").evaluate((audio) => !audio.paused)
+    )
+    .toBe(true);
+});
