@@ -1,7 +1,7 @@
 import type {
   DoorAnimationConfig,
   DoorAnimationState,
-  DoorAnimationVariant,
+  DoorAnimationId,
   HandleProfileId,
 } from "./types.ts";
 
@@ -97,8 +97,8 @@ const handleMotionByProfile: Record<
   HandleProfileId,
   {
     maxPressAngleDeg: number;
-    timingsByVariant: Record<
-      DoorAnimationVariant,
+    timingsByAnimation: Record<
+      DoorAnimationId,
       {
         pressStart?: number;
         pressEnd: number;
@@ -114,7 +114,7 @@ const handleMotionByProfile: Record<
 > = {
   "lever-l": {
     maxPressAngleDeg: 60,
-    timingsByVariant: {
+    timingsByAnimation: {
       "direct-entry": {
         pressStart: 0.27,
         pressEnd: 0.36,
@@ -149,7 +149,7 @@ const handleMotionByProfile: Record<
   },
   "knob-round": {
     maxPressAngleDeg: 38,
-    timingsByVariant: {
+    timingsByAnimation: {
       "direct-entry": {
         pressStart: 0.3,
         pressEnd: 0.4,
@@ -186,17 +186,17 @@ const handleMotionByProfile: Record<
 
 const getHandlePressAngle = ({
   profileId = DEFAULT_HANDLE_PROFILE_ID,
-  variant,
+  animation,
   progress,
 }: {
   profileId?: HandleProfileId;
-  variant: DoorAnimationVariant;
+  animation: DoorAnimationId;
   progress: number;
 }) => {
   const profile =
     handleMotionByProfile[profileId] ??
     handleMotionByProfile[DEFAULT_HANDLE_PROFILE_ID];
-  const timing = profile.timingsByVariant[variant];
+  const timing = profile.timingsByAnimation[animation];
   const normalized = getHandlePressWithBounce(progress, timing);
   return normalized * ((profile.maxPressAngleDeg * Math.PI) / 180);
 };
@@ -219,7 +219,7 @@ export const directEntryConfig: DoorAnimationConfig = {
     let fadeOut = 0;
     const handleAngle = getHandlePressAngle({
       profileId: context?.handleProfileId,
-      variant: "direct-entry",
+      animation: "direct-entry",
       progress: handleProgress,
     });
 
@@ -270,7 +270,7 @@ export const singleTopDownConfig: DoorAnimationConfig = {
     let fadeOut = 0;
     const handleAngle = getHandlePressAngle({
       profileId: context?.handleProfileId,
-      variant: "single-top-down-entry",
+      animation: "single-top-down-entry",
       progress: handleProgress,
     });
 
@@ -330,7 +330,7 @@ export const doubleSwingConfig: DoorAnimationConfig = {
     let fadeOut = 0;
     const handleAngle = getHandlePressAngle({
       profileId: context?.handleProfileId,
-      variant: "double-swing",
+      animation: "double-swing",
       progress: handleProgress,
     });
 
@@ -375,12 +375,12 @@ export const doorAnimationConfigs: DoorAnimationConfig[] = [
   doubleSwingConfig,
 ];
 
-export const doorAnimationMap: Record<DoorAnimationVariant, DoorAnimationConfig> =
+export const doorAnimationMap: Record<DoorAnimationId, DoorAnimationConfig> =
   doorAnimationConfigs.reduce(
     (acc, config) => ({ ...acc, [config.id]: config }),
-    {} as Record<DoorAnimationVariant, DoorAnimationConfig>
+    {} as Record<DoorAnimationId, DoorAnimationConfig>
   );
 
 export const getDoorAnimationConfig = (
-  variant: DoorAnimationVariant = "direct-entry"
-) => doorAnimationMap[variant] ?? doorAnimationConfigs[0];
+  animation: DoorAnimationId = "direct-entry"
+) => doorAnimationMap[animation] ?? doorAnimationConfigs[0];

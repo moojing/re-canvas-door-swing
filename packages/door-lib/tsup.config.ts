@@ -10,7 +10,6 @@ const sharedOptions = {
   loader: {
     ".png": "copy",
     ".mp3": "copy",
-    ".glb": "copy",
   },
 };
 
@@ -23,11 +22,6 @@ export default defineConfig([
   {
     ...sharedOptions,
     entry: ["src/vanilla.ts"],
-    clean: false,
-  },
-  {
-    ...sharedOptions,
-    entry: ["src/react.ts"],
     clean: false,
   },
 ]);

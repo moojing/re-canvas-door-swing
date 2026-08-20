@@ -1,17 +1,17 @@
 import * as THREE from "three";
 import { getDoorAnimationConfig } from "./core/animationState.ts";
-import { resolveDoorEntranceVariantSelection } from "./core/variants.ts";
+import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
 import { resolveDoorSurfaceTextureUrls } from "./core/surfaceTextures.ts";
 import type {
   DoorAnimationState,
   DoorAnimationConfig,
-  DoorAnimationVariant,
+  DoorAnimationId,
   DoorEntranceMotion,
   DoorEntrancePresetId,
   DoorEntranceSoundState,
   DoorEntranceType,
-  DoorEntranceVariant,
-  DoorEntranceVariantSelection,
+  DoorEntrancePreset,
+  DoorEntrancePresetSelection,
   DoorMaterialId,
   HandleProfileId,
   ResolvedDoorSurfaceTextureUrls,
@@ -19,7 +19,7 @@ import type {
 import { doorWood } from "./assets/textures";
 import { doorOpenClose } from "./assets/sounds";
 
-interface MountDoorEntranceOptions extends DoorEntranceVariantSelection {
+interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
   target: HTMLElement | null;
   autoPlay?: boolean;
   className?: string;
@@ -35,10 +35,10 @@ interface MountDoorEntranceOptions extends DoorEntranceVariantSelection {
 }
 
 interface MountedDoorEntrance {
-  play: (variant?: DoorEntrancePresetId) => void;
+  play: (preset?: DoorEntrancePresetId) => void;
   stop: () => void;
-  reset: (variant?: DoorEntrancePresetId) => void;
-  seek: (progress: number, variant?: DoorEntrancePresetId) => void;
+  reset: (preset?: DoorEntrancePresetId) => void;
+  seek: (progress: number, preset?: DoorEntrancePresetId) => void;
   seekSound: (progress: number) => void;
   unmount: () => void;
 }
@@ -123,7 +123,7 @@ class VanillaDoorScene {
   private readonly resizeObserver?: ResizeObserver;
   private doorRoot = new THREE.Group();
   private activeSurfaceTextureKey?: string;
-  private activeVariant?: DoorAnimationVariant;
+  private activeAnimation?: DoorAnimationId;
   private activeHandleGroup?: THREE.Group;
   private doorMaterials = createDoorMaterials();
   private handleMaterial = createHandleMaterial();
@@ -194,7 +194,7 @@ class VanillaDoorScene {
     cameraPanY: number;
   }) {
     if (
-      this.activeVariant !== config.id ||
+      this.activeAnimation !== config.id ||
       this.activeSurfaceTextureKey !==
         [
           surfaceTextureUrls.frontTextureUrl,
@@ -203,7 +203,7 @@ class VanillaDoorScene {
         ].join("|")
     ) {
       this.rebuildDoor(config.id, surfaceTextureUrls);
-      this.activeVariant = config.id;
+      this.activeAnimation = config.id;
       this.activeSurfaceTextureKey = [
         surfaceTextureUrls.frontTextureUrl,
         surfaceTextureUrls.edgeTextureUrl,
@@ -246,7 +246,7 @@ class VanillaDoorScene {
   }
 
   private rebuildDoor(
-    variant: DoorAnimationVariant,
+    animation: DoorAnimationId,
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls
   ) {
     disposeObject(this.doorRoot);
@@ -264,7 +264,7 @@ class VanillaDoorScene {
 
     this.addFrame();
 
-    if (variant === "double-swing") {
+    if (animation === "double-swing") {
       const left = this.createDoorLeaf({
         width: 1.48,
         height: 5.2,
@@ -396,13 +396,13 @@ class VanillaDoorScene {
     return pivot;
   }
 
-  private applyDoorState(variant: DoorAnimationVariant, state: DoorAnimationState) {
+  private applyDoorState(animation: DoorAnimationId, state: DoorAnimationState) {
     const maxAngle = Math.PI * 0.58;
     const left = this.doorRoot.getObjectByName("left-door");
     const right = this.doorRoot.getObjectByName("right-door");
     const single = this.doorRoot.getObjectByName("single-door");
 
-    if (variant === "double-swing") {
+    if (animation === "double-swing") {
       if (left) left.rotation.y = state.doorAngle * maxAngle;
       if (right) right.rotation.y = -(state.rightDoorAngle ?? state.doorAngle) * maxAngle;
     } else if (single) {
@@ -436,8 +436,8 @@ export const mountDoorEntrance = (
     throw new Error("mountDoorEntrance: target element is required");
   }
 
-  let activeDoorVariant = resolveDoorEntranceVariantSelection(options);
-  let activeConfig = getDoorAnimationConfig(activeDoorVariant.animation);
+  let activeDoorPreset = resolveDoorEntrancePresetSelection(options);
+  let activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
   let progress = 0;
   let isAnimating = false;
   let didComplete = false;
@@ -448,7 +448,7 @@ export const mountDoorEntrance = (
   let disposed = false;
 
   const scene = new VanillaDoorScene(
-    options.className ?? activeDoorVariant.className ?? DEFAULT_CLASS_NAME
+    options.className ?? activeDoorPreset.className ?? DEFAULT_CLASS_NAME
   );
   target.append(scene.element);
 
@@ -459,9 +459,9 @@ export const mountDoorEntrance = (
         edgeTextureUrl: options.textureUrl,
         backTextureUrl: options.textureUrl,
       }
-    : resolveDoorSurfaceTextureUrls(activeDoorVariant, DEFAULT_TEXTURE_URL);
+    : resolveDoorSurfaceTextureUrls(activeDoorPreset, DEFAULT_TEXTURE_URL);
   let resolvedSoundUrl = toPublicAssetUrl(
-    options.soundUrl ?? activeDoorVariant.soundUrl ?? DEFAULT_SOUND_URL
+    options.soundUrl ?? activeDoorPreset.soundUrl ?? DEFAULT_SOUND_URL
   );
 
   if (resolvedSoundUrl) {
@@ -602,7 +602,7 @@ export const mountDoorEntrance = (
     const state = config.getState(easedProgress, {
       linearProgress: progress,
       handleProfileId:
-        activeDoorVariant.handleProfileId ?? "lever-l",
+        activeDoorPreset.handleProfileId ?? "lever-l",
     });
     scene.render({
       state,
@@ -628,20 +628,20 @@ export const mountDoorEntrance = (
     }
   };
 
-  const resolveVariant = (nextVariant?: DoorEntrancePresetId) => {
-    activeDoorVariant = nextVariant
-      ? resolveDoorEntranceVariantSelection({ preset: nextVariant })
-      : activeDoorVariant;
-    activeConfig = getDoorAnimationConfig(activeDoorVariant.animation);
+  const resolvePreset = (nextPreset?: DoorEntrancePresetId) => {
+    activeDoorPreset = nextPreset
+      ? resolveDoorEntrancePresetSelection({ preset: nextPreset })
+      : activeDoorPreset;
+    activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
     resolvedSurfaceTextureUrls = options.textureUrl
       ? {
           frontTextureUrl: options.textureUrl,
           edgeTextureUrl: options.textureUrl,
           backTextureUrl: options.textureUrl,
         }
-      : resolveDoorSurfaceTextureUrls(activeDoorVariant, DEFAULT_TEXTURE_URL);
+      : resolveDoorSurfaceTextureUrls(activeDoorPreset, DEFAULT_TEXTURE_URL);
     resolvedSoundUrl = toPublicAssetUrl(
-      options.soundUrl ?? activeDoorVariant.soundUrl ?? DEFAULT_SOUND_URL
+      options.soundUrl ?? activeDoorPreset.soundUrl ?? DEFAULT_SOUND_URL
     );
     if (resolvedSoundUrl && audio.src !== resolvedSoundUrl) {
       audio.src = resolvedSoundUrl;
@@ -689,10 +689,10 @@ export const mountDoorEntrance = (
   };
 
   const api: MountedDoorEntrance = {
-    play: (variant) => {
+    play: (preset) => {
       if (disposed || isAnimating) return;
 
-      const config = resolveVariant(variant);
+      const config = resolvePreset(preset);
       const startProgress = progress >= 1 ? 0 : progress;
       if (startProgress !== progress) {
         renderProgress(startProgress, config);
@@ -737,23 +737,23 @@ export const mountDoorEntrance = (
       pauseSound();
       emitSoundProgress();
     },
-    reset: (variant) => {
+    reset: (preset) => {
       if (disposed) return;
       cancelAnimationLoop();
       isAnimating = false;
       clearAudioDelayTimer();
       resetSound();
-      const config = resolveVariant(variant);
+      const config = resolvePreset(preset);
       didComplete = false;
       renderProgress(0, config);
     },
-    seek: (nextProgress, variant) => {
+    seek: (nextProgress, preset) => {
       if (disposed) return;
       cancelAnimationLoop();
       isAnimating = false;
       clearAudioDelayTimer();
       pauseSound();
-      const config = resolveVariant(variant);
+      const config = resolvePreset(preset);
       renderProgress(nextProgress, config);
       syncSoundToTimelineProgress(clampProgress(nextProgress), config);
     },

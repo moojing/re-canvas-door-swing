@@ -1,28 +1,29 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  doorEntranceVariants,
-  getDoorEntranceVariant,
-  resolveDoorEntranceVariantSelection,
-} from "../variants.ts";
+  doorEntrancePresetMap,
+  doorEntrancePresets,
+  getDoorEntrancePreset,
+  resolveDoorEntrancePresetSelection,
+} from "../presets.ts";
 import { resolveDoorSurfaceTextureUrls } from "../surfaceTextures.ts";
 
-describe("core door entrance variants", () => {
-  it("returns a complete playable variant by id", () => {
-    const variant = getDoorEntranceVariant("single-lever-wood");
+describe("core door entrance presets", () => {
+  it("returns a complete playable preset by id", () => {
+    const preset = getDoorEntrancePreset("single-lever-wood");
 
-    assert.equal(variant.id, "single-lever-wood");
-    assert.equal(variant.type, "single");
-    assert.equal(variant.motion, "hinge-single");
-    assert.equal(variant.handleProfileId, "lever-l");
-    assert.equal(variant.material, "wood-panel-aged");
-    assert.equal(variant.animation, "direct-entry");
+    assert.equal(preset.id, "single-lever-wood");
+    assert.equal(preset.type, "single");
+    assert.equal(preset.motion, "hinge-single");
+    assert.equal(preset.handleProfileId, "lever-l");
+    assert.equal(preset.material, "wood-panel-aged");
+    assert.equal(preset.animation, "direct-entry");
   });
 
   it("keeps source references out of the runtime registry", () => {
-    for (const variant of doorEntranceVariants) {
-      assert.equal("sourceRefs" in variant, false);
-      assert.equal("thumbnailRefs" in variant, false);
+    for (const preset of doorEntrancePresets) {
+      assert.equal("sourceRefs" in preset, false);
+      assert.equal("thumbnailRefs" in preset, false);
     }
   });
 
@@ -55,49 +56,40 @@ describe("core door entrance variants", () => {
     });
   });
 
-  it("resolves random selection from variants matching the requested type", () => {
-    const variant = resolveDoorEntranceVariantSelection(
+  it("resolves random selection from presets matching the requested type", () => {
+    const preset = resolveDoorEntrancePresetSelection(
       { random: true, type: "double" },
       () => 0
     );
 
-    assert.equal(variant.id, "double-lever-wood");
-    assert.equal(variant.type, "double");
+    assert.equal(preset.id, "double-lever-wood");
+    assert.equal(preset.type, "double");
   });
 
-  it("does not allow variant with filter fields", () => {
+  it("does not allow a named preset with filter fields", () => {
     assert.throws(
       () =>
-        resolveDoorEntranceVariantSelection({
-          variant: "single-lever-wood",
+        resolveDoorEntrancePresetSelection({
+          preset: "single-lever-wood",
           type: "single",
         }),
-      /variant already defines type/
+      /preset already defines type/
     );
   });
 
-  it("maps deprecated preset selection without treating it as a variant", () => {
-    const variant = resolveDoorEntranceVariantSelection({
-      preset: "door-double",
-    });
+  it("does not expose legacy door aliases", () => {
+    assert.equal("door-single" in doorEntrancePresetMap, false);
 
-    assert.equal(variant.id, "double-lever-wood");
-  });
-
-  it("rejects legacy preset aliases passed through variant", () => {
     assert.throws(
-      () =>
-        resolveDoorEntranceVariantSelection({
-          variant: "door-single" as never,
-        }),
-      /Unknown door entrance variant/
+      () => getDoorEntrancePreset("door-single" as never),
+      /Unknown door entrance preset/
     );
   });
 
-  it("rejects unknown variant values instead of falling back", () => {
+  it("rejects unknown preset values instead of falling back", () => {
     assert.throws(
-      () => getDoorEntranceVariant("missing" as never),
-      /Unknown door entrance variant/
+      () => getDoorEntrancePreset("missing" as never),
+      /Unknown door entrance preset/
     );
   });
 });
