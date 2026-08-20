@@ -1,18 +1,8 @@
-import ReactSample from "@/sample/ReactSample";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { doorEntranceVariants } from "retro-horror-door";
+import { doorEntrancePresets } from "retro-horror-door";
 import { Link } from "react-router-dom";
-
-const reactSnippet = `import { DoorEntrance } from 'retro-horror-door/react';
-
-export const LandingGate = () => (
-  <DoorEntrance
-    variant="single-lever-wood"
-    onComplete={() => console.log('done')}
-  />
-);`;
 
 const htmlSnippet = `<div id="door-root"></div>
 <script type="module">
@@ -20,7 +10,7 @@ const htmlSnippet = `<div id="door-root"></div>
 
   mountDoorEntrance({
     target: document.getElementById('door-root'),
-    variant: 'single-lever-wood',
+    preset: 'single-lever-wood',
     autoPlay: true,
   });
 </script>`;
@@ -37,28 +27,26 @@ const Index = () => {
       <div className="mx-auto flex w-full max-w-none flex-col gap-10 px-4 py-8 sm:px-6">
         <header className="space-y-4">
           <Badge variant="outline" className="border-emerald-500/60 text-emerald-200">
-            module + samples ready
+            vanilla module ready
           </Badge>
           <h1 className="text-3xl font-bold sm:text-4xl">
             門入場動畫 Library
           </h1>
           <p className="max-w-3xl text-lg text-white/70">
-            門動畫以可播放 variant 封裝；預設入口提供 vanilla mount
-            helper，React adapter 則放在獨立入口。
+            門動畫以可播放 preset 封裝，並透過 vanilla mount helper
+            掛載到任意 DOM 節點。
           </p>
           <div className="flex flex-wrap gap-2 text-sm text-white/60">
-            {doorEntranceVariants.map((variant) => (
+            {doorEntrancePresets.map((preset) => (
               <span
-                key={variant.id}
+                key={preset.id}
                 className="rounded-full border border-white/10 px-3 py-1"
               >
-                {variant.id}
+                {preset.id}
               </span>
             ))}
           </div>
         </header>
-
-        <ReactSample />
 
         <section className="space-y-4">
           <div className="space-y-2">
@@ -122,19 +110,7 @@ const Index = () => {
           </div>
         </section>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">
-            <CardHeader>
-              <CardTitle className="text-lg">React 引入</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-white/70">
-                導入 `DoorEntrance`，指定 variant（例如 `single-lever-wood`）。`onComplete` 會在動畫結束後觸發。
-              </p>
-              <CodeBlock code={reactSnippet} />
-            </CardContent>
-          </Card>
-
+        <div className="max-w-3xl">
           <Card className="border-white/10 bg-white/[0.04] shadow-lg shadow-black/30">
             <CardHeader className="flex items-center justify-between gap-3">
               <CardTitle className="text-lg">HTML 引入</CardTitle>

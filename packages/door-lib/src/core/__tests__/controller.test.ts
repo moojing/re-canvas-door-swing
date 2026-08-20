@@ -8,7 +8,7 @@ describe("door entrance controller", () => {
     let completed = false;
 
     const controller = createDoorEntranceController({
-      variant: "single-lever-wood",
+      preset: "single-lever-wood",
       onProgress: (progress) => progressEvents.push(progress),
       onComplete: () => {
         completed = true;
@@ -27,7 +27,7 @@ describe("door entrance controller", () => {
     let completeCount = 0;
 
     const controller = createDoorEntranceController({
-      variant: "single-lever-wood",
+      preset: "single-lever-wood",
       onProgress: (progress) => progressEvents.push(progress),
       onComplete: () => {
         completeCount += 1;
@@ -43,25 +43,25 @@ describe("door entrance controller", () => {
     assert.equal(controller.getSnapshot().progress, 1);
   });
 
-  it("reset updates variant and progress state", () => {
+  it("reset updates preset and progress state", () => {
     const controller = createDoorEntranceController({
-      variant: "single-lever-wood",
+      preset: "single-lever-wood",
     });
 
     controller.seek(0.75);
-    controller.reset({ variant: "double-lever-wood", progress: 0.25 });
+    controller.reset({ preset: "double-lever-wood", progress: 0.25 });
 
     const snapshot = controller.getSnapshot();
 
     assert.equal(snapshot.progress, 0.25);
-    assert.equal(snapshot.variant.id, "double-lever-wood");
+    assert.equal(snapshot.preset.id, "double-lever-wood");
     assert.equal(snapshot.animation.id, "double-swing");
     assert.equal(snapshot.isPlaying, false);
   });
 
   it("stop cancels playback state", () => {
     const controller = createDoorEntranceController({
-      variant: "single-overhead-lever-wood",
+      preset: "single-overhead-lever-wood",
     });
 
     controller.play();
@@ -75,7 +75,7 @@ describe("door entrance controller", () => {
   it("restarts playback from the beginning after completion", () => {
     let completeCount = 0;
     const controller = createDoorEntranceController({
-      variant: "single-lever-wood",
+      preset: "single-lever-wood",
       onComplete: () => {
         completeCount += 1;
       },

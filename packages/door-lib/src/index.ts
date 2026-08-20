@@ -14,25 +14,18 @@ export {
   doorEntrancePresets,
   doorEntrancePresetMap,
   getDoorEntrancePreset,
+  resolveDoorEntrancePresetSelection,
 } from "./core/presets.ts";
-export {
-  doorEntranceVariantMap,
-  doorEntranceVariants,
-  getDoorEntranceVariant,
-  resolveDoorEntranceVariantSelection,
-} from "./core/variants.ts";
 export { resolveDoorSurfaceTextureUrls } from "./core/surfaceTextures.ts";
 export type {
   DoorAnimationConfig,
   DoorAnimationState,
-  DoorAnimationVariant,
+  DoorAnimationId,
   DoorEntranceMotion,
   DoorEntrancePreset,
   DoorEntrancePresetId,
   DoorEntranceType,
-  DoorEntranceVariant,
-  DoorEntranceVariantId,
-  DoorEntranceVariantSelection,
+  DoorEntrancePresetSelection,
   DoorEntranceSoundState,
   DoorSurfaceTextureUrls,
   ResolvedDoorSurfaceTextureUrls,

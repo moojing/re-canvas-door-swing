@@ -2,8 +2,8 @@
 
 Two-package workspace:
 
-- `packages/door-lib` (`retro-horror-door`): reusable retro horror door transitions. The default package entry is vanilla JS with a React adapter at `retro-horror-door/react`.
-- `packages/sample` (`retro-horror-door-sample`): Vite app showcasing React integration and a plain HTML sample at `/samples/vanilla.html`.
+- `packages/door-lib` (`retro-horror-door`): reusable retro horror door transitions with a vanilla JS API.
+- `packages/sample` (`retro-horror-door-sample`): Vite development app with PoCs and a plain HTML sample at `/samples/vanilla.html`.
 
 ## Quick start
 
@@ -22,10 +22,9 @@ Useful scripts:
 
 ## Library testing
 
-The door library uses layered tests to keep the core animation package
-vanilla-first while React support remains separate:
+The door library uses layered tests to keep the package framework-free:
 
-- `npm run test:lib:core` covers framework-free animation state, variants, sound,
+- `npm run test:lib:core` covers framework-free animation state, presets, sound,
   and controller behavior.
 - `npm run test:lib:package` checks public package exports and verifies the
   default `retro-horror-door` entry and `retro-horror-door/vanilla` output graphs are React-free.
@@ -41,8 +40,7 @@ Current expected status: `npm run verify:lib:core` and
 `npm run verify:lib:boundary` pass. Browser verification requires local dev
 server binding and a Playwright browser runtime.
 
-React behavior should be tested separately when a React adapter exists. Vanilla
-tests must not require React, React DOM, or R3F.
+The library does not install or publish React, React DOM, or R3F dependencies.
 
 ## Evaluation gallery
 
@@ -64,11 +62,11 @@ import { mountDoorEntrance } from "retro-horror-door";
 
 mountDoorEntrance({
   target: document.getElementById("door-root"),
-  variant: "single-lever-wood",
+  preset: "single-lever-wood",
 });
 ```
 
-Random selection chooses from available runtime variants; it does not mix door
+Random selection chooses from available runtime presets; it does not mix door
 parts manually:
 
 ```tsx
@@ -79,18 +77,6 @@ mountDoorEntrance({
 });
 ```
 
-React adapter:
-
-```tsx
-import { DoorEntrance } from "retro-horror-door/react";
-
-<DoorEntrance
-  variant="single-overhead-lever-wood"
-  autoPlay
-  onComplete={() => console.log("done")}
-/>;
-```
-
 Plain HTML:
 
 ```html
@@ -99,13 +85,13 @@ Plain HTML:
   import { mountDoorEntrance } from "retro-horror-door";
   mountDoorEntrance({
     target: document.getElementById("door-root"),
-    variant: "single-lever-wood"
+    preset: "single-lever-wood"
   });
 </script>
 ```
 
-Runtime variant entries contain only playable library settings such as type,
-motion, handle, material, sound, and camera behavior. A variant can also
+Runtime preset entries contain only playable library settings such as type,
+motion, handle, material, sound, and camera behavior. A preset can also
 provide `frontTextureUrl`, `edgeTextureUrl`, and `backTextureUrl`: when edge
 or back is absent it inherits the front texture. The legacy `textureUrl`
 field remains supported and applies the same texture to all three surfaces.

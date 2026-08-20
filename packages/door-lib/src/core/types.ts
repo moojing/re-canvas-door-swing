@@ -1,6 +1,6 @@
 export type Vector3Tuple = [number, number, number];
 
-export type DoorAnimationVariant =
+export type DoorAnimationId =
   | "direct-entry"
   | "single-top-down-entry"
   | "double-swing";
@@ -16,15 +16,10 @@ export type DoorEntranceMotion =
 
 export type DoorMaterialId = "wood-panel-aged";
 
-export type DoorEntranceVariantId =
+export type DoorEntrancePresetId =
   | "single-lever-wood"
   | "single-overhead-lever-wood"
   | "double-lever-wood";
-
-export type LegacyDoorEntrancePresetId =
-  | "door-single"
-  | "door-single-overhead"
-  | "door-double";
 
 export interface DoorSurfaceTextureUrls {
   frontTextureUrl?: string;
@@ -40,30 +35,20 @@ export interface ResolvedDoorSurfaceTextureUrls {
   backTextureUrl: string;
 }
 
-export interface DoorEntranceVariant extends DoorSurfaceTextureUrls {
-  id: DoorEntranceVariantId;
+export interface DoorEntrancePreset extends DoorSurfaceTextureUrls {
+  id: DoorEntrancePresetId;
   label: string;
   type: DoorEntranceType;
   motion: DoorEntranceMotion;
   material: DoorMaterialId;
-  animation: DoorAnimationVariant;
-  /** @deprecated Use animation. Kept for preset compatibility only. */
-  variant: DoorAnimationVariant;
+  animation: DoorAnimationId;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
   soundUrl?: string;
   className?: string;
 }
 
-/** @deprecated Use DoorEntranceVariantId. */
-export type DoorEntrancePresetId = DoorEntranceVariantId | LegacyDoorEntrancePresetId;
-
-/** @deprecated Use DoorEntranceVariant. */
-export type DoorEntrancePreset = DoorEntranceVariant;
-
-export interface DoorEntranceVariantSelection {
-  variant?: DoorEntranceVariantId;
-  /** @deprecated Use variant. */
+export interface DoorEntrancePresetSelection {
   preset?: DoorEntrancePresetId;
   random?: boolean;
   type?: DoorEntranceType;
@@ -82,7 +67,7 @@ export interface DoorAnimationState {
 }
 
 export interface DoorAnimationConfig {
-  id: DoorAnimationVariant;
+  id: DoorAnimationId;
   label: string;
   description?: string;
   duration: number;

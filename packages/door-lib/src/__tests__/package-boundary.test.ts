@@ -174,18 +174,20 @@ const assertOutputGraphReactFree = ({
 };
 
 describe("package boundary", () => {
-  it("keeps React peers optional while the default entry is vanilla", () => {
+  it("does not publish the removed React adapter or its peer dependencies", () => {
     const manifest = packageJson();
 
     for (const packageName of bannedPackages) {
-      if (!manifest.peerDependencies?.[packageName]) continue;
-
       assert.equal(
-        manifest.peerDependenciesMeta?.[packageName]?.optional,
-        true,
-        `Expected ${packageName} to be an optional peer dependency for the React adapter`
+        manifest.peerDependencies?.[packageName],
+        undefined,
+        `Expected ${packageName} to be absent after removing the React adapter`
       );
     }
+
+    assert.equal(manifest.exports?.["./react"], undefined);
+    assert.equal(existsSync(dist("react.js")), false);
+    assert.equal(existsSync(dist("react.cjs")), false);
   });
 
   it("keeps the root package entry React-free by default", () => {
@@ -211,13 +213,15 @@ describe("package boundary", () => {
     assert.equal(vanillaExport?.require, "./dist/vanilla.cjs");
   });
 
-  it("publishes the variant registry from the root entry", () => {
+  it("publishes the preset registry from the root entry", () => {
     const declaration = readFileSync(dist("index.d.ts"), "utf8");
 
-    assert.match(declaration, /doorEntranceVariants/);
-    assert.match(declaration, /getDoorEntranceVariant/);
-    assert.match(declaration, /resolveDoorEntranceVariantSelection/);
-    assert.match(declaration, /DoorEntranceVariantId/);
+    assert.match(declaration, /doorEntrancePresets/);
+    assert.match(declaration, /getDoorEntrancePreset/);
+    assert.match(declaration, /resolveDoorEntrancePresetSelection/);
+    assert.match(declaration, /DoorEntrancePresetId/);
+    assert.doesNotMatch(declaration, /doorEntranceVariants/);
+    assert.doesNotMatch(declaration, /getDoorEntranceVariant/);
   });
 
   it("keeps the full vanilla output graph React-free", () => {
