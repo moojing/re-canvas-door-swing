@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import TransitionComplete from "./pages/TransitionComplete";
 import NotFound from "./pages/NotFound";
 import A04DoorPoC from "./poc/A04DoorPoC";
 import HeavyWaterDoorA11 from "./poc/HeavyWaterDoorA11";
@@ -24,6 +25,7 @@ const App = () => (
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/transition-complete" element={<TransitionComplete />} />
           <Route path="/poc" element={<PocGallery />} />
           <Route path="/poc/a04" element={<A04DoorPoC />} />
           <Route path="/poc/a11" element={<HeavyWaterDoorA11 />} />

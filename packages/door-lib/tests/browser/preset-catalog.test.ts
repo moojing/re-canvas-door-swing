@@ -25,7 +25,7 @@ test("preset catalog opens and closes a vanilla detail modal", async ({
   await page.getByRole("button", { name: "Close preset detail" }).click();
 
   await expect(dialog).toHaveCount(0);
-  await expect(page.locator("canvas")).toHaveCount(3);
+  await expect(page.locator("canvas")).toHaveCount(4);
 });
 
 test("preset detail lets users scrub the animation timeline", async ({
@@ -63,4 +63,63 @@ test("mobile preset detail keeps its close control within the viewport", async (
   expect(bounds).not.toBeNull();
   expect(bounds?.x).toBeGreaterThanOrEqual(0);
   expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(390);
+});
+
+test("full-screen transition plays the selected preset before navigating", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await page.getByLabel("Transition preset").selectOption("double-lever-wood");
+  await page
+    .getByRole("button", { name: "Start full-screen transition" })
+    .click();
+
+  const transition = page.getByRole("status", {
+    name: "Page transition in progress",
+  });
+  await expect(transition).toBeVisible();
+  await expect(transition).toBeFocused();
+  await expect(transition.locator("canvas")).toBeVisible();
+  await expect(page.getByRole("main")).toHaveAttribute("inert", "");
+  await expect(transition.locator("audio")).toHaveJSProperty("paused", false);
+
+  await expect(page).toHaveURL(/\/transition-complete$/, { timeout: 10_000 });
+  await expect(
+    page.getByRole("heading", { name: "Destination reached" })
+  ).toBeVisible();
+  await expect(page.getByText("Double Lever Wood", { exact: true })).toBeVisible();
+
+  await page.getByRole("link", { name: "Return to preset catalog" }).click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("full-screen transition does not start a second run", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Transition preset").selectOption("double-lever-wood");
+
+  const startButton = page.getByRole("button", {
+    name: "Start full-screen transition",
+  });
+  await startButton.click();
+
+  await expect(startButton).toBeDisabled();
+  await expect(
+    page.getByRole("status", { name: "Page transition in progress" })
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("status", { name: "Page transition in progress" }).locator("canvas")
+  ).toHaveCount(1);
+});
+
+test("transition destination has a direct-visit fallback", async ({ page }) => {
+  await page.goto("/transition-complete");
+
+  await expect(
+    page.getByRole("heading", { name: "Destination reached" })
+  ).toBeVisible();
+  await expect(page.getByText("No preset was selected", { exact: true })).toBeVisible();
+
+  await page.getByRole("link", { name: "Return to preset catalog" }).click();
+  await expect(page).toHaveURL(/\/$/);
 });
