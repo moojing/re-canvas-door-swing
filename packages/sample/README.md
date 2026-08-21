@@ -1,73 +1,48 @@
-# Welcome to your Lovable project
+# Retro Horror Door Sample
 
-## Project info
+This Vite app is the development and visual verification surface for the
+`retro-horror-door` package. React is used only for the sample UI; every door
+canvas is mounted through the library's vanilla `mountDoorEntrance` API.
 
-**URL**: https://lovable.dev/projects/84de2ac1-9588-4d10-8d71-60ee259f20ca
+## Run locally
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/84de2ac1-9588-4d10-8d71-60ee259f20ca) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Run these commands from the repository root:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
+npm run build:lib
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open `http://127.0.0.1:5173/`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Routes
 
-**Use GitHub Codespaces**
+- `/`: playable preset catalog. Each card is a real initial renderer frame.
+  Selecting a card opens a modal with Play, Reset, timeline seeking, sound,
+  and the `mountDoorEntrance` usage for that preset.
+- `/poc`: historic technical PoCs. Individual POC routes remain available from
+  this gallery, but they are not the sample home page.
+- `/samples/vanilla.html`: minimal non-React mounting example.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Development notes
 
-## What technologies are used for this project?
+- The catalog reads `doorEntrancePresets` from the published library entry.
+  Do not duplicate the preset registry in the sample.
+- `PresetAnimationPreview.tsx` and `PresetDetailModal.tsx` both mount the
+  vanilla renderer so the preview and interactive scene use the same geometry,
+  materials, lighting, and opening behavior.
+- Library-owned default textures and sounds are bundled from
+  `packages/door-lib/src/assets/`. Files in this package's `public/` directory
+  are sample or PoC assets only.
 
-This project is built with:
+## Verification
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```sh
+npm run test:lib:browser
+npm run lint
+npm run build
+```
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/84de2ac1-9588-4d10-8d71-60ee259f20ca) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+The browser suite covers the catalog modal, timeline, initial canvas preview,
+audio after Play, and the standalone vanilla sample.

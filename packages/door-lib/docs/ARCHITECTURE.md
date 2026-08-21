@@ -52,6 +52,16 @@ export interface DoorAnimationConfig {
 - `random: true` 只從可用 runtime presets 中挑選；`type`、`motion`、`handle`、`material` 只在 random mode 作為篩選條件。有明確 `preset` 時不能再混用這些欄位。
 - Runtime preset registry 不包含來源影片、縮圖或分類筆記。這些只存在於 Notion / gallery / dev tracking metadata，不能進 npm package。
 
+## Sample catalog
+
+- `packages/sample` 的 `/` 是目前的 preset catalog，不再是 PoC 導覽頁。
+- 每張卡由 `PresetAnimationPreview.tsx` 以同一個 `mountDoorEntrance` renderer
+  畫出 progress `0` 的真實門板初始畫面；不可用另外維護的靜態縮圖取代。
+- 選擇卡片後，`PresetDetailModal.tsx` 會在 modal 內重新 mount 同一個 preset，
+  提供播放、重設、時間軸 seek、音效與呼叫範例。這不是捲動到頁面下方的 detail
+  section。
+- 歷史 PoC 集中在 `/poc` 與其子路徑，保留作技術實驗，不代表已發布的 runtime preset。
+
 ## 新增動畫的操作流程
 1) **新增 timeline config**：在 `src/core/animationState.ts` 新增 `id`、`label`、`description`、`duration` 與 `getState`。
 2) **登錄**：將 config 加入 `doorAnimationConfigs`，並在 `src/core/types.ts` 的 `DoorAnimationId` union 加上新 id；需要不同幾何時，再擴充 `src/vanilla.ts` 的 scene builder。
@@ -87,9 +97,11 @@ The library manifest must not expose React-related peer dependencies or a
 `retro-horror-door/react` package export.
 
 ### Browser Smoke Tests
-Run `npm run test:lib:browser` to exercise the plain HTML sample in a browser:
-the vanilla sample must mount, render a canvas, respond to controls, and clean
-up through its lifecycle.
+Run `npm run test:lib:browser` to exercise both vanilla surfaces in a browser:
+the plain HTML sample must mount and clean up, while the preset catalog must
+render real canvas previews, open and close its detail modal, support timeline
+seeking, unlock sound from the Play gesture, and keep the mobile close control
+inside the viewport.
 
 `npm run verify:lib:browser` runs the core verification path first, then the
 browser smoke tests. It requires local dev server binding and an installed

@@ -1,19 +1,75 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-The Vite + React entry point sits in `src/main.tsx`, bootstrapping routes defined in `src/App.tsx`. Route-level views belong in `src/pages/`, reusable building blocks in `src/components/`, shared stateful logic in `src/hooks/`, and lightweight utilities in `src/lib/`. UI primitives from shadcn live under `src/components/ui/`. Static textures and other assets reside in `public/`, while build and styling configuration is centralized in `vite.config.ts`, `tailwind.config.ts`, and `postcss.config.js`.
+## Project Structure
 
-## Build, Test, and Development Commands
-Install dependencies with `npm install`. Run `npm run dev` for the hot-reloading development server, or `npm run preview` to inspect the production build locally after running `npm run build`. Use `npm run build:dev` when you need a production bundle that still targets development services. Execute `npm run lint` before every push to surface TypeScript and React issues.
+The repository is an npm workspaces monorepo:
 
-## Coding Style & Naming Conventions
-TypeScript files use ES modules and two-space indentation. Prefer functional React components and PascalCase filenames for components (`DoorAnimation3D.tsx`) and camelCase for hooks and utilities. Co-locate component styles with Tailwind utility classes; fall back to `App.css` or `index.css` only for global resets. Rely on the existing ESLint configuration and avoid disabling rules unless there is a documented reason in code comments.
+- `packages/door-lib/` is the publishable `retro-horror-door` library. Its
+  default API is vanilla JS + Three.js; it must remain React-free.
+- `packages/sample/` is a Vite + React app used to develop and visually verify
+  the library. The catalog lives in `src/pages/Index.tsx`, with the renderer
+  preview and modal in adjacent page modules. Historic experiments remain in
+  `src/poc/` and are routed below `/poc`.
+- `packages/door-lib/src/core/` contains framework-free types, timeline state,
+  preset selection, and texture resolution. `src/vanilla.ts` owns DOM mounting,
+  the renderer, playback, and sound.
+- Library-owned assets live in `packages/door-lib/src/assets/`; sample `public/`
+  assets are only for the sample or PoCs.
 
-## Testing Guidelines
-The project currently relies on manual verification. Before opening a pull request, exercise key flows in the local dev server—especially door-swing interactions and texture loading. When introducing regression-prone logic, add focused tests using Vitest + React Testing Library (mirror the directory being tested, e.g., `src/components/__tests__/DoorAnimation3D.test.tsx`) and document any new setup steps in the README.
+## Commands
 
-## Commit & Pull Request Guidelines
-Follow conventional commits (`feat:`, `fix:`, `chore:`) as reflected in the git history, keeping scopes short and lowercased. Each commit should address a single concern and leave the build lint-clean. Pull requests must include a summary, screenshots or short clips for UI changes, and references to related issues. Note any configuration updates or required migrations in the PR description so reviewers can verify them promptly.
+Run commands from the repository root:
+
+- `npm install`
+- `npm run dev` - start the sample app
+- `npm run build` - build library then sample
+- `npm run lint` - library typecheck and sample lint
+- `npm run test:lib:core` - core behavior tests
+- `npm run test:lib:package` - published entry and React-free boundary tests
+- `npm run test:lib:browser` - Playwright coverage for the vanilla sample and
+  catalog modal
+- `npm run verify:lib:browser` - core verification plus browser coverage
+
+## Library Conventions
+
+- Public usage is `mountDoorEntrance({ target, preset })` from
+  `retro-horror-door`.
+- A preset is a released, internally valid full door combination. Do not add a
+  public API that arbitrarily mixes motion, handle, and material.
+- Random mode chooses from registered presets and may use `type`, `motion`,
+  `handle`, and `material` only as filters. Explicit `preset` and filter fields
+  are mutually exclusive.
+- Surface assets belong to the preset: `frontTextureUrl`, `edgeTextureUrl`, and
+  `backTextureUrl`. `textureUrl` remains a legacy all-surfaces alias.
+- Do not add source videos, frame grabs, gallery thumbnails, or reference
+  metadata to the package.
+- The vanilla scene contains only door leaves and handles. Do not reintroduce a
+  frame, floor, sill, or unrelated scene geometry.
+
+## Catalog Conventions
+
+- The sample home page lists `doorEntrancePresets`; do not duplicate registry
+  data in the sample.
+- Card previews must render the actual preset at its initial state through
+  `mountDoorEntrance`. Detail playback opens in a modal, not a lower-page
+  section or a separate fake preview.
+- Keep Play, Reset, timeline seek, Escape close, overlay close, and mobile
+  close-button behavior working. Sound begins after the Play user gesture.
+
+## Testing and Pull Requests
+
+Use TypeScript with two-space indentation. Prefer focused tests in the same
+area as the behavior being changed. Library or catalog changes require the
+relevant core, package, or browser test, plus `npm run lint`; visual renderer
+changes should also be checked in the local sample app.
+
+Follow conventional commits (`feat:`, `fix:`, `docs:`, `chore:`). Pull requests
+need a concise summary, test evidence, and a screenshot or clip for UI changes.
 
 ## Evaluation Gallery
-The sibling repository `../re-door-gallery` ([GitHub](https://github.com/moojing/re-door-gallery)) is the single source of truth for door classifications, the evaluation report, and the evaluation CSV. Do not recreate tracked copies of those three files inside this repository. Any evaluation edit must target `../re-door-gallery/docs/` and be followed by `npm run gallery:check`. Gallery source videos and frame extracts are local-only under the sibling repository's ignored `materials/door-transitions/` and `materials/frame-extracts/` directories and must never be committed.
+
+The sibling `../re-door-gallery` repository is the single source of truth for
+door classification records, the report, and the estimation CSV. Do not copy
+those files here. Edit the gallery's `docs/` files and run
+`npm run gallery:check` after any evaluation-data change. Gallery source videos
+and frame extracts are local-only under ignored `materials/` directories.

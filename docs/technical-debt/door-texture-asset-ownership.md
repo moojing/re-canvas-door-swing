@@ -1,27 +1,28 @@
 # Door Texture Asset Ownership
 
 Date: 2026-05-23
-Last updated: 2026-07-11
+Last updated: 2026-08-20
 Status: **Implemented** (see Implementation Notes below)
 
 ## Summary
 
-The `retro-horror-door` library currently defaults to a texture path of
-`textures/door-1.png`, but the actual file is hosted by the sample app at
-`packages/sample/public/textures/door-1.png`.
-
-This means the library's default behavior depends on an external consumer app
-shipping a specific static asset at a specific public URL.
+This debt is resolved. `retro-horror-door` owns its default texture and sound
+assets in `packages/door-lib/src/assets/`, and tsup copies them into the
+published `dist/` output with content hashes. Runtime presets import those
+assets directly rather than relying on `packages/sample/public/`.
 
 ## Current State
 
-- Default texture path is defined in `packages/door-lib/src/module/presets.ts` as a plain string `"textures/door-1.png"`.
-- Texture manifest in `packages/door-lib/src/module/assets/textures.ts` also uses string paths and a `getTextureUrl(id, base)` helper that prepends a consumer-supplied base URL.
-- The concrete asset currently lives in `packages/sample/public/textures/door-1.png`.
-- `packages/door-lib/package.json` only publishes `dist`, so the texture is not packaged with the library itself.
-- Sound assets have the same problem — also referenced as plain string paths.
+- `packages/door-lib/src/core/presets.ts` imports the bundled `doorWood` asset
+  and assigns it to `frontTextureUrl` for the current presets.
+- `packages/door-lib/src/vanilla.ts` resolves front, edge, and back surfaces;
+  omitted edge/back URLs inherit the front texture.
+- `packages/door-lib/src/assets/{textures,sounds}/` contains the library-owned
+  source assets. `packages/door-lib/package.json` publishes their generated
+  copies through `dist/`.
+- `packages/sample/public/` is not an implicit host for library defaults.
 
-## Why This Is Technical Debt
+## Original Problem (historical)
 
 - The library is not self-contained: a default asset is documented and assumed,
   but not actually owned by the library package.
@@ -31,7 +32,7 @@ shipping a specific static asset at a specific public URL.
 - Asset replacement becomes confusing because the authoritative source is not in
   the package that declares the default.
 
-## Risks
+## Original Risks (historical)
 
 - Published package works differently from the sample app.
 - Integrators may see missing textures in production.
@@ -53,7 +54,11 @@ CDN (jsDelivr) was considered but rejected: the pool design means the set of
 textures is fixed at build time, not runtime, so CDN's "load anything at
 runtime" advantage does not apply here.
 
-## Target Architecture
+## Original Target Architecture (historical)
+
+The sections below record the decision as it was proposed in May. The current
+implementation is described in **Current State** and **Implementation Notes**;
+the old `src/module/` paths are not part of the active codebase.
 
 ### 1. Library owns and imports its assets
 
@@ -123,7 +128,7 @@ If a consumer wants to supply their own texture URL (remote URL, their own
 public asset, or a data URL), the `textureUrl` prop continues to accept any
 string — the bundler-import default is just the fallback.
 
-## Files to Change
+## Original Files to Change (historical)
 
 | File | Change |
 |------|--------|
@@ -169,6 +174,7 @@ pass, and the sample dev server loads texture/sound/model from the library
 ## Follow-up Work (out of scope for this change)
 
 - Decide catalog size and naming convention before adding 100+ textures.
-- Add pool preload hook (`useDoorEntrance({ pool: [...] })`).
 - Validate that tree-shaking actually drops unused texture imports in a Vite consumer build.
-- Document the pool API in README (including the `assetsInclude` requirement for `.glb`).
+- Document an asset import subpath only if the public package intentionally
+  exposes one; consumers currently select complete presets rather than building
+  arbitrary runtime pools.
