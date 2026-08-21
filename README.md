@@ -105,3 +105,37 @@ field remains supported and applies the same texture to all three surfaces.
 Source videos,
 classification notes, and thumbnail references belong in development tracking
 docs and are not shipped in the npm package.
+
+## Full-screen page transitions
+
+For a page change, mount one viewport-sized vanilla door overlay when the app
+starts. Keep the overlay in the DOM, but hide its idle state with opacity and
+`pointer-events` rather than `display: none`. This ensures the renderer is
+already sized and ready when a user starts the transition.
+
+Call `reset()` and `play()` synchronously from the user action that triggers
+navigation. The click is necessary for browsers to permit door audio. Navigate
+only from `onComplete`, so the outgoing page remains visible until the selected
+preset has finished.
+
+```ts
+import { mountDoorEntrance } from "retro-horror-door";
+
+const overlay = document.getElementById("door-transition");
+const door = mountDoorEntrance({
+  target: overlay,
+  preset: "single-lever-wood",
+  autoPlay: false,
+  className: "h-full w-full border-0 bg-black",
+  onComplete: () => window.location.assign("/next-page"),
+});
+
+document.querySelector("#continue")?.addEventListener("click", () => {
+  const preset = "double-lever-wood";
+  overlay?.classList.add("is-visible");
+  door.reset(preset);
+  door.play(preset);
+});
+```
+
+The sample catalog includes this flow under **Full-screen page transition**.
