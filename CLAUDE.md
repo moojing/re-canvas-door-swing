@@ -1,78 +1,89 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Repository layout
 
-## Repository Layout
+This is an npm workspaces monorepo:
 
-This is an **npm workspaces monorepo** with two packages:
+- `packages/door-lib/` publishes `retro-horror-door`. Its default public entry
+  is a React-free, DOM + Three.js vanilla API: `mountDoorEntrance`.
+- `packages/sample/` is a Vite + React development surface for the library.
+  React belongs to the sample only, not to the library runtime graph.
+- `docs/` contains current architecture and historical design records.
 
-- `packages/door-lib/` — the `door-entrance` library (publishable). A React Three Fiber door-opening transition component, also mountable from vanilla JS.
-- `packages/sample/` — the `door-entrance-sample` demo app (private). A Vite + React site that showcases the library and hosts its runtime assets. Deployed to GitHub Pages.
+The sample home page (`/`) is the playable preset catalog. `/poc` retains
+historic technical PoCs, and `/samples/vanilla.html` is the smallest plain
+HTML integration example.
 
-Repo-level docs live in `docs/` — notably `docs/technical-debt/` which tracks known debt items and their decisions.
+## Commands
 
-## Development Commands
+Run from the repository root:
 
-Run from the repo root:
+- `npm install`
+- `npm run dev` - start the sample app at `http://127.0.0.1:5173`
+- `npm run dev:lib` - rebuild the library in watch mode
+- `npm run build` - build the library and sample
+- `npm run lint` - typecheck the library and lint the sample
+- `npm run test:lib:core` - framework-free animation, preset, sound, and
+  controller tests
+- `npm run test:lib:package` - public export and React-free output-boundary tests
+- `npm run test:lib:browser` - Playwright coverage for the vanilla HTML mount
+  and the preset catalog modal
+- `npm run verify:lib:browser` - core verification followed by browser tests
+- `npm run gallery:check` - validate the sibling evaluation gallery after
+  changing evaluation data
 
-- `npm i` — install all workspace dependencies
-- `npm run dev` — start the sample app dev server (Vite, http://127.0.0.1:5173)
-- `npm run dev:lib` — build the library in watch mode (tsup)
-- `npm run build` — build library, then sample
-- `npm run build:lib` / `npm run build:sample` — build one package
-- `npm run lint` — ESLint (sample workspace only; the library has no lint script)
+## Library contract
 
-No test framework is configured in either package.
+- Consumers import from `retro-horror-door`:
+  `mountDoorEntrance({ target, preset: "single-lever-wood" })`.
+- A `preset` is the complete released combination of `type`, `motion`, handle,
+  material, animation, camera behavior, sound, and surface textures. Do not
+  create a separate public composition API.
+- `random: true` chooses a complete registered preset. `type`, `motion`,
+  `handle`, and `material` are filters for random selection only; do not combine
+  them with an explicit `preset`.
+- Presets can provide `frontTextureUrl`, `edgeTextureUrl`, and
+  `backTextureUrl`. Missing edge/back values inherit the front surface.
+  `textureUrl` is legacy compatibility for all three surfaces.
+- Source videos, gallery thumbnails, and classification notes are development
+  metadata. They must not enter the npm package.
+- `retro-horror-door/vanilla` remains a compatibility alias. There is no React
+  export or React peer dependency. A future React adapter must be a separate
+  package built on the existing core/vanilla contract.
 
-## Library: `packages/door-lib` (`door-entrance`)
+## Source structure
 
-- **Build**: tsup (`tsup.config.ts`), dual entry points → `dist/index.{js,cjs}` and `dist/vanilla.{js,cjs}` with `.d.ts`. Only `dist/` is published. Asset imports (`.png`/`.mp3`/`.glb`) use esbuild's `copy` loader: files are copied into `dist/` with content hashes and the import statements are preserved for the consumer's bundler to resolve.
-- **Peer deps**: `react` ^18, `@react-three/fiber` ^8, `three` ^0.133.
-- **TypeScript**: `strict: true`.
+- `packages/door-lib/src/core/`: types, animation timelines, preset selection,
+  and surface texture resolution.
+- `packages/door-lib/src/vanilla.ts`: Three.js renderer, playback controller,
+  audio scheduling, and mounted handle API.
+- `packages/door-lib/src/assets/`: library-owned texture and sound assets copied
+  into `dist/` by tsup.
+- `packages/sample/src/pages/Index.tsx`: catalog grid.
+- `packages/sample/src/pages/PresetAnimationPreview.tsx`: actual initial-frame
+  renderer on each card.
+- `packages/sample/src/pages/PresetDetailModal.tsx`: interactive vanilla
+  renderer, controls, timeline, and usage snippet.
 
-### Source structure (`src/module/`)
+The renderer intentionally creates only the door leaves and handles. Do not
+reintroduce a door frame, sill, floor, or separate fake card thumbnails.
 
-- `DoorEntrance.tsx` — main React component. Renders a full-screen R3F canvas, drives the animation timeline, plays the door sound, exposes a `DoorEntranceHandle` imperative ref, and calls `onComplete` when the transition ends.
-- `animations/` — one folder per animation variant, each exporting a config + renderer:
-  - `direct-entry` — single door swings open, camera moves through
-  - `top-down-entry` — single door viewed top-down (`single-top-down-entry` variant id)
-  - `double-swing` — double doors swing open
-  - `shared.ts` — shared helpers (easing functions, handle-press progress); `HandleModel.tsx` — GLTF door-handle loader; `animation.template.ts` — boilerplate for adding a new variant
-- `presets.ts` — preset map (`door-single`, `door-single-overhead`, `door-double`) binding a variant to default texture/handle/sound URLs (bundler-imported from `src/assets/`).
-- `handles/` — handle profile definitions (`profiles.ts`) and handle motion (`motion.ts`).
-- `assets/textures.ts` — texture manifest (resolved asset URLs) and `getTextureUrl(id)` / `pickTextureId` helpers.
-- `types.ts` — public types (`DoorAnimationVariant`, `DoorEntrancePreset`, sound progress options, etc.).
-- `vanilla.tsx` — `mountDoorEntrance(...)`, wraps the React component for non-React consumers (exported as the `door-entrance/vanilla` subpath).
+## Change and verification expectations
 
-### Assets (`src/assets/`)
+- Extend `DoorAnimationConfig` first when adding motion, then register a
+  complete preset in `src/core/presets.ts`; add assets only when project-owned
+  or generated.
+- Keep catalog previews and modal playback on the same `mountDoorEntrance`
+  path. Audio must start only after a real user Play gesture.
+- Run focused core/package/browser tests for library or catalog changes, then
+  `npm run lint` and `npm run build` before a PR.
+- Update `README.md`, `packages/sample/README.md`, and
+  `packages/door-lib/docs/ARCHITECTURE.md` when public behavior changes.
 
-Default texture/sound/handle-model files live in
-`src/assets/{textures,sounds,models}/`, each folder exporting named URLs from
-its `index.ts` (`doorWood`, `doorOpenClose`, `doorHandleSingle`). They are
-bundler imports, so the library is self-contained; history and design in
-`docs/technical-debt/door-texture-asset-ownership.md`. Consumers must treat
-`.glb` as an asset (Vite: `assetsInclude: ["**/*.glb"]`).
+## Evaluation gallery
 
-## Sample App: `packages/sample`
-
-- **Stack**: Vite + `@vitejs/plugin-react`, Tailwind CSS + shadcn/ui (`src/components/ui/`), React Router DOM, TanStack React Query, lovable-tagger (dev mode only).
-- **Vite config**: dev server on `127.0.0.1:5173`; `base` is `/re-canvas-door-swing/` in production builds (GitHub Pages); path alias `@/` → `src/`; `assetsInclude` covers `.glb` for the library's handle models.
-- **Routing**: `src/App.tsx` with `BrowserRouter basename={import.meta.env.BASE_URL}` — `/` → `pages/Index.tsx`, `*` → `pages/NotFound.tsx`.
-- **Demo code**: `src/sample/ReactSample.tsx` (React usage) and `src/sample/vanillaEntry.ts` (vanilla `mountDoorEntrance` usage), both embedded in the Index page.
-- **Assets**: `public/textures/` holds sample-only assets (e.g. `door-2.png`); the library's default presets ship their own assets (see above).
-- **TypeScript**: non-strict (`strict: false`, `noImplicitAny: false`, `strictNullChecks: false`) — unlike the library.
-
-## Conventions
-
-- Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`), short lowercase scopes.
-- New animation variants: start from `animations/animation.template.ts`, register the variant in `animations/index.ts` and (optionally) a preset in `presets.ts`.
-- Verification is manual — exercise the door animations and texture/sound loading in the sample app before opening a PR.
-# Evaluation gallery
-
-The sibling repository `../re-door-gallery` is the single source of truth for the evaluation
-records and its canonical remote is https://github.com/moojing/re-door-gallery. When
-classifications, the report, or the CSV change, edit `../re-door-gallery/docs/` directly and
-run `npm run gallery:check`; the work is incomplete until that check passes. This repository
-must not track duplicate copies of those three evaluation files. Local source videos and frame
-extracts belong only in the gallery's ignored `materials/door-transitions/` and
-`materials/frame-extracts/` directories and must never be committed.
+`../re-door-gallery` is the single source of truth for classification records,
+the report, and the estimation CSV. Edit those under
+`../re-door-gallery/docs/`, then run `npm run gallery:check`. Videos and frame
+extracts remain local-only in the gallery's ignored `materials/` directories
+and must never be committed here.

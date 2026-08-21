@@ -3,7 +3,7 @@
 Two-package workspace:
 
 - `packages/door-lib` (`retro-horror-door`): reusable retro horror door transitions with a vanilla JS API.
-- `packages/sample` (`retro-horror-door-sample`): Vite development app with PoCs and a plain HTML sample at `/samples/vanilla.html`.
+- `packages/sample` (`retro-horror-door-sample`): Vite development app. Its home page is a playable preset catalog; it also keeps the PoC gallery and a plain HTML vanilla example.
 
 ## Quick start
 
@@ -12,6 +12,12 @@ npm install
 npm run build:lib        # builds the library once (tsup)
 npm run dev              # runs the sample app (uses the built lib)
 ```
+
+Open `http://127.0.0.1:5173/` to browse every published preset. Each card
+shows the renderer's initial frame; **Open preset** opens a modal with the
+same vanilla renderer, playback controls, sound, and a seekable timeline.
+The older technical PoCs remain available at `/poc`, and the standalone HTML
+example is at `/samples/vanilla.html`.
 
 Useful scripts:
 - `npm run dev:lib` (watch build for the library)
@@ -28,17 +34,18 @@ The door library uses layered tests to keep the package framework-free:
   and controller behavior.
 - `npm run test:lib:package` checks public package exports and verifies the
   default `retro-horror-door` entry and `retro-horror-door/vanilla` output graphs are React-free.
-- `npm run test:lib:browser` runs a browser smoke test for the plain HTML sample:
-  mount, canvas rendering, controls, and lifecycle cleanup.
+- `npm run test:lib:browser` runs browser coverage for the plain HTML mount and
+  the preset catalog: canvas rendering, playback, sound, modal lifecycle,
+  timeline seeking, and the mobile close control.
 - `npm run verify:lib` / `npm run verify:lib:core` run the current green core
   verification path: library typecheck, build, and core tests.
 - `npm run verify:lib:boundary` runs the package-boundary layer.
 - `npm run verify:lib:browser` runs core verification plus the browser smoke
   tests.
 
-Current expected status: `npm run verify:lib:core` and
-`npm run verify:lib:boundary` pass. Browser verification requires local dev
-server binding and a Playwright browser runtime.
+Run `npm run verify:lib:browser` before publishing a renderer or catalog
+change. Browser verification requires local dev-server binding and an
+installed Playwright browser runtime.
 
 The library does not install or publish React, React DOM, or R3F dependencies.
 
@@ -57,7 +64,7 @@ check is stale.
 
 ## Using the library
 
-```tsx
+```ts
 import { mountDoorEntrance } from "retro-horror-door";
 
 mountDoorEntrance({
