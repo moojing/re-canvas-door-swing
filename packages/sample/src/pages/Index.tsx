@@ -45,7 +45,7 @@ const Index = () => {
       className="min-h-screen bg-[#070504] text-[#e9dfcd]"
     >
       <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10 lg:py-20">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#5f4933]/60 pb-5">
+        <header className="sticky top-0 z-40 -mx-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#5f4933]/60 bg-[#070504]/95 px-5 py-4 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
           <p className="font-[Georgia,serif] text-xl text-[#f1e7d6]">
             Retro Horror Door
           </p>
