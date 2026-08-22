@@ -16,18 +16,18 @@
 - Create: `packages/sample/src/pages/Index.header.test.mjs`
 - Modify: `packages/sample/src/pages/Index.tsx`
 
-- [ ] Write a failing Node test that reads `Index.tsx` and matches the complete `GitHub README` anchor and complete `Stakeholder picker` anchor independently. Each match must include its expected URL, `target="_blank"`, and `rel="noreferrer"`.
-- [ ] Run `node --test packages/sample/src/pages/Index.header.test.mjs`; it must fail before the header exists.
-- [ ] Add a flex header before the existing catalog heading. Use `justify-between` to keep the compact product name at the left and a wrapping link group at the right on desktop; allow the whole header to wrap on narrow screens. Use the existing palette, visible labels, and `ArrowUpRight`.
-- [ ] Re-run `node --test packages/sample/src/pages/Index.header.test.mjs`; it must pass.
-- [ ] Commit the test and `Index.tsx` with `feat: add sample header links`.
+- [x] Write a failing Node test that reads `Index.tsx` and matches the complete `GitHub README` anchor and complete `Stakeholder picker` anchor independently. Each match must include its expected URL, `target="_blank"`, and `rel="noreferrer"`.
+- [x] Run `node --test packages/sample/src/pages/Index.header.test.mjs`; it must fail before the header exists.
+- [x] Add a flex header before the existing catalog heading. Use `justify-between` to keep the compact product name at the left and a wrapping link group at the right on desktop; allow the whole header to wrap on narrow screens. Use the existing palette, visible labels, and `ArrowUpRight`.
+- [x] Re-run `node --test packages/sample/src/pages/Index.header.test.mjs`; it must pass.
+- [x] Commit the test and `Index.tsx` with `feat: add sample header links`.
 
 ### Task 2: Verify the catalog remains usable
 
 **Files:**
 - Modify: none
 
-- [ ] Run `npm run lint` and `npm run build:sample`; expect exit 0 with only existing Fast Refresh warnings.
-- [ ] Run `npm run test:lib:browser`; expect modal playback and full-screen transition coverage to pass.
-- [ ] Inspect the home page at desktop and mobile widths. Confirm both links are visible, wrap cleanly, and leave catalog controls usable.
-- [ ] Check `git status --short` to confirm no implementation files are unstaged.
+- [x] Run `npm run lint` and `npm run build:sample`; expect exit 0 with only existing Fast Refresh warnings.
+- [x] Run `npm run test:lib:browser`; expect modal playback and full-screen transition coverage to pass.
+- [x] Inspect the home page at desktop and mobile widths. Confirm both links are visible, wrap cleanly, and leave catalog controls usable.
+- [x] Check `git status --short` to confirm no implementation files are unstaged.
