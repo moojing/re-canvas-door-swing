@@ -45,7 +45,33 @@ const Index = () => {
       className="min-h-screen bg-[#070504] text-[#e9dfcd]"
     >
       <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10 lg:py-20">
-        <header className="max-w-3xl border-l border-[#b77a38]/70 pl-5 sm:pl-7">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#5f4933]/60 pb-5">
+          <p className="font-[Georgia,serif] text-xl text-[#f1e7d6]">
+            Retro Horror Door
+          </p>
+          <nav aria-label="Project links" className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-[0.14em] sm:justify-end">
+            <a
+              href="https://github.com/moojing/re-canvas-door-swing#readme"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#070504]"
+            >
+              GitHub README
+              <ArrowUpRight aria-hidden="true" size={14} />
+            </a>
+            <a
+              href="https://re-door-gallery.pages.dev/stakeholder-selection"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#070504]"
+            >
+              Stakeholder picker
+              <ArrowUpRight aria-hidden="true" size={14} />
+            </a>
+          </nav>
+        </header>
+
+        <header className="mt-10 max-w-3xl border-l border-[#b77a38]/70 pl-5 sm:mt-14 sm:pl-7">
           <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
             Retro Horror Door / {String(doorEntrancePresets.length).padStart(2, "0")} presets
           </p>
