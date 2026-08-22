@@ -1,5 +1,7 @@
 # Retro Horror Door Monorepo
 
+**Language:** [English](README.md) | [繁體中文](README.zh-TW.md)
+
 Two-package workspace:
 
 - `packages/door-lib` (`retro-horror-door`): reusable retro horror door transitions with a vanilla JS API.
