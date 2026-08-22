@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "retro-horror-door": path.resolve(__dirname, "../door-lib/src/index.ts"),
     },
   },
 }));
