@@ -7,9 +7,13 @@ import {
 
 type PresetAnimationPreviewProps = {
   preset: DoorEntrancePreset;
+  progress?: number;
 };
 
-const PresetAnimationPreview = ({ preset }: PresetAnimationPreviewProps) => {
+const PresetAnimationPreview = ({
+  preset,
+  progress = 0,
+}: PresetAnimationPreviewProps) => {
   const targetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,9 +26,10 @@ const PresetAnimationPreview = ({ preset }: PresetAnimationPreviewProps) => {
       autoPlay: false,
       className: "h-full min-h-0 w-full border-0 bg-black",
     });
+    if (progress) door.seek(progress);
 
     return () => door.unmount();
-  }, [preset.id]);
+  }, [preset.id, progress]);
 
   return (
     <div

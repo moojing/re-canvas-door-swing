@@ -4,6 +4,7 @@ import test from "node:test";
 
 const appPath = new URL("../App.tsx", import.meta.url);
 const indexPath = new URL("./Index.tsx", import.meta.url);
+const listPath = new URL("./DevAnimationList.tsx", import.meta.url);
 
 test("registers developer animation routes before the catch-all", async () => {
   const source = await readFile(appPath, "utf8");
@@ -21,4 +22,11 @@ test("catalog page mounts the shared sample header", async () => {
   const source = await readFile(indexPath, "utf8");
 
   assert.match(source, /<SampleHeader\s*\/>/);
+});
+
+test("animation list previews the first published preset for each animation", async () => {
+  const source = await readFile(listPath, "utf8");
+
+  assert.match(source, /<PresetAnimationPreview preset=\{preview\} progress=\{0\.4\} \/>/);
+  assert.match(source, /const preview = presets\[0\]/);
 });
