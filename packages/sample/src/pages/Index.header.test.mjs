@@ -32,8 +32,10 @@ test("header exposes the required external links", async () => {
   const source = await readFile(headerPath, "utf8");
 
   for (const { label, href } of requiredLinks) {
-    assert.match(source, anchorPattern({ label, href }), `expected a complete external anchor for ${label}`);
+    assert.match(source, new RegExp(`label: "${escapeRegExp(label)}"`));
+    assert.match(source, new RegExp(`href: "${escapeRegExp(href)}"`));
   }
+  assert.match(source, /<a href=\{link\.href\} target="_blank" rel="noreferrer"/);
 });
 
 test("anchor matcher rejects a near-match URL", () => {
@@ -52,11 +54,12 @@ test("header stays at the top while the page scrolls", async () => {
   );
 });
 
-test("header lists animations and collapses overflow into a dropdown", async () => {
+test("header sends Animations to the list and collapses non-home links on small screens", async () => {
   const source = await readFile(headerPath, "utf8");
 
-  assert.match(source, /shouldCollapseAnimationLinks\(doorAnimationConfigs\.length\)/);
-  assert.match(source, /\/dev\/animations\/\$\{animation\.id\}/);
-  assert.match(source, /<details/);
-  assert.match(source, /to="\/dev\/animations"/);
+  assert.match(source, /to: "\/dev\/animations"/);
+  assert.doesNotMatch(source, /\/dev\/animations\/\$\{/);
+  assert.match(source, /hidden items-center gap-x-5 sm:flex/);
+  assert.match(source, /relative sm:hidden/);
+  assert.match(source, />\s*More\s*</);
 });

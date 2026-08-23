@@ -4,13 +4,7 @@ import {
   isKnownAnimation,
   presetsForAnimation,
   resolveVerifierPreset,
-  shouldCollapseAnimationLinks,
 } from "./animationPresets.ts";
-
-test("uses a header dropdown once animation links overflow", () => {
-  assert.equal(shouldCollapseAnimationLinks(2), false);
-  assert.equal(shouldCollapseAnimationLinks(3), true);
-});
 
 const animations = ["direct-entry", "single-top-down-entry", "double-swing"];
 const presets = [
