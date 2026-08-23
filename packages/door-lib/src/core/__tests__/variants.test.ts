@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { doorAnimationConfigs } from "../animationState.ts";
 import {
   doorEntrancePresetMap,
   doorEntrancePresets,
@@ -16,8 +17,21 @@ describe("core door entrance presets", () => {
     assert.equal(preset.type, "single");
     assert.equal(preset.motion, "hinge-single");
     assert.equal(preset.handleProfileId, "lever-l");
+    assert.ok(preset.handleModelUrl);
     assert.equal(preset.material, "wood-panel-aged");
     assert.equal(preset.animation, "direct-entry");
+  });
+
+  it("assigns every published preset to a registered animation", () => {
+    const animationIds = new Set(doorAnimationConfigs.map(({ id }) => id));
+
+    for (const preset of doorEntrancePresets) {
+      assert.equal(
+        animationIds.has(preset.animation),
+        true,
+        `${preset.id} uses unknown animation ${preset.animation}`
+      );
+    }
   });
 
   it("keeps source references out of the runtime registry", () => {

@@ -10,6 +10,7 @@ const sharedOptions = {
   loader: {
     ".png": "copy",
     ".mp3": "copy",
+    ".glb": "copy",
   },
 };
 

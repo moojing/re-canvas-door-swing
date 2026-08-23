@@ -16,8 +16,9 @@ import type {
   HandleProfileId,
   ResolvedDoorSurfaceTextureUrls,
 } from "./core/types.ts";
-import { doorWood } from "./assets/textures";
-import { doorOpenClose } from "./assets/sounds";
+import { doorWood } from "./assets/textures/index.ts";
+import { doorOpenClose } from "./assets/sounds/index.ts";
+import { loadHandleScene, prepareHandleModel } from "./handleModel.ts";
 
 interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
   target: HTMLElement | null;
@@ -130,10 +131,12 @@ class VanillaDoorScene {
   private readonly resizeObserver?: ResizeObserver;
   private doorRoot = new THREE.Group();
   private activeSurfaceTextureKey?: string;
+  private activeHandleModelUrl?: string;
   private activeAnimation?: DoorAnimationId;
   private activeHandleGroups: Array<{
     group: THREE.Group;
     rotationMultiplier: number;
+    pressTargets?: Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>;
   }> = [];
   private doorMaterials = createDoorMaterials();
   private frontDoorMaterial = createDoorFaceMaterial();
@@ -197,31 +200,31 @@ class VanillaDoorScene {
     state,
     config,
     surfaceTextureUrls,
+    handleModelUrl,
     cameraPanX,
     cameraPanY,
   }: {
     state: DoorAnimationState;
     config: DoorAnimationConfig;
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls;
+    handleModelUrl?: string;
     cameraPanX: number;
     cameraPanY: number;
   }) {
+    const surfaceKey = [
+      surfaceTextureUrls.frontTextureUrl,
+      surfaceTextureUrls.edgeTextureUrl,
+      surfaceTextureUrls.backTextureUrl,
+    ].join("|");
     if (
       this.activeAnimation !== config.id ||
-      this.activeSurfaceTextureKey !==
-        [
-          surfaceTextureUrls.frontTextureUrl,
-          surfaceTextureUrls.edgeTextureUrl,
-          surfaceTextureUrls.backTextureUrl,
-        ].join("|")
+      this.activeSurfaceTextureKey !== surfaceKey ||
+      this.activeHandleModelUrl !== handleModelUrl
     ) {
-      this.rebuildDoor(config.id, surfaceTextureUrls);
+      this.rebuildDoor(config.id, surfaceTextureUrls, handleModelUrl);
       this.activeAnimation = config.id;
-      this.activeSurfaceTextureKey = [
-        surfaceTextureUrls.frontTextureUrl,
-        surfaceTextureUrls.edgeTextureUrl,
-        surfaceTextureUrls.backTextureUrl,
-      ].join("|");
+      this.activeSurfaceTextureKey = surfaceKey;
+      this.activeHandleModelUrl = handleModelUrl;
     }
 
     this.applyDoorState(config.id, state);
@@ -263,7 +266,8 @@ class VanillaDoorScene {
 
   private rebuildDoor(
     animation: DoorAnimationId,
-    surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls
+    surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls,
+    handleModelUrl?: string
   ) {
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
@@ -288,6 +292,7 @@ class VanillaDoorScene {
         doorCenterX: 1.5,
         handleX: 2.26,
         side: "left",
+        handleModelUrl,
       });
       left.name = "left-door";
       this.doorRoot.add(left);
@@ -299,6 +304,7 @@ class VanillaDoorScene {
         doorCenterX: -1.5,
         handleX: -2.26,
         side: "right",
+        handleModelUrl,
       });
       right.name = "right-door";
       this.doorRoot.add(right);
@@ -312,6 +318,7 @@ class VanillaDoorScene {
       doorCenterX: 1.5,
       handleX: 2.26,
       side: "single",
+      handleModelUrl,
     });
     single.name = "single-door";
     this.doorRoot.add(single);
@@ -346,6 +353,7 @@ class VanillaDoorScene {
     doorCenterX,
     handleX,
     side,
+    handleModelUrl,
   }: {
     width: number;
     height: number;
@@ -353,6 +361,7 @@ class VanillaDoorScene {
     doorCenterX: number;
     handleX: number;
     side: "single" | "left" | "right";
+    handleModelUrl?: string;
   }) {
     const pivot = new THREE.Group();
     pivot.position.x = pivotX;
@@ -380,7 +389,7 @@ class VanillaDoorScene {
     pivot.add(back);
 
     const handleGroup = new THREE.Group();
-    handleGroup.position.set(handleX, -0.02, 0.22);
+    handleGroup.position.set(handleX, -0.02, 0.32);
     const stem = new THREE.Mesh(
       new THREE.CylinderGeometry(0.08, 0.08, 0.12, 24),
       this.handleMaterial
@@ -394,10 +403,17 @@ class VanillaDoorScene {
     handleGroup.add(stem, lever);
     pivot.add(handleGroup);
 
-    this.activeHandleGroups.push({
+    const handleEntry = {
       group: handleGroup,
       rotationMultiplier: side === "left" ? 1 : -1,
-    });
+      pressTargets: undefined as
+        | Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
+        | undefined,
+    };
+    this.activeHandleGroups.push(handleEntry);
+    if (handleModelUrl) {
+      this.mountImportedHandle(handleEntry, handleModelUrl, side === "left");
+    }
 
     return pivot;
   }
@@ -415,9 +431,44 @@ class VanillaDoorScene {
       single.rotation.y = -state.doorAngle * maxAngle;
     }
 
-    this.activeHandleGroups.forEach(({ group, rotationMultiplier }) => {
-      group.rotation.z = (state.handleAngle ?? 0) * rotationMultiplier;
+    this.activeHandleGroups.forEach(({ group, rotationMultiplier, pressTargets }) => {
+      const angle = (state.handleAngle ?? 0) * rotationMultiplier;
+      if (pressTargets?.length) {
+        group.rotation.z = 0;
+        pressTargets.forEach(({ node, baseRotation }) => {
+          node.rotation.set(
+            baseRotation.x,
+            baseRotation.y,
+            baseRotation.z + angle
+          );
+        });
+        return;
+      }
+      group.rotation.z = angle;
     });
+  }
+
+  private mountImportedHandle(
+    handleEntry: VanillaDoorScene["activeHandleGroups"][number],
+    url: string,
+    mirrorX: boolean
+  ) {
+    void loadHandleScene(url)
+      .then((scene) => {
+        if (this.disposed || !handleEntry.group.parent) return;
+        const prepared = prepareHandleModel(scene);
+        if (!prepared) return;
+
+        handleEntry.group.clear();
+        const wrapper = new THREE.Group();
+        const scale = prepared.scale;
+        wrapper.scale.set(mirrorX ? -scale : scale, scale, scale);
+        wrapper.add(prepared.object);
+        handleEntry.group.add(wrapper);
+        handleEntry.pressTargets = prepared.pressTargets;
+        this.renderer.render(this.scene, this.camera);
+      })
+      .catch(() => undefined);
   }
 
   private applyCameraState(
@@ -645,6 +696,9 @@ export const mountDoorEntrance = (
       state,
       config,
       surfaceTextureUrls: resolvedSurfaceTextureUrls,
+      handleModelUrl: toPublicAssetUrl(
+        options.handleModelUrl ?? activeDoorPreset.handleModelUrl
+      ),
       cameraPanX: options.cameraPanX ?? 0,
       cameraPanY: options.cameraPanY ?? 0,
     });
