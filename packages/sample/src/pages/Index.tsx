@@ -2,12 +2,16 @@ import { useCallback, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
+  doorAnimationConfigs,
   doorEntrancePresets,
+  type DoorEntrancePreset,
   type DoorEntrancePresetId,
 } from "retro-horror-door";
 import FullScreenDoorTransition, {
   type FullScreenDoorTransitionHandle,
 } from "@/components/FullScreenDoorTransition";
+import SampleHeader from "@/components/SampleHeader";
+import { presetsForAnimation } from "@/dev/animationPresets";
 import PresetDetailModal from "./PresetDetailModal";
 import PresetAnimationPreview from "./PresetAnimationPreview";
 
@@ -17,186 +21,175 @@ const formatValue = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+const PresetCard = ({
+  preset,
+  isTransitioning,
+  onOpen,
+  onStart,
+}: {
+  preset: DoorEntrancePreset;
+  isTransitioning: boolean;
+  onOpen: () => void;
+  onStart: () => void;
+}) => (
+  <article className="flex min-h-[340px] flex-col overflow-hidden border border-[#5f4933]/60 bg-[#0c0907]">
+    <div className="relative h-64 min-h-0 overflow-hidden border-b border-[#5f4933]/45 bg-[#090705]">
+      <PresetAnimationPreview preset={preset} />
+      <span className="absolute left-4 top-4 border border-[#c58a45]/55 bg-[#080604]/90 px-2.5 py-1 text-[0.65rem] font-bold tracking-[0.18em] text-[#d8a05a]">
+        {formatValue(preset.type)}
+      </span>
+    </div>
+
+    <div className="flex flex-1 flex-col p-5 sm:p-6">
+      <h3 className="font-[Georgia,serif] text-2xl leading-tight text-[#eee2d0]">
+        {preset.label}
+      </h3>
+      <p className="mt-2 font-mono text-xs text-[#a89d8e]">{preset.id}</p>
+      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+        <div>
+          <dt className="text-[#756958]">Motion</dt>
+          <dd className="mt-1 text-[#d8c9b5]">{formatValue(preset.motion)}</dd>
+        </div>
+        <div>
+          <dt className="text-[#756958]">Handle</dt>
+          <dd className="mt-1 text-[#d8c9b5]">
+            {preset.handleProfileId ? formatValue(preset.handleProfileId) : "None"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[#756958]">Material</dt>
+          <dd className="mt-1 text-[#d8c9b5]">{formatValue(preset.material)}</dd>
+        </div>
+        <div>
+          <dt className="text-[#756958]">Animation</dt>
+          <dd className="mt-1 text-[#d8c9b5]">{formatValue(preset.animation)}</dd>
+        </div>
+      </dl>
+      <div className="mt-auto border-t border-[#4b3928]/65 pt-5">
+        <button
+          type="button"
+          aria-label={`Open ${preset.label}`}
+          onClick={onOpen}
+          className="flex w-full items-center justify-between text-left text-xs font-semibold uppercase tracking-[0.14em] text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907]"
+        >
+          Open preset
+          <ArrowUpRight aria-hidden="true" size={16} />
+        </button>
+        <button
+          type="button"
+          disabled={isTransitioning}
+          aria-label={`Start full-screen transition with ${preset.label}`}
+          onClick={onStart}
+          className="mt-4 min-h-11 w-full border border-[#c98d48] bg-[#c98d48] px-5 text-sm font-bold text-[#100c08] transition-colors hover:bg-[#dda762] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Start full-screen transition
+        </button>
+      </div>
+    </div>
+  </article>
+);
+
+const AnimationSection = ({
+  animation,
+  presets,
+  isTransitioning,
+  onOpen,
+  onStart,
+}: {
+  animation: (typeof doorAnimationConfigs)[number];
+  presets: readonly DoorEntrancePreset[];
+  isTransitioning: boolean;
+  onOpen: (id: DoorEntrancePresetId) => void;
+  onStart: (id: DoorEntrancePresetId) => void;
+}) => (
+    <section
+      aria-labelledby={`animation-${animation.id}`}
+      className="mt-14 border-t border-[#5f4933]/60 pt-8 sm:mt-16 sm:pt-10"
+    >
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[#c98d48]">
+        Animation
+      </p>
+      <h2
+        id={`animation-${animation.id}`}
+        className="mt-2 font-[Georgia,serif] text-3xl text-[#f1e7d6] sm:text-4xl"
+      >
+        {animation.label}
+      </h2>
+      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {presets.map((preset) => (
+          <PresetCard
+            key={preset.id}
+            preset={preset}
+            isTransitioning={isTransitioning}
+            onOpen={() => onOpen(preset.id)}
+            onStart={() => onStart(preset.id)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+
 const Index = () => {
   const navigate = useNavigate();
   const transitionRef = useRef<FullScreenDoorTransitionHandle>(null);
   const [selectedPresetId, setSelectedPresetId] =
     useState<DoorEntrancePresetId | null>(null);
-  const [transitionPresetId, setTransitionPresetId] =
-    useState<DoorEntrancePresetId>(doorEntrancePresets[0].id);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const selectedPreset = doorEntrancePresets.find(
     (preset) => preset.id === selectedPresetId
   );
   const closeDetail = useCallback(() => setSelectedPresetId(null), []);
-  const startTransition = () => {
+  const startTransition = (presetId: DoorEntrancePresetId) => {
     if (isTransitioning) return;
 
     transitionRef.current?.play({
-      preset: transitionPresetId,
+      preset: presetId,
       destination: "/transition-complete",
     });
   };
 
   return (
     <>
-    <main
-      inert={isTransitioning ? "" : undefined}
-      className="min-h-screen bg-[#070504] text-[#e9dfcd]"
-    >
-      <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10 lg:py-20">
-        <header className="sticky top-0 z-40 -mx-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#5f4933]/60 bg-[#070504]/95 px-5 py-4 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-          <p className="font-[Georgia,serif] text-xl text-[#f1e7d6]">
-            Retro Horror Door
-          </p>
-          <nav aria-label="Project links" className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-[0.14em] sm:justify-end">
-            <a
-              href="https://github.com/moojing/re-canvas-door-swing#readme"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#070504]"
-            >
-              GitHub README
-              <ArrowUpRight aria-hidden="true" size={14} />
-            </a>
-            <a
-              href="https://re-door-gallery.pages.dev/stakeholder-selection"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#070504]"
-            >
-              Stakeholder picker
-              <ArrowUpRight aria-hidden="true" size={14} />
-            </a>
-          </nav>
-        </header>
+      <main
+        inert={isTransitioning ? "" : undefined}
+        className="min-h-screen bg-[#070504] text-[#e9dfcd]"
+      >
+        <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10 lg:py-20">
+          <SampleHeader />
 
-        <header className="mt-10 max-w-3xl border-l border-[#b77a38]/70 pl-5 sm:mt-14 sm:pl-7">
-          <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
-            Retro Horror Door / {String(doorEntrancePresets.length).padStart(2, "0")} presets
-          </p>
-          <h1 className="font-[Georgia,serif] text-4xl leading-[1.04] text-[#f1e7d6] sm:text-5xl lg:text-6xl">
-            Playable door presets
-          </h1>
-          <p className="mt-5 max-w-2xl text-sm leading-7 text-[#aa9f90] sm:text-base">
-            每張卡代表一組已定義、可發布的門組合。開啟 preset 以檢視實際播放與其固定設定。
-          </p>
-        </header>
+          <header className="mt-10 max-w-3xl border-l border-[#b77a38]/70 pl-5 sm:mt-14 sm:pl-7">
+            <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
+              Retro Horror Door / {String(doorEntrancePresets.length).padStart(2, "0")} presets
+            </p>
+            <h1 className="font-[Georgia,serif] text-4xl leading-[1.04] text-[#f1e7d6] sm:text-5xl lg:text-6xl">
+              Playable door presets
+            </h1>
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-[#aa9f90] sm:text-base">
+              每張卡代表一組已定義、可發布的門組合。開啟 preset 以檢視實際播放與其固定設定。
+            </p>
+          </header>
 
-        <section
-          aria-label="Available door presets"
-          className="mt-10 grid gap-5 sm:grid-cols-2 lg:mt-14 lg:grid-cols-3"
-        >
-          {doorEntrancePresets.map((preset) => (
-              <article
-                key={preset.id}
-                className="flex min-h-[340px] flex-col overflow-hidden border border-[#5f4933]/60 bg-[#0c0907]"
-              >
-                <div
-                  className="relative h-64 min-h-0 overflow-hidden border-b border-[#5f4933]/45 bg-[#090705]"
-                >
-                  <PresetAnimationPreview preset={preset} />
-                  <span className="absolute left-4 top-4 border border-[#c58a45]/55 bg-[#080604]/90 px-2.5 py-1 text-[0.65rem] font-bold tracking-[0.18em] text-[#d8a05a]">
-                    {formatValue(preset.type)}
-                  </span>
-                </div>
+          {doorAnimationConfigs.map((animation) => {
+            const presets = presetsForAnimation(animation.id, doorEntrancePresets);
+            if (presets.length === 0) return null;
 
-                <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <h2 className="font-[Georgia,serif] text-2xl leading-tight text-[#eee2d0]">
-                    {preset.label}
-                  </h2>
-                  <p className="mt-2 font-mono text-xs text-[#a89d8e]">{preset.id}</p>
-                  <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-                    <div>
-                      <dt className="text-[#756958]">Motion</dt>
-                      <dd className="mt-1 text-[#d8c9b5]">{formatValue(preset.motion)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[#756958]">Handle</dt>
-                      <dd className="mt-1 text-[#d8c9b5]">
-                        {preset.handleProfileId
-                          ? formatValue(preset.handleProfileId)
-                          : "None"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-[#756958]">Material</dt>
-                      <dd className="mt-1 text-[#d8c9b5]">{formatValue(preset.material)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[#756958]">Animation</dt>
-                      <dd className="mt-1 text-[#d8c9b5]">{formatValue(preset.animation)}</dd>
-                    </div>
-                  </dl>
-                  <button
-                    type="button"
-                    aria-label={`Open ${preset.label}`}
-                    onClick={() => setSelectedPresetId(preset.id)}
-                    className="mt-auto flex items-center justify-between border-t border-[#4b3928]/65 pt-5 text-left text-xs font-semibold uppercase tracking-[0.14em] text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907]"
-                  >
-                    Open preset
-                    <ArrowUpRight aria-hidden="true" size={16} />
-                  </button>
-                </div>
-              </article>
-          ))}
-        </section>
+            return (
+              <AnimationSection
+                key={animation.id}
+                animation={animation}
+                presets={presets}
+                isTransitioning={isTransitioning}
+                onOpen={setSelectedPresetId}
+                onStart={startTransition}
+              />
+            );
+          })}
+        </div>
 
-        <section
-          aria-labelledby="transition-demo-title"
-          className="mt-14 border-y border-[#5f4933]/60 py-8 sm:mt-20 sm:py-10"
-        >
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
-            <div className="max-w-2xl">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[#c98d48]">
-                App navigation demo
-              </p>
-              <h2
-                id="transition-demo-title"
-                className="mt-3 font-[Georgia,serif] text-3xl text-[#f1e7d6] sm:text-4xl"
-              >
-                Full-screen page transition
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-[#aa9f90] sm:text-base">
-                Choose a released preset, then use its actual vanilla animation before arriving at the next page.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_auto] lg:min-w-[520px]">
-              <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#aa9f90]">
-                Transition preset
-                <select
-                  aria-label="Transition preset"
-                  value={transitionPresetId}
-                  disabled={isTransitioning}
-                  onChange={(event) =>
-                    setTransitionPresetId(event.target.value as DoorEntrancePresetId)
-                  }
-                  className="min-h-11 border border-[#5f4933] bg-[#0c0907] px-3 text-sm font-normal normal-case tracking-normal text-[#e9dfcd] focus:outline-none focus:ring-2 focus:ring-[#d39952] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {doorEntrancePresets.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                disabled={isTransitioning}
-                onClick={startTransition}
-                className="min-h-11 self-end border border-[#c98d48] bg-[#c98d48] px-5 text-sm font-bold text-[#100c08] transition-colors hover:bg-[#dda762] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#070504] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Start full-screen transition
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {selectedPreset && (
-        <PresetDetailModal preset={selectedPreset} onClose={closeDetail} />
-      )}
-    </main>
+        {selectedPreset && (
+          <PresetDetailModal preset={selectedPreset} onClose={closeDetail} />
+        )}
+      </main>
       <FullScreenDoorTransition
         ref={transitionRef}
         onActiveChange={setIsTransitioning}

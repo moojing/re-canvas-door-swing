@@ -140,4 +140,4 @@ document.querySelector("#continue")?.addEventListener("click", () => {
 });
 ```
 
-The sample catalog includes this flow under **Full-screen page transition**.
+The sample catalog includes this flow on each preset card.

@@ -17,9 +17,8 @@ test("registers developer animation routes before the catch-all", async () => {
   );
 });
 
-test("catalog header does not expose a Dev link", async () => {
+test("catalog page mounts the shared sample header", async () => {
   const source = await readFile(indexPath, "utf8");
 
-  assert.doesNotMatch(source, /\/dev\/animations/);
-  assert.doesNotMatch(source, />Dev</);
+  assert.match(source, /<SampleHeader\s*\/>/);
 });

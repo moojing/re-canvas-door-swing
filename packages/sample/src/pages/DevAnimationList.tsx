@@ -3,11 +3,13 @@ import {
   doorAnimationConfigs,
   doorEntrancePresets,
 } from "retro-horror-door";
+import SampleHeader from "@/components/SampleHeader";
 import { presetsForAnimation } from "@/dev/animationPresets";
 
 const DevAnimationList = () => (
-  <main className="min-h-screen bg-[#070504] px-5 py-10 text-[#e9dfcd] sm:px-8">
-    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
+  <main className="min-h-screen bg-[#070504] px-5 py-10 text-[#e9dfcd] sm:px-8 lg:px-10">
+    <SampleHeader />
+    <p className="mt-10 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
       Developer verify
     </p>
     <h1 className="mt-3 font-[Georgia,serif] text-4xl text-[#f1e7d6]">

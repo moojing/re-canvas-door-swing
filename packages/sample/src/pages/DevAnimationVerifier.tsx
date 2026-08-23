@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import {
   doorAnimationConfigs,
   doorEntrancePresets,
@@ -12,6 +12,7 @@ import {
   presetsForAnimation,
   resolveVerifierPreset,
 } from "@/dev/animationPresets";
+import SampleHeader from "@/components/SampleHeader";
 import NotFound from "./NotFound";
 
 const formatTime = (milliseconds: number) => {
@@ -63,21 +64,14 @@ const DevAnimationVerifier = () => {
   }
 
   return (
-    <main className="min-h-screen bg-[#070504] px-5 py-8 text-[#e9dfcd] sm:px-8">
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
+    <main className="min-h-screen bg-[#070504] px-5 py-8 text-[#e9dfcd] sm:px-8 lg:px-10">
+      <SampleHeader />
+      <p className="mt-10 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
         Developer verify
       </p>
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-[Georgia,serif] text-4xl text-[#f1e7d6]">
-          {animation.label}
-        </h1>
-        <Link
-          to="/dev/animations"
-          className="text-xs font-semibold uppercase tracking-[0.14em] text-[#c98d48]"
-        >
-          All animations
-        </Link>
-      </div>
+      <h1 className="mt-3 font-[Georgia,serif] text-4xl text-[#f1e7d6]">
+        {animation.label}
+      </h1>
 
       {!preset ? (
         <p className="mt-10 text-[#aa9f90]">

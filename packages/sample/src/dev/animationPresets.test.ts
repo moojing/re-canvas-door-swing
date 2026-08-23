@@ -4,7 +4,13 @@ import {
   isKnownAnimation,
   presetsForAnimation,
   resolveVerifierPreset,
+  useAnimationDropdown,
 } from "./animationPresets.ts";
+
+test("uses a header dropdown once animation links overflow", () => {
+  assert.equal(useAnimationDropdown(2), false);
+  assert.equal(useAnimationDropdown(3), true);
+});
 
 const animations = ["direct-entry", "single-top-down-entry", "double-swing"];
 const presets = [
