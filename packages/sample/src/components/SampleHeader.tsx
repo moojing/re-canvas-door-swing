@@ -1,14 +1,16 @@
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { doorAnimationConfigs } from "retro-horror-door";
-import { useAnimationDropdown } from "@/dev/animationPresets";
+import { shouldCollapseAnimationLinks } from "@/dev/animationPresets";
 
 const linkClassName =
   "flex items-center gap-1.5 text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#070504]";
+const menuLinkClassName =
+  "block px-3 py-2 text-[#d8c9b5] hover:bg-[#16110d] hover:text-[#f1e7d6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-inset";
 
 const SampleHeader = () => {
   const animations = doorAnimationConfigs;
-  const dropdown = useAnimationDropdown(doorAnimationConfigs.length);
+  const dropdown = shouldCollapseAnimationLinks(doorAnimationConfigs.length);
 
   return (
     <header className="sticky top-0 z-40 -mx-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#5f4933]/60 bg-[#070504]/95 px-5 py-4 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
@@ -47,7 +49,7 @@ const SampleHeader = () => {
                 <li key={animation.id}>
                   <Link
                     to={`/dev/animations/${animation.id}`}
-                    className="block px-3 py-2 text-[#d8c9b5] hover:bg-[#16110d] hover:text-[#f1e7d6]"
+                    className={menuLinkClassName}
                   >
                     {animation.label}
                   </Link>
@@ -56,7 +58,7 @@ const SampleHeader = () => {
               <li>
                 <Link
                   to="/dev/animations"
-                  className="block border-t border-[#4b3928] px-3 py-2 text-[#c98d48] hover:bg-[#16110d]"
+                  className={`${menuLinkClassName} border-t border-[#4b3928] text-[#c98d48]`}
                 >
                   All animations
                 </Link>

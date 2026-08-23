@@ -55,7 +55,7 @@ test("header stays at the top while the page scrolls", async () => {
 test("header lists animations and collapses overflow into a dropdown", async () => {
   const source = await readFile(headerPath, "utf8");
 
-  assert.match(source, /useAnimationDropdown\(doorAnimationConfigs\.length\)/);
+  assert.match(source, /shouldCollapseAnimationLinks\(doorAnimationConfigs\.length\)/);
   assert.match(source, /\/dev\/animations\/\$\{animation\.id\}/);
   assert.match(source, /<details/);
   assert.match(source, /to="\/dev\/animations"/);

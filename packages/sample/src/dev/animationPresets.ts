@@ -1,6 +1,6 @@
 export const INLINE_HEADER_ANIMATION_LIMIT = 2;
 
-export const useAnimationDropdown = (count: number) =>
+export const shouldCollapseAnimationLinks = (count: number) =>
   count > INLINE_HEADER_ANIMATION_LIMIT;
 
 export const isKnownAnimation = (
