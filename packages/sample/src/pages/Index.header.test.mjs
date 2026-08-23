@@ -45,3 +45,9 @@ test("catalog header stays at the top while the page scrolls", async () => {
     /<header className="[^\"]*\bsticky\b[^\"]*\btop-0\b[^\"]*">/
   );
 });
+
+test("catalog header does not expose a developer verify link", async () => {
+  const source = await readFile(indexPath, "utf8");
+
+  assert.doesNotMatch(source, /\/dev\/animations/);
+});

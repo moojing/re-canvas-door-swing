@@ -2,9 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import TransitionComplete from "./pages/TransitionComplete";
+import DevAnimationList from "./pages/DevAnimationList";
+import DevAnimationVerifier from "./pages/DevAnimationVerifier";
 import NotFound from "./pages/NotFound";
 import A04DoorPoC from "./poc/A04DoorPoC";
 import HeavyWaterDoorA11 from "./poc/HeavyWaterDoorA11";
@@ -25,6 +27,9 @@ const App = () => (
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/dev" element={<Navigate to="/dev/animations" replace />} />
+          <Route path="/dev/animations" element={<DevAnimationList />} />
+          <Route path="/dev/animations/:animationId" element={<DevAnimationVerifier />} />
           <Route path="/transition-complete" element={<TransitionComplete />} />
           <Route path="/poc" element={<PocGallery />} />
           <Route path="/poc/a04" element={<A04DoorPoC />} />
