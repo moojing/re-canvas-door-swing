@@ -70,9 +70,10 @@ test("full-screen transition plays the selected preset before navigating", async
 }) => {
   await page.goto("/");
 
-  await page.getByLabel("Transition preset").selectOption("double-lever-wood");
   await page
-    .getByRole("button", { name: "Start full-screen transition" })
+    .getByRole("button", {
+      name: "Start full-screen transition with Double Lever Wood",
+    })
     .click();
 
   const transition = page.getByRole("status", {
@@ -96,10 +97,8 @@ test("full-screen transition plays the selected preset before navigating", async
 
 test("full-screen transition does not start a second run", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Transition preset").selectOption("double-lever-wood");
-
   const startButton = page.getByRole("button", {
-    name: "Start full-screen transition",
+    name: "Start full-screen transition with Double Lever Wood",
   });
   await startButton.click();
 

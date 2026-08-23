@@ -108,4 +108,4 @@ document.querySelector("#continue")?.addEventListener("click", () => {
 });
 ```
 
-Sample catalog 的 **Full-screen page transition** 區塊提供此流程的實作範例。
+Sample catalog 的每張 preset 卡片都提供此流程的實作範例。

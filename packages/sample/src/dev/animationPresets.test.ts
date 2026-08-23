@@ -4,7 +4,13 @@ import {
   isKnownAnimation,
   presetsForAnimation,
   resolveVerifierPreset,
+  shouldCollapseAnimationLinks,
 } from "./animationPresets.ts";
+
+test("uses a header dropdown once animation links overflow", () => {
+  assert.equal(shouldCollapseAnimationLinks(2), false);
+  assert.equal(shouldCollapseAnimationLinks(3), true);
+});
 
 const animations = ["direct-entry", "single-top-down-entry", "double-swing"];
 const presets = [
@@ -25,6 +31,14 @@ test("groups published presets by animation", () => {
   assert.deepEqual(presetsForAnimation("double-swing", presets), [
     presets[2],
   ]);
+});
+
+test("keeps every published preset when grouping by known animations", () => {
+  const grouped = animations.flatMap((id) => presetsForAnimation(id, presets));
+  assert.deepEqual(
+    grouped.map((preset) => preset.id).sort(),
+    presets.map((preset) => preset.id).sort()
+  );
 });
 
 test("falls back to the first preset for a missing or mismatched id", () => {

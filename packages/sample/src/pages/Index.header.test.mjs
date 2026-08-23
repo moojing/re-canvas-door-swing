@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const indexPath = new URL("./Index.tsx", import.meta.url);
+const headerPath = new URL("../components/SampleHeader.tsx", import.meta.url);
 
 const requiredLinks = [
   {
@@ -22,8 +23,13 @@ const anchorPattern = ({ label, href }) =>
     `<a\\b(?=[^>]*\\bhref=["']${escapeRegExp(href)}["'])(?=[^>]*\\btarget=["']_blank["'])(?=[^>]*\\brel=["']noreferrer["'])[^>]*>[\\s\\S]*?${escapeRegExp(label)}[\\s\\S]*?<\\/a>`
   );
 
-test("catalog header exposes the required external links", async () => {
+test("catalog uses the shared sample header", async () => {
   const source = await readFile(indexPath, "utf8");
+  assert.match(source, /<SampleHeader\s*\/>/);
+});
+
+test("header exposes the required external links", async () => {
+  const source = await readFile(headerPath, "utf8");
 
   for (const { label, href } of requiredLinks) {
     assert.match(source, anchorPattern({ label, href }), `expected a complete external anchor for ${label}`);
@@ -37,8 +43,8 @@ test("anchor matcher rejects a near-match URL", () => {
   assert.doesNotMatch(malformedAnchor, anchorPattern({ label, href }));
 });
 
-test("catalog header stays at the top while the page scrolls", async () => {
-  const source = await readFile(indexPath, "utf8");
+test("header stays at the top while the page scrolls", async () => {
+  const source = await readFile(headerPath, "utf8");
 
   assert.match(
     source,
@@ -46,8 +52,11 @@ test("catalog header stays at the top while the page scrolls", async () => {
   );
 });
 
-test("catalog header does not expose a developer verify link", async () => {
-  const source = await readFile(indexPath, "utf8");
+test("header lists animations and collapses overflow into a dropdown", async () => {
+  const source = await readFile(headerPath, "utf8");
 
-  assert.doesNotMatch(source, /\/dev\/animations/);
+  assert.match(source, /shouldCollapseAnimationLinks\(doorAnimationConfigs\.length\)/);
+  assert.match(source, /\/dev\/animations\/\$\{animation\.id\}/);
+  assert.match(source, /<details/);
+  assert.match(source, /to="\/dev\/animations"/);
 });
