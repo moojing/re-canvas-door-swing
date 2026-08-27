@@ -8,7 +8,7 @@ describe("door entrance controller", () => {
     let completed = false;
 
     const controller = createDoorEntranceController({
-      preset: "single-lever-wood",
+      preset: "biohazard-1996-a01-iron-door",
       onProgress: (progress) => progressEvents.push(progress),
       onComplete: () => {
         completed = true;
@@ -27,7 +27,7 @@ describe("door entrance controller", () => {
     let completeCount = 0;
 
     const controller = createDoorEntranceController({
-      preset: "single-lever-wood",
+      preset: "biohazard-1996-a01-iron-door",
       onProgress: (progress) => progressEvents.push(progress),
       onComplete: () => {
         completeCount += 1;
@@ -45,23 +45,23 @@ describe("door entrance controller", () => {
 
   it("reset updates preset and progress state", () => {
     const controller = createDoorEntranceController({
-      preset: "single-lever-wood",
+      preset: "biohazard-1996-a01-iron-door",
     });
 
     controller.seek(0.75);
-    controller.reset({ preset: "double-lever-wood", progress: 0.25 });
+    controller.reset({ preset: "biohazard-1998-a01-no-handle-door", progress: 0.25 });
 
     const snapshot = controller.getSnapshot();
 
     assert.equal(snapshot.progress, 0.25);
-    assert.equal(snapshot.preset.id, "double-lever-wood");
-    assert.equal(snapshot.animation.id, "double-swing");
+    assert.equal(snapshot.preset.id, "biohazard-1998-a01-no-handle-door");
+    assert.equal(snapshot.animation.id, "direct-entry");
     assert.equal(snapshot.isPlaying, false);
   });
 
   it("stop cancels playback state", () => {
     const controller = createDoorEntranceController({
-      preset: "single-overhead-lever-wood",
+      preset: "biohazard-1998-a01-no-handle-door",
     });
 
     controller.play();
@@ -75,7 +75,7 @@ describe("door entrance controller", () => {
   it("restarts playback from the beginning after completion", () => {
     let completeCount = 0;
     const controller = createDoorEntranceController({
-      preset: "single-lever-wood",
+      preset: "biohazard-1996-a01-iron-door",
       onComplete: () => {
         completeCount += 1;
       },

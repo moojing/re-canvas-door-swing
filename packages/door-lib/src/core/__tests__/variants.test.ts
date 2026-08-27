@@ -11,14 +11,15 @@ import { resolveDoorSurfaceTextureUrls } from "../surfaceTextures.ts";
 
 describe("core door entrance presets", () => {
   it("returns a complete playable preset by id", () => {
-    const preset = getDoorEntrancePreset("single-lever-wood");
+    const preset = getDoorEntrancePreset();
 
-    assert.equal(preset.id, "single-lever-wood");
+    assert.equal(preset.id, "biohazard-1996-a01-iron-door");
+    assert.equal(preset.label, "1-1 A-1 Iron Door");
     assert.equal(preset.type, "single");
     assert.equal(preset.motion, "hinge-single");
-    assert.equal(preset.handleProfileId, "lever-l");
-    assert.ok(preset.handleModelUrl);
-    assert.equal(preset.material, "wood-panel-aged");
+    assert.equal(preset.handleProfileId, undefined);
+    assert.equal(preset.handleModelUrl, undefined);
+    assert.equal(preset.material, "rusted-iron-riveted-panel");
     assert.equal(preset.animation, "direct-entry");
   });
 
@@ -65,12 +66,12 @@ describe("core door entrance presets", () => {
   });
 
   it("keeps Phase 1 runtime presets fully authored", () => {
-    const phaseOnePresets = doorEntrancePresets.filter((preset) =>
-      preset.id.startsWith("biohazard-")
+    assert.deepEqual(
+      doorEntrancePresets.map((preset) => preset.id),
+      ["biohazard-1996-a01-iron-door", "biohazard-1998-a01-no-handle-door"]
     );
 
-    assert.equal(phaseOnePresets.length, 2);
-    for (const preset of phaseOnePresets) {
+    for (const preset of doorEntrancePresets) {
       assert.ok(preset.frontTextureUrl, `${preset.id} needs a front texture`);
       assert.ok(preset.backTextureUrl, `${preset.id} needs a back texture`);
       assert.ok(preset.edgeTextureUrl, `${preset.id} needs an edge texture`);
@@ -135,32 +136,52 @@ describe("core door entrance presets", () => {
     });
   });
 
-  it("resolves random selection from presets matching the requested type", () => {
+  it("resolves random selection from presets matching the requested filters", () => {
     const preset = resolveDoorEntrancePresetSelection(
-      { random: true, type: "double" },
+      {
+        random: true,
+        type: "single",
+        motion: "hinge-single",
+        material: "rusted-iron-riveted-panel",
+      },
       () => 0
     );
 
-    assert.equal(preset.id, "double-lever-wood");
-    assert.equal(preset.type, "double");
+    assert.equal(preset.id, "biohazard-1996-a01-iron-door");
+    assert.equal(preset.type, "single");
   });
 
   it("does not allow a named preset with filter fields", () => {
     assert.throws(
       () =>
         resolveDoorEntrancePresetSelection({
-          preset: "single-lever-wood",
+          preset: "biohazard-1996-a01-iron-door",
           type: "single",
         }),
       /preset already defines type/
     );
   });
 
-  it("does not expose legacy door aliases", () => {
+  it("does not expose legacy door aliases or retired demo presets", () => {
     assert.equal("door-single" in doorEntrancePresetMap, false);
+    assert.equal("single-lever-wood" in doorEntrancePresetMap, false);
+    assert.equal("single-overhead-lever-wood" in doorEntrancePresetMap, false);
+    assert.equal("double-lever-wood" in doorEntrancePresetMap, false);
 
     assert.throws(
       () => getDoorEntrancePreset("door-single" as never),
+      /Unknown door entrance preset/
+    );
+    assert.throws(
+      () => getDoorEntrancePreset("single-lever-wood" as never),
+      /Unknown door entrance preset/
+    );
+    assert.throws(
+      () => getDoorEntrancePreset("single-overhead-lever-wood" as never),
+      /Unknown door entrance preset/
+    );
+    assert.throws(
+      () => getDoorEntrancePreset("double-lever-wood" as never),
       /Unknown door entrance preset/
     );
   });

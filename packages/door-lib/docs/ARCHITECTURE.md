@@ -47,7 +47,7 @@ export interface DoorAnimationConfig {
 ```
 - 目標契約：core 與 React-free `vanilla` renderer 只依賴這層，適合時間軸驅動的開門動畫。
 - 目前狀態：`retro-horror-door` 預設匯出 DOM + Three.js 的 vanilla renderer；`retro-horror-door/vanilla` 保留為相容別名。兩者都不透過 React、React DOM 或 R3F 掛載。
-- 公開選門 API 使用 `preset`，例如 `single-lever-wood`。一個 preset 是可播放的完整門組合，內部固定 `type`、`motion`、`handleProfileId`、`material`、animation config、聲音與鏡頭行為。
+- 公開選門 API 使用 `preset`，例如 `biohazard-1996-a01-iron-door`。一個 preset 是可播放的完整門組合，內部固定 `type`、`motion`、`handleProfileId`、`material`、animation config、聲音與鏡頭行為。
 - 每個 runtime preset 可指定 `frontTextureUrl`、`edgeTextureUrl`、`backTextureUrl`。未指定側邊或背面時，renderer 會使用正面貼圖；`textureUrl` 僅保留給舊版相容，等同三個面皆使用同一張圖。這些欄位屬於 preset，不提供新的 per-mount 客製欄位。
 - `random: true` 只從可用 runtime presets 中挑選；`type`、`motion`、`handle`、`material` 只在 random mode 作為篩選條件。有明確 `preset` 時不能再混用這些欄位。
 - Runtime preset registry 不包含來源影片、縮圖或分類筆記。這些只存在於 Notion / gallery / dev tracking metadata，不能進 npm package。
