@@ -14,12 +14,13 @@ export type DoorEntranceMotion =
   | "hinge-single-overhead"
   | "hinge-double";
 
-export type DoorMaterialId = "wood-panel-aged";
+export type DoorMaterialId = "wood-panel-aged" | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
   | "single-lever-wood"
   | "single-overhead-lever-wood"
-  | "double-lever-wood";
+  | "double-lever-wood"
+  | "biohazard-1996-a01-iron-door";
 
 export interface DoorSurfaceTextureUrls {
   frontTextureUrl?: string;

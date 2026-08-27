@@ -4,7 +4,11 @@ import type {
   DoorEntrancePresetSelection,
 } from "./types.ts";
 import { doorHandleSingle } from "../assets/models/index.ts";
-import { doorWood } from "../assets/textures/index.ts";
+import {
+  biohazard1996A01IronDoorBack,
+  biohazard1996A01IronDoorFront,
+  doorWood,
+} from "../assets/textures/index.ts";
 
 const DEFAULT_PRESET_ID: DoorEntrancePresetId = "single-lever-wood";
 
@@ -44,6 +48,17 @@ export const doorEntrancePresetMap: Record<
     animation: "double-swing",
     handleProfileId: "lever-l",
     handleModelUrl: doorHandleSingle,
+  },
+  "biohazard-1996-a01-iron-door": {
+    id: "biohazard-1996-a01-iron-door",
+    label: "1-1 A-1 Iron Door",
+    type: "single",
+    motion: "hinge-single",
+    material: "rusted-iron-riveted-panel",
+    frontTextureUrl: biohazard1996A01IronDoorFront,
+    edgeTextureUrl: biohazard1996A01IronDoorFront,
+    backTextureUrl: biohazard1996A01IronDoorBack,
+    animation: "direct-entry",
   },
 };
 

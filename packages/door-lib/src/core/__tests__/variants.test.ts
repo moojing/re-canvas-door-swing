@@ -22,6 +22,27 @@ describe("core door entrance presets", () => {
     assert.equal(preset.animation, "direct-entry");
   });
 
+  it("publishes the Phase 1 Biohazard A-1 iron door as a handle-free preset", () => {
+    const preset = getDoorEntrancePreset("biohazard-1996-a01-iron-door");
+
+    assert.equal(preset.id, "biohazard-1996-a01-iron-door");
+    assert.equal(preset.label, "1-1 A-1 Iron Door");
+    assert.equal(preset.type, "single");
+    assert.equal(preset.motion, "hinge-single");
+    assert.equal(preset.handleProfileId, undefined);
+    assert.equal(preset.handleModelUrl, undefined);
+    assert.equal(preset.material, "rusted-iron-riveted-panel");
+    assert.equal(preset.animation, "direct-entry");
+    assert.match(
+      preset.frontTextureUrl ?? "",
+      /biohazard-1996-a01-iron-door-front\.webp$/
+    );
+    assert.match(
+      preset.backTextureUrl ?? "",
+      /biohazard-1996-a01-iron-door-back\.webp$/
+    );
+  });
+
   it("assigns every published preset to a registered animation", () => {
     const animationIds = new Set(doorAnimationConfigs.map(({ id }) => id));
 
