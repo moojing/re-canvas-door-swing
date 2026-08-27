@@ -9,6 +9,7 @@ const sharedOptions = {
   // (see docs/technical-debt/door-texture-asset-ownership.md).
   loader: {
     ".png": "copy",
+    ".webp": "copy",
     ".mp3": "copy",
     ".glb": "copy",
   },

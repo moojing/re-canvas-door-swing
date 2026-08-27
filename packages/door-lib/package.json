@@ -27,7 +27,7 @@
     "dev": "npm run build -- --watch",
     "lint": "tsc --noEmit",
     "test": "npm run test:core",
-    "test:core": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test src/core/__tests__/*.test.ts",
+    "test:core": "node --disable-warning=ExperimentalWarning --experimental-strip-types --import ./src/__tests__/asset-loader.mjs --test src/core/__tests__/*.test.ts src/__tests__/handleModel.test.ts",
     "test:package": "npm run build && node --disable-warning=ExperimentalWarning --experimental-strip-types --test src/__tests__/package-boundary.test.ts",
     "test:browser": "npm run build && playwright test --config tests/browser/playwright.config.ts"
   },

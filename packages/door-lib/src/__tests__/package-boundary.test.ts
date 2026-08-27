@@ -242,6 +242,21 @@ describe("package boundary", () => {
     assert.doesNotMatch(source, /width: 1\.48/);
   });
 
+  it("preserves authored back texture orientation", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.match(source, /mirrorBackTexture:\s*!activeDoorPreset\.backTextureUrl/);
+    assert.match(source, /if \(mirrorBackTexture\) mirrorPlaneTextureX\(back\.geometry\);/);
+    assert.doesNotMatch(source, /;\s*mirrorPlaneTextureX\(back\.geometry\);\s*back\.position/s);
+  });
+
+  it("does not create fallback handle geometry for handle-free presets", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.match(source, /hasHandle:\s*Boolean\(activeDoorPreset\.handleProfileId\)/);
+    assert.match(source, /if \(!hasHandle\) return pivot;/);
+  });
+
   it("keeps the full vanilla output graph React-free", () => {
     assertOutputGraphReactFree({
       label: "vanilla",

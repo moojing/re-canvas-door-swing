@@ -9,6 +9,7 @@ const NODE_NAME_CANDIDATES = [
   "Object_18",
 ];
 const TARGET_HANDLE_SIZE = 0.72;
+const TARGET_PRESS_HANDLE_LENGTH = 0.6;
 const PRESS_HINTS = ["handle", "lever", "grip"];
 const STATIC_HINTS = [
   "door_handle",
@@ -21,11 +22,14 @@ const STATIC_HINTS = [
   "screw",
   "rosette",
 ];
-const HANDLE_COLOR = "#6f665b";
+const HANDLE_COLOR = "#74685c";
+const HANDLE_METALNESS = 0.65;
+const HANDLE_ROUGHNESS = 0.55;
 
 export interface PreparedHandleModel {
   object: THREE.Object3D;
   scale: number;
+  pressRotationMultiplier: 1 | -1;
   pressTargets: Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>;
 }
 
@@ -39,16 +43,16 @@ const toVintageMetal = (material: THREE.Material) => {
   ) {
     const next = material.clone();
     next.color.set(HANDLE_COLOR);
-    next.metalness = Math.max(next.metalness, 0.72);
-    next.roughness = 0.68;
+    next.metalness = HANDLE_METALNESS;
+    next.roughness = HANDLE_ROUGHNESS;
     next.needsUpdate = true;
     return next;
   }
 
   return new THREE.MeshStandardMaterial({
     color: HANDLE_COLOR,
-    metalness: 0.72,
-    roughness: 0.68,
+    metalness: HANDLE_METALNESS,
+    roughness: HANDLE_ROUGHNESS,
   });
 };
 
@@ -76,6 +80,51 @@ const pickHandleNode = (scene: THREE.Object3D) => {
   return fallback ? { node: fallback, name: fallbackName } : null;
 };
 
+const getLocalBoundsCenter = (node: THREE.Object3D) => {
+  node.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(node);
+  if (bounds.isEmpty()) return null;
+
+  const center = bounds.getCenter(new THREE.Vector3());
+  return node.worldToLocal(center);
+};
+
+const getPressRotationMultiplier = (
+  pressTargets: Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
+): 1 | -1 => {
+  for (const { node } of pressTargets) {
+    const center = getLocalBoundsCenter(node);
+    if (!center || Math.abs(center.x) < 0.000001) continue;
+    return center.x < 0 ? 1 : -1;
+  }
+
+  return -1;
+};
+
+const getScaleBasisSize = (
+  object: THREE.Object3D,
+  pressTargets: Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
+) => {
+  const pressBounds = new THREE.Box3();
+  for (const { node } of pressTargets) {
+    pressBounds.union(new THREE.Box3().setFromObject(node));
+  }
+
+  if (!pressBounds.isEmpty()) {
+    const pressSize = pressBounds.getSize(new THREE.Vector3());
+    return {
+      size: Math.max(pressSize.x, pressSize.y, pressSize.z, Number.EPSILON),
+      target: TARGET_PRESS_HANDLE_LENGTH,
+    };
+  }
+
+  const objectSize = new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
+  return {
+    size: Math.max(objectSize.x, objectSize.y, objectSize.z, Number.EPSILON),
+    target: TARGET_HANDLE_SIZE,
+  };
+};
+
 export const loadHandleScene = (url: string) => {
   const cached = sceneCache.get(url);
   if (cached) return cached;
@@ -100,9 +149,6 @@ export const prepareHandleModel = (
     picked.node.position.sub(bounds.getCenter(new THREE.Vector3()));
   }
   picked.node.updateMatrixWorld(true);
-  const size = new THREE.Box3().setFromObject(picked.node).getSize(new THREE.Vector3());
-  const longest = Math.max(size.x, size.y, size.z, Number.EPSILON);
-
   picked.node.traverse((object) => {
     const mesh = object as THREE.Mesh;
     if (!mesh.isMesh || !mesh.material) return;
@@ -131,10 +177,12 @@ export const prepareHandleModel = (
       return true;
     })
     .map((node) => ({ node, baseRotation: node.rotation.clone() }));
+  const scaleBasis = getScaleBasisSize(picked.node, pressTargets);
 
   return {
     object: picked.node,
-    scale: TARGET_HANDLE_SIZE / longest,
+    scale: scaleBasis.target / scaleBasis.size,
+    pressRotationMultiplier: getPressRotationMultiplier(pressTargets),
     pressTargets,
   };
 };
