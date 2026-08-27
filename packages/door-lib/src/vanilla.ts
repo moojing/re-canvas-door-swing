@@ -456,7 +456,8 @@ class VanillaDoorScene {
       new THREE.PlaneGeometry(width, height),
       this.backDoorMaterial
     );
-    if (mirrorBackTexture !== mirrorTextureX) mirrorPlaneTextureX(back.geometry);
+    const shouldMirrorBackTexture = mirrorBackTexture || mirrorTextureX;
+    if (shouldMirrorBackTexture) mirrorPlaneTextureX(back.geometry);
     back.position.set(doorCenterX, 0, -0.001);
     back.rotation.y = Math.PI;
     pivot.add(back);

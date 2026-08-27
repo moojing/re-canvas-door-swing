@@ -258,8 +258,13 @@ describe("package boundary", () => {
     assert.match(source, /if \(mirrorTextureX\) mirrorPlaneTextureX\(front\.geometry\);/);
     assert.match(
       source,
-      /if \(mirrorBackTexture !== mirrorTextureX\) mirrorPlaneTextureX\(back\.geometry\);/
+      /const shouldMirrorBackTexture = mirrorBackTexture \|\| mirrorTextureX/
     );
+    assert.match(
+      source,
+      /if \(shouldMirrorBackTexture\) mirrorPlaneTextureX\(back\.geometry\);/
+    );
+    assert.doesNotMatch(source, /mirrorBackTexture !== mirrorTextureX/);
     assert.doesNotMatch(source, /;\s*mirrorPlaneTextureX\(back\.geometry\);\s*back\.position/s);
   });
 
