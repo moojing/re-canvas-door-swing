@@ -18,6 +18,13 @@ test("registers developer animation routes before the catch-all", async () => {
   );
 });
 
+test("does not register retired POC routes in the sample app", async () => {
+  const source = await readFile(appPath, "utf8");
+
+  assert.doesNotMatch(source, /from "\.\/poc\//);
+  assert.doesNotMatch(source, /path="\/poc/);
+});
+
 test("catalog page mounts the shared sample header", async () => {
   const source = await readFile(indexPath, "utf8");
 
