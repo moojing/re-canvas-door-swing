@@ -16,6 +16,10 @@ test("preset catalog opens and closes a vanilla detail modal", async ({
   await expect(
     page.getByRole("img", { name: "1-1 A-1 Iron Door animation preview" })
   ).toHaveCount(1);
+  await expect(
+    page.getByRole("img", { name: "1-2 A-1 No-Handle Door animation preview" })
+  ).toHaveCount(1);
+  const catalogCanvasCount = await page.locator("canvas").count();
 
   await page
     .getByRole("button", { name: "Open Single Lever Wood" })
@@ -28,7 +32,7 @@ test("preset catalog opens and closes a vanilla detail modal", async ({
   await page.getByRole("button", { name: "Close preset detail" }).click();
 
   await expect(dialog).toHaveCount(0);
-  await expect(page.locator("canvas")).toHaveCount(5);
+  await expect(page.locator("canvas")).toHaveCount(catalogCanvasCount);
 });
 
 test("preset detail lets users scrub the animation timeline", async ({

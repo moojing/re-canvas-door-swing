@@ -59,6 +59,21 @@ export const doorEntrancePresetMap: Record<
     edgeTextureUrl: biohazard1996A01IronDoorFront,
     backTextureUrl: biohazard1996A01IronDoorBack,
     animation: "direct-entry",
+    hingeSide: "left",
+    mirrorTextureX: false,
+  },
+  "biohazard-1998-a01-no-handle-door": {
+    id: "biohazard-1998-a01-no-handle-door",
+    label: "1-2 A-1 No-Handle Door",
+    type: "single",
+    motion: "hinge-single",
+    material: "rusted-iron-riveted-panel",
+    frontTextureUrl: biohazard1996A01IronDoorFront,
+    edgeTextureUrl: biohazard1996A01IronDoorFront,
+    backTextureUrl: biohazard1996A01IronDoorBack,
+    animation: "direct-entry",
+    hingeSide: "right",
+    mirrorTextureX: true,
   },
 };
 

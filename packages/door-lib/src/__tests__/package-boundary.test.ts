@@ -235,9 +235,15 @@ describe("package boundary", () => {
     const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
 
     assert.match(source, /width: 3,\s+height: 6,\s+pivotX: -1\.5/);
+    assert.match(source, /hingeSide === "right"/);
+    assert.match(source, /pivotX: 1\.5,\s+doorCenterX: -1\.5/);
     assert.match(source, /width: 3,\s+height: 6,\s+pivotX: -3/);
     assert.match(source, /width: 3,\s+height: 6,\s+pivotX: 3/);
     assert.match(source, /const maxAngle = Math\.PI \/ 2/);
+    assert.match(
+      source,
+      /const singleRotationDirection = this\.activeSingleHingeSide === "right" \? 1 : -1/
+    );
     assert.match(source, /new THREE\.PlaneGeometry\(width, height\)/);
     assert.doesNotMatch(source, /width: 1\.48/);
   });
@@ -245,8 +251,15 @@ describe("package boundary", () => {
   it("preserves authored back texture orientation", () => {
     const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
 
-    assert.match(source, /mirrorBackTexture:\s*!activeDoorPreset\.backTextureUrl/);
-    assert.match(source, /if \(mirrorBackTexture\) mirrorPlaneTextureX\(back\.geometry\);/);
+    assert.match(
+      source,
+      /mirrorBackTexture:\s*Boolean\(activeDoorPreset\.backTextureUrl\) && !options\.textureUrl/
+    );
+    assert.match(source, /if \(mirrorTextureX\) mirrorPlaneTextureX\(front\.geometry\);/);
+    assert.match(
+      source,
+      /if \(mirrorBackTexture !== mirrorTextureX\) mirrorPlaneTextureX\(back\.geometry\);/
+    );
     assert.doesNotMatch(source, /;\s*mirrorPlaneTextureX\(back\.geometry\);\s*back\.position/s);
   });
 

@@ -33,6 +33,8 @@ describe("core door entrance presets", () => {
     assert.equal(preset.handleModelUrl, undefined);
     assert.equal(preset.material, "rusted-iron-riveted-panel");
     assert.equal(preset.animation, "direct-entry");
+    assert.equal(preset.hingeSide, "left");
+    assert.equal(preset.mirrorTextureX, false);
     assert.match(
       preset.frontTextureUrl ?? "",
       /biohazard-1996-a01-iron-door-front\.webp$/
@@ -41,6 +43,48 @@ describe("core door entrance presets", () => {
       preset.backTextureUrl ?? "",
       /biohazard-1996-a01-iron-door-back\.webp$/
     );
+  });
+
+  it("publishes the Phase 1 Biohazard A-1 mirror as the opposite no-handle preset", () => {
+    const source = getDoorEntrancePreset("biohazard-1996-a01-iron-door");
+    const preset = getDoorEntrancePreset("biohazard-1998-a01-no-handle-door");
+
+    assert.equal(preset.id, "biohazard-1998-a01-no-handle-door");
+    assert.equal(preset.label, "1-2 A-1 No-Handle Door");
+    assert.equal(preset.type, "single");
+    assert.equal(preset.motion, "hinge-single");
+    assert.equal(preset.handleProfileId, undefined);
+    assert.equal(preset.handleModelUrl, undefined);
+    assert.equal(preset.material, "rusted-iron-riveted-panel");
+    assert.equal(preset.animation, "direct-entry");
+    assert.equal(preset.hingeSide, "right");
+    assert.equal(preset.mirrorTextureX, true);
+    assert.equal(preset.frontTextureUrl, source.frontTextureUrl);
+    assert.equal(preset.edgeTextureUrl, source.edgeTextureUrl);
+    assert.equal(preset.backTextureUrl, source.backTextureUrl);
+  });
+
+  it("keeps Phase 1 runtime presets fully authored", () => {
+    const phaseOnePresets = doorEntrancePresets.filter((preset) =>
+      preset.id.startsWith("biohazard-")
+    );
+
+    assert.equal(phaseOnePresets.length, 2);
+    for (const preset of phaseOnePresets) {
+      assert.ok(preset.frontTextureUrl, `${preset.id} needs a front texture`);
+      assert.ok(preset.backTextureUrl, `${preset.id} needs a back texture`);
+      assert.ok(preset.edgeTextureUrl, `${preset.id} needs an edge texture`);
+      assert.ok(preset.type, `${preset.id} needs a type`);
+      assert.ok(preset.motion, `${preset.id} needs a motion`);
+      assert.ok(preset.material, `${preset.id} needs a material`);
+      assert.ok(preset.animation, `${preset.id} needs an animation`);
+      assert.ok(preset.hingeSide, `${preset.id} needs a hinge side`);
+      assert.equal(
+        typeof preset.mirrorTextureX,
+        "boolean",
+        `${preset.id} needs an explicit texture mirror setting`
+      );
+    }
   });
 
   it("assigns every published preset to a registered animation", () => {

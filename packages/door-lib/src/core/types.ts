@@ -14,13 +14,16 @@ export type DoorEntranceMotion =
   | "hinge-single-overhead"
   | "hinge-double";
 
+export type DoorHingeSide = "left" | "right";
+
 export type DoorMaterialId = "wood-panel-aged" | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
   | "single-lever-wood"
   | "single-overhead-lever-wood"
   | "double-lever-wood"
-  | "biohazard-1996-a01-iron-door";
+  | "biohazard-1996-a01-iron-door"
+  | "biohazard-1998-a01-no-handle-door";
 
 export interface DoorSurfaceTextureUrls {
   frontTextureUrl?: string;
@@ -43,6 +46,8 @@ export interface DoorEntrancePreset extends DoorSurfaceTextureUrls {
   motion: DoorEntranceMotion;
   material: DoorMaterialId;
   animation: DoorAnimationId;
+  hingeSide?: DoorHingeSide;
+  mirrorTextureX?: boolean;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
   soundUrl?: string;
