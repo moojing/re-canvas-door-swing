@@ -38,7 +38,9 @@ packages/sample/public/textures/poc-b10/
 test-results/
 __pycache__/
 # Codex CLI 本地工作目錄
-.codex/
+.codex/*
+!.codex/skills/
+!.codex/skills/**
 .agents/
 .superpowers/
 .worktrees/
