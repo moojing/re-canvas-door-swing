@@ -8,14 +8,6 @@ import TransitionComplete from "./pages/TransitionComplete";
 import DevAnimationList from "./pages/DevAnimationList";
 import DevAnimationVerifier from "./pages/DevAnimationVerifier";
 import NotFound from "./pages/NotFound";
-import A04DoorPoC from "./poc/A04DoorPoC";
-import HeavyWaterDoorA11 from "./poc/HeavyWaterDoorA11";
-import SewerGateB10 from "./poc/SewerGateB10";
-import LiftPlatformC03 from "./poc/LiftPlatformC03";
-import ArchedGateB05 from "./poc/ArchedGateB05";
-import HeavyWaterDoubleDoorB06 from "./poc/HeavyWaterDoubleDoorB06";
-import C06DrilledHolePoC from "./poc/C06DrilledHolePoC";
-import PocGallery from "./poc/PocGallery";
 
 const queryClient = new QueryClient();
 
@@ -31,14 +23,6 @@ const App = () => (
           <Route path="/dev/animations" element={<DevAnimationList />} />
           <Route path="/dev/animations/:animationId" element={<DevAnimationVerifier />} />
           <Route path="/transition-complete" element={<TransitionComplete />} />
-          <Route path="/poc" element={<PocGallery />} />
-          <Route path="/poc/a04" element={<A04DoorPoC />} />
-          <Route path="/poc/a11" element={<HeavyWaterDoorA11 />} />
-          <Route path="/poc/b10" element={<SewerGateB10 />} />
-          <Route path="/poc/c03" element={<LiftPlatformC03 />} />
-          <Route path="/poc/b05" element={<ArchedGateB05 />} />
-          <Route path="/poc/b06" element={<HeavyWaterDoubleDoorB06 />} />
-          <Route path="/poc/c06" element={<C06DrilledHolePoC />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

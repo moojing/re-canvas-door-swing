@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prototype Door Animation"
+  short_description: "Create and verify door animation presets"
+  default_prompt: "Use $prototype-door-animation to create a gallery-referenced door preset and launch the sample for verification."

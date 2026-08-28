@@ -3,52 +3,17 @@ import type {
   DoorEntrancePresetId,
   DoorEntrancePresetSelection,
 } from "./types.ts";
-import { doorHandleSingle } from "../assets/models/index.ts";
 import {
   biohazard1996A01IronDoorBack,
   biohazard1996A01IronDoorFront,
-  doorWood,
 } from "../assets/textures/index.ts";
 
-const DEFAULT_PRESET_ID: DoorEntrancePresetId = "single-lever-wood";
+const DEFAULT_PRESET_ID: DoorEntrancePresetId = "biohazard-1996-a01-iron-door";
 
 export const doorEntrancePresetMap: Record<
   DoorEntrancePresetId,
   DoorEntrancePreset
 > = {
-  "single-lever-wood": {
-    id: "single-lever-wood",
-    label: "Single Lever Wood",
-    type: "single",
-    motion: "hinge-single",
-    material: "wood-panel-aged",
-    frontTextureUrl: doorWood,
-    animation: "direct-entry",
-    handleProfileId: "lever-l",
-    handleModelUrl: doorHandleSingle,
-  },
-  "single-overhead-lever-wood": {
-    id: "single-overhead-lever-wood",
-    label: "Single Overhead Lever Wood",
-    type: "single",
-    motion: "hinge-single-overhead",
-    material: "wood-panel-aged",
-    frontTextureUrl: doorWood,
-    animation: "single-top-down-entry",
-    handleProfileId: "lever-l",
-    handleModelUrl: doorHandleSingle,
-  },
-  "double-lever-wood": {
-    id: "double-lever-wood",
-    label: "Double Lever Wood",
-    type: "double",
-    motion: "hinge-double",
-    material: "wood-panel-aged",
-    frontTextureUrl: doorWood,
-    animation: "double-swing",
-    handleProfileId: "lever-l",
-    handleModelUrl: doorHandleSingle,
-  },
   "biohazard-1996-a01-iron-door": {
     id: "biohazard-1996-a01-iron-door",
     label: "1-1 A-1 Iron Door",
@@ -59,6 +24,21 @@ export const doorEntrancePresetMap: Record<
     edgeTextureUrl: biohazard1996A01IronDoorFront,
     backTextureUrl: biohazard1996A01IronDoorBack,
     animation: "direct-entry",
+    hingeSide: "left",
+    mirrorTextureX: false,
+  },
+  "biohazard-1998-a01-no-handle-door": {
+    id: "biohazard-1998-a01-no-handle-door",
+    label: "1-2 A-1 No-Handle Door",
+    type: "single",
+    motion: "hinge-single",
+    material: "rusted-iron-riveted-panel",
+    frontTextureUrl: biohazard1996A01IronDoorFront,
+    edgeTextureUrl: biohazard1996A01IronDoorFront,
+    backTextureUrl: biohazard1996A01IronDoorBack,
+    animation: "direct-entry",
+    hingeSide: "right",
+    mirrorTextureX: true,
   },
 };
 

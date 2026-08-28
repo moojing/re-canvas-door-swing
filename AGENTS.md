@@ -8,13 +8,13 @@ The repository is an npm workspaces monorepo:
   default API is vanilla JS + Three.js; it must remain React-free.
 - `packages/sample/` is a Vite + React app used to develop and visually verify
   the library. The catalog lives in `src/pages/Index.tsx`, with the renderer
-  preview and modal in adjacent page modules. Historic experiments remain in
-  `src/poc/` and are routed below `/poc`.
+  preview and modal in adjacent page modules. The old PoC routes have been
+  retired now that direct-entry presets render through the library.
 - `packages/door-lib/src/core/` contains framework-free types, timeline state,
   preset selection, and texture resolution. `src/vanilla.ts` owns DOM mounting,
   the renderer, playback, and sound.
 - Library-owned assets live in `packages/door-lib/src/assets/`; sample `public/`
-  assets are only for the sample or PoCs.
+  assets are only for the sample.
 
 ## Commands
 

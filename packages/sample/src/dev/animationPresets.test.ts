@@ -8,9 +8,8 @@ import {
 
 const animations = ["direct-entry", "single-top-down-entry", "double-swing"];
 const presets = [
-  { id: "single-lever-wood", animation: "direct-entry" },
-  { id: "single-overhead-lever-wood", animation: "single-top-down-entry" },
-  { id: "double-lever-wood", animation: "double-swing" },
+  { id: "biohazard-1996-a01-iron-door", animation: "direct-entry" },
+  { id: "biohazard-1998-a01-no-handle-door", animation: "direct-entry" },
 ];
 
 test("recognizes registered animation ids only", () => {
@@ -21,10 +20,9 @@ test("recognizes registered animation ids only", () => {
 test("groups published presets by animation", () => {
   assert.deepEqual(presetsForAnimation("direct-entry", presets), [
     presets[0],
+    presets[1],
   ]);
-  assert.deepEqual(presetsForAnimation("double-swing", presets), [
-    presets[2],
-  ]);
+  assert.deepEqual(presetsForAnimation("double-swing", presets), []);
 });
 
 test("keeps every published preset when grouping by known animations", () => {
@@ -45,7 +43,7 @@ test("falls back to the first preset for a missing or mismatched id", () => {
     presets[0]
   );
   assert.equal(
-    resolveVerifierPreset("direct-entry", presets, "double-lever-wood"),
+    resolveVerifierPreset("direct-entry", presets, "missing-phase-one-preset"),
     presets[0]
   );
 });

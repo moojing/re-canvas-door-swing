@@ -49,7 +49,7 @@ const FullScreenDoorTransition = forwardRef<
 
     const door = mountDoorEntrance({
       target,
-      preset: "single-lever-wood",
+      preset: "biohazard-1996-a01-iron-door",
       autoPlay: false,
       className: "h-full w-full border-0 bg-black",
       onComplete: () => {

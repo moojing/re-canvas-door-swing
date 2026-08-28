@@ -6,29 +6,31 @@ test("preset catalog opens and closes a vanilla detail modal", async ({
   await page.goto("/");
 
   const panelPreview = page.getByRole("img", {
-    name: "Single Lever Wood animation preview",
+    name: "1-1 A-1 Iron Door animation preview",
   });
   await expect(panelPreview).toBeVisible();
   await expect(panelPreview.locator("canvas")).toBeVisible();
   await expect(
-    page.getByRole("img", { name: "Double Lever Wood animation preview" })
-  ).toHaveCount(1);
-  await expect(
     page.getByRole("img", { name: "1-1 A-1 Iron Door animation preview" })
   ).toHaveCount(1);
+  await expect(
+    page.getByRole("img", { name: "1-2 A-1 No-Handle Door animation preview" })
+  ).toHaveCount(1);
+  await expect(page.getByText("Single Lever Wood")).toHaveCount(0);
+  const catalogCanvasCount = await page.locator("canvas").count();
 
   await page
-    .getByRole("button", { name: "Open Single Lever Wood" })
+    .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
     .click();
 
-  const dialog = page.getByRole("dialog", { name: "Single Lever Wood" });
+  const dialog = page.getByRole("dialog", { name: "1-1 A-1 Iron Door" });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("canvas")).toBeVisible();
 
   await page.getByRole("button", { name: "Close preset detail" }).click();
 
   await expect(dialog).toHaveCount(0);
-  await expect(page.locator("canvas")).toHaveCount(5);
+  await expect(page.locator("canvas")).toHaveCount(catalogCanvasCount);
 });
 
 test("preset detail lets users scrub the animation timeline", async ({
@@ -36,7 +38,7 @@ test("preset detail lets users scrub the animation timeline", async ({
 }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Open Single Lever Wood" })
+    .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
     .click();
 
   const timeline = page.getByRole("slider", {
@@ -55,7 +57,7 @@ test("mobile preset detail keeps its close control within the viewport", async (
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Open Single Lever Wood" })
+    .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
     .click();
 
   const closeButton = page.getByRole("button", {
@@ -75,7 +77,7 @@ test("full-screen transition plays the selected preset before navigating", async
 
   await page
     .getByRole("button", {
-      name: "Start full-screen transition with Double Lever Wood",
+      name: "Start full-screen transition with 1-1 A-1 Iron Door",
     })
     .click();
 
@@ -92,7 +94,7 @@ test("full-screen transition plays the selected preset before navigating", async
   await expect(
     page.getByRole("heading", { name: "Destination reached" })
   ).toBeVisible();
-  await expect(page.getByText("Double Lever Wood", { exact: true })).toBeVisible();
+  await expect(page.getByText("1-1 A-1 Iron Door", { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: "Return to preset catalog" }).click();
   await expect(page).toHaveURL(/\/$/);
@@ -101,7 +103,7 @@ test("full-screen transition plays the selected preset before navigating", async
 test("full-screen transition does not start a second run", async ({ page }) => {
   await page.goto("/");
   const startButton = page.getByRole("button", {
-    name: "Start full-screen transition with Double Lever Wood",
+    name: "Start full-screen transition with 1-1 A-1 Iron Door",
   });
   await startButton.click();
 

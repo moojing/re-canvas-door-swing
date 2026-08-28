@@ -12,6 +12,7 @@ import type {
   DoorEntranceType,
   DoorEntrancePreset,
   DoorEntrancePresetSelection,
+  DoorHingeSide,
   DoorMaterialId,
   HandleProfileId,
   ResolvedDoorSurfaceTextureUrls,
@@ -142,6 +143,8 @@ class VanillaDoorScene {
   private activeHandleModelUrl?: string;
   private activeHasHandle?: boolean;
   private activeMirrorBackTexture?: boolean;
+  private activeMirrorTextureX?: boolean;
+  private activeSingleHingeSide: DoorHingeSide = "left";
   private activeAnimation?: DoorAnimationId;
   private activeHandleGroups: Array<{
     group: THREE.Group;
@@ -214,6 +217,8 @@ class VanillaDoorScene {
     handleModelUrl,
     hasHandle,
     mirrorBackTexture,
+    mirrorTextureX,
+    hingeSide,
     cameraPanX,
     cameraPanY,
   }: {
@@ -223,6 +228,8 @@ class VanillaDoorScene {
     handleModelUrl?: string;
     hasHandle: boolean;
     mirrorBackTexture: boolean;
+    mirrorTextureX: boolean;
+    hingeSide: DoorHingeSide;
     cameraPanX: number;
     cameraPanY: number;
   }) {
@@ -236,20 +243,26 @@ class VanillaDoorScene {
       this.activeSurfaceTextureKey !== surfaceKey ||
       this.activeHandleModelUrl !== handleModelUrl ||
       this.activeHasHandle !== hasHandle ||
-      this.activeMirrorBackTexture !== mirrorBackTexture
+      this.activeMirrorBackTexture !== mirrorBackTexture ||
+      this.activeMirrorTextureX !== mirrorTextureX ||
+      this.activeSingleHingeSide !== hingeSide
     ) {
       this.rebuildDoor(
         config.id,
         surfaceTextureUrls,
         handleModelUrl,
         hasHandle,
-        mirrorBackTexture
+        mirrorBackTexture,
+        mirrorTextureX,
+        hingeSide
       );
       this.activeAnimation = config.id;
       this.activeSurfaceTextureKey = surfaceKey;
       this.activeHandleModelUrl = handleModelUrl;
       this.activeHasHandle = hasHandle;
       this.activeMirrorBackTexture = mirrorBackTexture;
+      this.activeMirrorTextureX = mirrorTextureX;
+      this.activeSingleHingeSide = hingeSide;
     }
 
     this.applyDoorState(config.id, state);
@@ -294,7 +307,9 @@ class VanillaDoorScene {
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls,
     handleModelUrl: string | undefined,
     hasHandle: boolean,
-    mirrorBackTexture: boolean
+    mirrorBackTexture: boolean,
+    mirrorTextureX: boolean,
+    hingeSide: DoorHingeSide
   ) {
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
@@ -322,6 +337,7 @@ class VanillaDoorScene {
         handleModelUrl,
         hasHandle,
         mirrorBackTexture,
+        mirrorTextureX,
       });
       left.name = "left-door";
       this.doorRoot.add(left);
@@ -336,23 +352,39 @@ class VanillaDoorScene {
         handleModelUrl,
         hasHandle,
         mirrorBackTexture,
+        mirrorTextureX,
       });
       right.name = "right-door";
       this.doorRoot.add(right);
       return;
     }
 
-    const single = this.createDoorLeaf({
-      width: 3,
-      height: 6,
-      pivotX: -1.5,
-      doorCenterX: 1.5,
-      handleX: 2.26,
-      side: "single",
-      handleModelUrl,
-      hasHandle,
-      mirrorBackTexture,
-    });
+    const single =
+      hingeSide === "right"
+        ? this.createDoorLeaf({
+            width: 3,
+            height: 6,
+            pivotX: 1.5,
+            doorCenterX: -1.5,
+            handleX: -2.26,
+            side: "left",
+            handleModelUrl,
+            hasHandle,
+            mirrorBackTexture,
+            mirrorTextureX,
+          })
+        : this.createDoorLeaf({
+            width: 3,
+            height: 6,
+            pivotX: -1.5,
+            doorCenterX: 1.5,
+            handleX: 2.26,
+            side: "single",
+            handleModelUrl,
+            hasHandle,
+            mirrorBackTexture,
+            mirrorTextureX,
+          });
     single.name = "single-door";
     this.doorRoot.add(single);
   }
@@ -389,6 +421,7 @@ class VanillaDoorScene {
     handleModelUrl,
     hasHandle,
     mirrorBackTexture,
+    mirrorTextureX,
   }: {
     width: number;
     height: number;
@@ -399,6 +432,7 @@ class VanillaDoorScene {
     handleModelUrl?: string;
     hasHandle: boolean;
     mirrorBackTexture: boolean;
+    mirrorTextureX: boolean;
   }) {
     const pivot = new THREE.Group();
     pivot.position.x = pivotX;
@@ -415,13 +449,15 @@ class VanillaDoorScene {
       this.frontDoorMaterial
     );
     front.position.set(doorCenterX, 0, 0.161);
+    if (mirrorTextureX) mirrorPlaneTextureX(front.geometry);
     pivot.add(front);
 
     const back = new THREE.Mesh(
       new THREE.PlaneGeometry(width, height),
       this.backDoorMaterial
     );
-    if (mirrorBackTexture) mirrorPlaneTextureX(back.geometry);
+    const shouldMirrorBackTexture = mirrorBackTexture || mirrorTextureX;
+    if (shouldMirrorBackTexture) mirrorPlaneTextureX(back.geometry);
     back.position.set(doorCenterX, 0, -0.001);
     back.rotation.y = Math.PI;
     pivot.add(back);
@@ -469,7 +505,8 @@ class VanillaDoorScene {
       if (left) left.rotation.y = -state.doorAngle * maxAngle;
       if (right) right.rotation.y = (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
     } else if (single) {
-      single.rotation.y = -state.doorAngle * maxAngle;
+      const singleRotationDirection = this.activeSingleHingeSide === "right" ? 1 : -1;
+      single.rotation.y = singleRotationDirection * state.doorAngle * maxAngle;
     }
 
     this.activeHandleGroups.forEach((handleEntry) => {
@@ -745,7 +782,9 @@ export const mountDoorEntrance = (
         options.handleModelUrl ?? activeDoorPreset.handleModelUrl
       ),
       hasHandle: Boolean(activeDoorPreset.handleProfileId),
-      mirrorBackTexture: !activeDoorPreset.backTextureUrl || Boolean(options.textureUrl),
+      mirrorBackTexture: Boolean(activeDoorPreset.backTextureUrl) && !options.textureUrl,
+      mirrorTextureX: activeDoorPreset.mirrorTextureX ?? false,
+      hingeSide: activeDoorPreset.hingeSide ?? "left",
       cameraPanX: options.cameraPanX ?? 0,
       cameraPanY: options.cameraPanY ?? 0,
     });

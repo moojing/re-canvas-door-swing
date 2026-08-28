@@ -28,6 +28,7 @@ export type {
   DoorEntrancePresetSelection,
   DoorEntranceSoundState,
   DoorSurfaceTextureUrls,
+  DoorHingeSide,
   ResolvedDoorSurfaceTextureUrls,
   DoorMaterialId,
   HandleProfileId,

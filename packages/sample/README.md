@@ -21,8 +21,6 @@ Open `http://127.0.0.1:5173/`.
 - `/`: playable preset catalog. Each card is a real initial renderer frame.
   Selecting a card opens a modal with Play, Reset, timeline seeking, sound,
   and the `mountDoorEntrance` usage for that preset.
-- `/poc`: historic technical PoCs. Individual POC routes remain available from
-  this gallery, but they are not the sample home page.
 - `/samples/vanilla.html`: minimal non-React mounting example.
 
 ## Development notes
@@ -34,7 +32,7 @@ Open `http://127.0.0.1:5173/`.
   materials, lighting, and opening behavior.
 - Library-owned default textures and sounds are bundled from
   `packages/door-lib/src/assets/`. Files in this package's `public/` directory
-  are sample or PoC assets only.
+  are sample assets only.
 
 ## Verification
 

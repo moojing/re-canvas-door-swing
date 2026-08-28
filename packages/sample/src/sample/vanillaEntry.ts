@@ -36,7 +36,8 @@ const setStatus = (text: string) => {
 const boot = () => {
   if (!target) return;
   const getSelectedPreset = (): DoorEntrancePresetId =>
-    (presetSelect?.value as DoorEntrancePresetId) ?? "single-lever-wood";
+    (presetSelect?.value as DoorEntrancePresetId) ??
+    "biohazard-1996-a01-iron-door";
 
   const mountApp = (preset: DoorEntrancePresetId) => {
     ready = false;
