@@ -19,7 +19,11 @@ import type {
 } from "./core/types.ts";
 import { doorWood } from "./assets/textures/index.ts";
 import { doorOpenClose } from "./assets/sounds/index.ts";
-import { loadHandleScene, prepareHandleModel } from "./handleModel.ts";
+import {
+  createAgedHandleMaterial,
+  loadHandleScene,
+  prepareHandleModel,
+} from "./handleModel.ts";
 
 interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
   target: HTMLElement | null;
@@ -51,6 +55,11 @@ const DEFAULT_CLASS_NAME =
   "h-[460px] w-full rounded-xl border border-white/10 bg-black";
 const DEFAULT_TEXTURE_URL = doorWood;
 const DEFAULT_SOUND_URL = doorOpenClose;
+const DOOR_DEPTH = 0.16;
+const DOOR_SURFACE_OFFSET = 0.002;
+const IMPORTED_HANDLE_SURFACE_EMBED = 0.006;
+const IMPORTED_KNOB_MODEL_SCALE = 0.45;
+const KNOB_HANDLE_EDGE_INSET = 0.28;
 
 const clampProgress = (progress: number) => {
   if (!Number.isFinite(progress)) return 0;
@@ -121,12 +130,7 @@ const mirrorPlaneTextureX = (geometry: THREE.BufferGeometry) => {
   uv.needsUpdate = true;
 };
 
-const createHandleMaterial = () =>
-  new THREE.MeshStandardMaterial({
-    color: "#74685c",
-    roughness: 0.55,
-    metalness: 0.65,
-  });
+const createHandleMaterial = () => createAgedHandleMaterial();
 
 class VanillaDoorScene {
   readonly element: HTMLDivElement;
@@ -141,6 +145,7 @@ class VanillaDoorScene {
   private doorRoot = new THREE.Group();
   private activeSurfaceTextureKey?: string;
   private activeHandleModelUrl?: string;
+  private activeHandleProfileId?: HandleProfileId;
   private activeHasHandle?: boolean;
   private activeMirrorBackTexture?: boolean;
   private activeMirrorTextureX?: boolean;
@@ -199,9 +204,6 @@ class VanillaDoorScene {
     const rimLight = new THREE.DirectionalLight("#8fa8c7", 0.35);
     rimLight.position.set(-3, 2, -4);
     this.scene.add(rimLight);
-    const warmLight = new THREE.PointLight("#ff8844", 0.55);
-    warmLight.position.set(0, 2, 3);
-    this.scene.add(warmLight);
     this.scene.add(this.doorRoot);
 
     if (typeof ResizeObserver !== "undefined") {
@@ -215,6 +217,7 @@ class VanillaDoorScene {
     config,
     surfaceTextureUrls,
     handleModelUrl,
+    handleProfileId,
     hasHandle,
     mirrorBackTexture,
     mirrorTextureX,
@@ -226,6 +229,7 @@ class VanillaDoorScene {
     config: DoorAnimationConfig;
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls;
     handleModelUrl?: string;
+    handleProfileId?: HandleProfileId;
     hasHandle: boolean;
     mirrorBackTexture: boolean;
     mirrorTextureX: boolean;
@@ -242,6 +246,7 @@ class VanillaDoorScene {
       this.activeAnimation !== config.id ||
       this.activeSurfaceTextureKey !== surfaceKey ||
       this.activeHandleModelUrl !== handleModelUrl ||
+      this.activeHandleProfileId !== handleProfileId ||
       this.activeHasHandle !== hasHandle ||
       this.activeMirrorBackTexture !== mirrorBackTexture ||
       this.activeMirrorTextureX !== mirrorTextureX ||
@@ -251,6 +256,7 @@ class VanillaDoorScene {
         config.id,
         surfaceTextureUrls,
         handleModelUrl,
+        handleProfileId,
         hasHandle,
         mirrorBackTexture,
         mirrorTextureX,
@@ -259,6 +265,7 @@ class VanillaDoorScene {
       this.activeAnimation = config.id;
       this.activeSurfaceTextureKey = surfaceKey;
       this.activeHandleModelUrl = handleModelUrl;
+      this.activeHandleProfileId = handleProfileId;
       this.activeHasHandle = hasHandle;
       this.activeMirrorBackTexture = mirrorBackTexture;
       this.activeMirrorTextureX = mirrorTextureX;
@@ -306,6 +313,7 @@ class VanillaDoorScene {
     animation: DoorAnimationId,
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls,
     handleModelUrl: string | undefined,
+    handleProfileId: HandleProfileId | undefined,
     hasHandle: boolean,
     mirrorBackTexture: boolean,
     mirrorTextureX: boolean,
@@ -335,6 +343,7 @@ class VanillaDoorScene {
         handleX: 2.26,
         side: "left",
         handleModelUrl,
+        handleProfileId,
         hasHandle,
         mirrorBackTexture,
         mirrorTextureX,
@@ -350,6 +359,7 @@ class VanillaDoorScene {
         handleX: -2.26,
         side: "right",
         handleModelUrl,
+        handleProfileId,
         hasHandle,
         mirrorBackTexture,
         mirrorTextureX,
@@ -369,6 +379,7 @@ class VanillaDoorScene {
             handleX: -2.26,
             side: "left",
             handleModelUrl,
+            handleProfileId,
             hasHandle,
             mirrorBackTexture,
             mirrorTextureX,
@@ -381,6 +392,7 @@ class VanillaDoorScene {
             handleX: 2.26,
             side: "single",
             handleModelUrl,
+            handleProfileId,
             hasHandle,
             mirrorBackTexture,
             mirrorTextureX,
@@ -419,6 +431,7 @@ class VanillaDoorScene {
     handleX,
     side,
     handleModelUrl,
+    handleProfileId,
     hasHandle,
     mirrorBackTexture,
     mirrorTextureX,
@@ -430,6 +443,7 @@ class VanillaDoorScene {
     handleX: number;
     side: "single" | "left" | "right";
     handleModelUrl?: string;
+    handleProfileId?: HandleProfileId;
     hasHandle: boolean;
     mirrorBackTexture: boolean;
     mirrorTextureX: boolean;
@@ -438,17 +452,17 @@ class VanillaDoorScene {
     pivot.position.x = pivotX;
 
     const door = new THREE.Mesh(
-      new THREE.BoxGeometry(width, height, 0.16),
+      new THREE.BoxGeometry(width, height, DOOR_DEPTH),
       this.doorMaterials
     );
-    door.position.set(doorCenterX, 0, 0.08);
+    door.position.set(doorCenterX, 0, DOOR_DEPTH / 2);
     pivot.add(door);
 
     const front = new THREE.Mesh(
       new THREE.PlaneGeometry(width, height),
       this.frontDoorMaterial
     );
-    front.position.set(doorCenterX, 0, 0.161);
+    front.position.set(doorCenterX, 0, DOOR_DEPTH + DOOR_SURFACE_OFFSET);
     if (mirrorTextureX) mirrorPlaneTextureX(front.geometry);
     pivot.add(front);
 
@@ -458,41 +472,129 @@ class VanillaDoorScene {
     );
     const shouldMirrorBackTexture = mirrorBackTexture || mirrorTextureX;
     if (shouldMirrorBackTexture) mirrorPlaneTextureX(back.geometry);
-    back.position.set(doorCenterX, 0, -0.001);
+    back.position.set(doorCenterX, 0, -DOOR_SURFACE_OFFSET);
     back.rotation.y = Math.PI;
     pivot.add(back);
 
     if (!hasHandle) return pivot;
 
+    const frontHandleGroup = this.createHandleGroup({
+      width,
+      handleX,
+      side,
+      handleModelUrl,
+      handleProfileId,
+      face: "front",
+    });
+    pivot.add(frontHandleGroup);
+
+    const backHandleGroup = this.createHandleGroup({
+      width,
+      handleX,
+      side,
+      handleModelUrl,
+      handleProfileId,
+      face: "back",
+    });
+    pivot.add(backHandleGroup);
+
+    return pivot;
+  }
+
+  private createHandleGroup({
+    width,
+    handleX,
+    side,
+    handleModelUrl,
+    handleProfileId,
+    face,
+  }: {
+    width: number;
+    handleX: number;
+    side: "single" | "left" | "right";
+    handleModelUrl?: string;
+    handleProfileId?: HandleProfileId;
+    face: "front" | "back";
+  }) {
     const handleGroup = new THREE.Group();
-    handleGroup.position.set(handleX, -0.02, 0.32);
-    const stem = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08, 0.08, 0.12, 24),
-      this.handleMaterial
+    handleGroup.name = `${face}-handle`;
+    const resolvedHandleX =
+      handleProfileId === "knob-round"
+        ? Math.sign(handleX) *
+          Math.min(Math.abs(handleX) + 0.46, width - KNOB_HANDLE_EDGE_INSET)
+        : handleX;
+    handleGroup.position.set(
+      resolvedHandleX,
+      -0.02,
+      face === "front" ? DOOR_DEPTH + DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET
     );
-    stem.rotation.x = Math.PI / 2;
-    const lever = new THREE.Mesh(
-      new THREE.BoxGeometry(0.6, 0.08, 0.08),
-      this.handleMaterial
-    );
-    lever.position.x = side === "left" ? -0.25 : 0.25;
-    handleGroup.add(stem, lever);
-    pivot.add(handleGroup);
+    if (face === "back") handleGroup.rotation.y = Math.PI;
+    let pressTargets:
+      | Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
+      | undefined;
+
+    if (handleProfileId === "knob-round") {
+      const rose = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.18, 0.04, 32),
+        this.handleMaterial
+      );
+      rose.rotation.x = Math.PI / 2;
+      rose.position.z = 0.02;
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.07, 0.07, 0.12, 24),
+        this.handleMaterial
+      );
+      stem.rotation.x = Math.PI / 2;
+      stem.position.z = 0.075;
+      const knob = new THREE.Mesh(
+        new THREE.SphereGeometry(0.165, 28, 16),
+        this.handleMaterial
+      );
+      knob.scale.z = 0.72;
+      knob.position.z = 0.19;
+      const turnSlot = new THREE.Mesh(
+        new THREE.BoxGeometry(0.2, 0.025, 0.025),
+        this.handleMaterial
+      );
+      turnSlot.position.z = 0.35;
+      handleGroup.add(rose, stem, knob, turnSlot);
+      pressTargets = [
+        { node: knob, baseRotation: knob.rotation.clone() },
+        { node: turnSlot, baseRotation: turnSlot.rotation.clone() },
+      ];
+    } else {
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.08, 0.12, 24),
+        this.handleMaterial
+      );
+      stem.rotation.x = Math.PI / 2;
+      const lever = new THREE.Mesh(
+        new THREE.BoxGeometry(0.6, 0.08, 0.08),
+        this.handleMaterial
+      );
+      lever.position.x = side === "left" ? -0.25 : 0.25;
+      handleGroup.add(stem, lever);
+    }
 
     const handleEntry = {
       group: handleGroup,
-      rotationMultiplier: side === "left" ? 1 : -1,
+      rotationMultiplier:
+        face === "front"
+          ? side === "left"
+            ? 1
+            : -1
+          : side === "left"
+            ? -1
+            : 1,
       pressRotationMultiplier: undefined as 1 | -1 | undefined,
-      pressTargets: undefined as
-        | Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
-        | undefined,
+      pressTargets,
     };
     this.activeHandleGroups.push(handleEntry);
     if (handleModelUrl) {
-      this.mountImportedHandle(handleEntry, handleModelUrl, side === "left");
+      this.mountImportedHandle(handleEntry, handleModelUrl, side === "left", handleProfileId);
     }
 
-    return pivot;
+    return handleGroup;
   }
 
   private applyDoorState(animation: DoorAnimationId, state: DoorAnimationState) {
@@ -533,7 +635,8 @@ class VanillaDoorScene {
   private mountImportedHandle(
     handleEntry: VanillaDoorScene["activeHandleGroups"][number],
     url: string,
-    mirrorX: boolean
+    mirrorX: boolean,
+    handleProfileId?: HandleProfileId
   ) {
     void loadHandleScene(url)
       .then((scene) => {
@@ -543,9 +646,16 @@ class VanillaDoorScene {
 
         handleEntry.group.clear();
         const wrapper = new THREE.Group();
-        const scale = prepared.scale;
+        const scale =
+          prepared.scale *
+          (handleProfileId === "knob-round" ? IMPORTED_KNOB_MODEL_SCALE : 1);
+        wrapper.rotation.x = handleProfileId === "knob-round" ? Math.PI / 2 : 0;
         wrapper.scale.set(mirrorX ? -scale : scale, scale, scale);
         wrapper.add(prepared.object);
+        const importedBounds = new THREE.Box3().setFromObject(wrapper);
+        if (!importedBounds.isEmpty()) {
+          wrapper.position.z += -importedBounds.min.z - IMPORTED_HANDLE_SURFACE_EMBED;
+        }
         handleEntry.group.add(wrapper);
         handleEntry.pressRotationMultiplier = prepared.pressRotationMultiplier;
         handleEntry.pressTargets = prepared.pressTargets;
@@ -781,6 +891,7 @@ export const mountDoorEntrance = (
       handleModelUrl: toPublicAssetUrl(
         options.handleModelUrl ?? activeDoorPreset.handleModelUrl
       ),
+      handleProfileId: activeDoorPreset.handleProfileId,
       hasHandle: Boolean(activeDoorPreset.handleProfileId),
       mirrorBackTexture: Boolean(activeDoorPreset.backTextureUrl) && !options.textureUrl,
       mirrorTextureX: activeDoorPreset.mirrorTextureX ?? false,

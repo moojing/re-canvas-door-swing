@@ -6,7 +6,10 @@ import type {
 import {
   biohazard1996A01IronDoorBack,
   biohazard1996A01IronDoorFront,
+  biohazard1996A02YellowPanelKnobDoorBack,
+  biohazard1996A02YellowPanelKnobDoorFront,
 } from "../assets/textures/index.ts";
+import { doorKnob } from "../assets/models/index.ts";
 
 const DEFAULT_PRESET_ID: DoorEntrancePresetId = "biohazard-1996-a01-iron-door";
 
@@ -39,6 +42,21 @@ export const doorEntrancePresetMap: Record<
     animation: "direct-entry",
     hingeSide: "right",
     mirrorTextureX: true,
+  },
+  "biohazard-1996-a02-yellow-panel-knob-door": {
+    id: "biohazard-1996-a02-yellow-panel-knob-door",
+    label: "1-1 A-2 Yellow Panel Knob Door",
+    type: "single",
+    motion: "hinge-single",
+    material: "aged-wood-panel",
+    frontTextureUrl: biohazard1996A02YellowPanelKnobDoorFront,
+    edgeTextureUrl: biohazard1996A02YellowPanelKnobDoorFront,
+    backTextureUrl: biohazard1996A02YellowPanelKnobDoorBack,
+    animation: "direct-entry",
+    hingeSide: "left",
+    mirrorTextureX: false,
+    handleProfileId: "knob-round",
+    handleModelUrl: doorKnob,
   },
 };
 

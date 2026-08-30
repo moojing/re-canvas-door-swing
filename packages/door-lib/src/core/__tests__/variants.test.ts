@@ -65,10 +65,39 @@ describe("core door entrance presets", () => {
     assert.equal(preset.backTextureUrl, source.backTextureUrl);
   });
 
+  it("publishes the Phase 1 Biohazard A-2 yellow panel door as a round-knob preset", () => {
+    const preset = getDoorEntrancePreset(
+      "biohazard-1996-a02-yellow-panel-knob-door" as never
+    );
+
+    assert.equal(preset.id, "biohazard-1996-a02-yellow-panel-knob-door");
+    assert.equal(preset.label, "1-1 A-2 Yellow Panel Knob Door");
+    assert.equal(preset.type, "single");
+    assert.equal(preset.motion, "hinge-single");
+    assert.equal(preset.handleProfileId, "knob-round");
+    assert.match(preset.handleModelUrl ?? "", /door_knob\.glb$/);
+    assert.equal(preset.material, "aged-wood-panel");
+    assert.equal(preset.animation, "direct-entry");
+    assert.equal(preset.hingeSide, "left");
+    assert.equal(preset.mirrorTextureX, false);
+    assert.match(
+      preset.frontTextureUrl ?? "",
+      /biohazard-1996-a02-yellow-panel-knob-door-front\.webp$/
+    );
+    assert.match(
+      preset.backTextureUrl ?? "",
+      /biohazard-1996-a02-yellow-panel-knob-door-back\.webp$/
+    );
+  });
+
   it("keeps Phase 1 runtime presets fully authored", () => {
     assert.deepEqual(
       doorEntrancePresets.map((preset) => preset.id),
-      ["biohazard-1996-a01-iron-door", "biohazard-1998-a01-no-handle-door"]
+      [
+        "biohazard-1996-a01-iron-door",
+        "biohazard-1998-a01-no-handle-door",
+        "biohazard-1996-a02-yellow-panel-knob-door",
+      ]
     );
 
     for (const preset of doorEntrancePresets) {
@@ -149,6 +178,16 @@ describe("core door entrance presets", () => {
 
     assert.equal(preset.id, "biohazard-1996-a01-iron-door");
     assert.equal(preset.type, "single");
+  });
+
+  it("resolves random selection from round-knob presets", () => {
+    const preset = resolveDoorEntrancePresetSelection(
+      { random: true, handle: "knob-round" },
+      () => 0
+    );
+
+    assert.equal(preset.id, "biohazard-1996-a02-yellow-panel-knob-door");
+    assert.equal(preset.handleProfileId, "knob-round");
   });
 
   it("does not allow a named preset with filter fields", () => {

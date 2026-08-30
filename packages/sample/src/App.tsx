@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import TransitionComplete from "./pages/TransitionComplete";
 import DevAnimationList from "./pages/DevAnimationList";
 import DevAnimationVerifier from "./pages/DevAnimationVerifier";
+import DevHandleMaterialVerifier from "./pages/DevHandleMaterialVerifier";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/dev" element={<Navigate to="/dev/animations" replace />} />
           <Route path="/dev/animations" element={<DevAnimationList />} />
           <Route path="/dev/animations/:animationId" element={<DevAnimationVerifier />} />
+          <Route path="/dev/handles/:handleId" element={<DevHandleMaterialVerifier />} />
           <Route path="/transition-complete" element={<TransitionComplete />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
