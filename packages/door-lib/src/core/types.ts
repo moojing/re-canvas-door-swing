@@ -16,11 +16,15 @@ export type DoorEntranceMotion =
 
 export type DoorHingeSide = "left" | "right";
 
-export type DoorMaterialId = "wood-panel-aged" | "rusted-iron-riveted-panel";
+export type DoorMaterialId =
+  | "wood-panel-aged"
+  | "aged-wood-panel"
+  | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
   | "biohazard-1996-a01-iron-door"
-  | "biohazard-1998-a01-no-handle-door";
+  | "biohazard-1998-a01-no-handle-door"
+  | "biohazard-1996-a02-yellow-panel-knob-door";
 
 export interface DoorSurfaceTextureUrls {
   frontTextureUrl?: string;

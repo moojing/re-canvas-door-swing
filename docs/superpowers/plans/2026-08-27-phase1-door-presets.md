@@ -29,7 +29,7 @@ Use this backlog only as the Phase 1 implementation checklist. If the gallery/ex
 | Wave | Category | Source ids |
 | --- | --- | --- |
 | 1 | 鉸鏈單開 × 無配件 | `1-1/a01/a01-s1鐵門.mp4`, `1-2/a01/a01單門-無把手.mp4`, `1-3/a01/a01-s2停車場門.mp4` |
-| 2 | 鉸鏈單開 × 喇叭鎖 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4`, `1-2/a03/a03-s2目字門.mp4`, `1-3/a02/a02-s1 鐵窗門.mp4` |
+| 2 | 鉸鏈單開 × 喇叭鎖 | `1-1/a02/a02-s5黃目字門.mp4`, `1-2/a03/a03-s2目字門.mp4`, `1-3/a02/a02-s1 鐵窗門.mp4` |
 | 3 | 鉸鏈單開 × 豎把 | `1-1/a03/a03-s2紅十字門.mp4`, `1-1/a03/a03-s4紅花紋門.mp4`, `1-3/a07/a12-s1鐵門.mp4` |
 | 4 | 鉸鏈單開 × 橫把／推桿 | `1-3/a03/a03-s1目鐵門.mp4`, `1-3/a03/a03-s2鐵門.mp4` |
 | 5 | 鉸鏈單開 × 彎把 | `1-1/a06/a05-s4黃目字門.mp4` |
@@ -56,6 +56,7 @@ Use this backlog only as the Phase 1 implementation checklist. If the gallery/ex
 | `1-1/a01/a01-s1鐵門.mp4` | `biohazard-1996-a01-iron-door` | Implemented with left hinge and authored A01 front/back textures. |
 | `1-2/a01/a01單門-無把手.mp4` | `biohazard-1998-a01-no-handle-door` | Implemented as the opposite-hand A01 preset: right hinge, mirrored texture mapping, shared runtime textures. |
 | `1-3/a01/a01-s2停車場門.mp4` | TBD | Pending new runtime texture. |
+| `1-1/a02/a02-s5黃目字門.mp4` | `biohazard-1996-a02-yellow-panel-knob-door` | Implemented with left hinge, authored A02 front/back WebP textures, and procedural `knob-round` hardware. |
 
 ## File Structure
 

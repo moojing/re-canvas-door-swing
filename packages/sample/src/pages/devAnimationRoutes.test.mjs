@@ -5,6 +5,7 @@ import test from "node:test";
 const appPath = new URL("../App.tsx", import.meta.url);
 const indexPath = new URL("./Index.tsx", import.meta.url);
 const listPath = new URL("./DevAnimationList.tsx", import.meta.url);
+const handlePath = new URL("./DevHandleMaterialVerifier.tsx", import.meta.url);
 
 test("registers developer animation routes before the catch-all", async () => {
   const source = await readFile(appPath, "utf8");
@@ -12,9 +13,10 @@ test("registers developer animation routes before the catch-all", async () => {
   assert.match(source, /path="\/dev"[\s\S]*Navigate[\s\S]*to="\/dev\/animations"/);
   assert.match(source, /path="\/dev\/animations"/);
   assert.match(source, /path="\/dev\/animations\/:animationId"/);
+  assert.match(source, /path="\/dev\/handles\/:handleId"/);
   assert.match(
     source,
-    /path="\/dev\/animations\/:animationId"[\s\S]*path="\*"/
+    /path="\/dev\/handles\/:handleId"[\s\S]*path="\*"/
   );
 });
 
@@ -36,4 +38,14 @@ test("animation list previews the first published preset for each animation", as
 
   assert.match(source, /<PresetAnimationPreview preset=\{preview\} progress=\{0\.4\} \/>/);
   assert.match(source, /const preview = presets\[0\]/);
+});
+
+test("handle material verifier renders the local knob with runtime aged brass", async () => {
+  const source = await readFile(handlePath, "utf8");
+
+  assert.match(source, /doorKnob/);
+  assert.match(source, /createAgedHandleMaterial/);
+  assert.match(source, /metalness/i);
+  assert.match(source, /roughness/i);
+  assert.match(source, /emissive/i);
 });

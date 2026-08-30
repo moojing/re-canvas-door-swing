@@ -224,6 +224,15 @@ describe("package boundary", () => {
     assert.doesNotMatch(declaration, /getDoorEntranceVariant/);
   });
 
+  it("publishes model attribution with copied runtime model assets", () => {
+    const attribution = readFileSync(dist("ATTRIBUTION.md"), "utf8");
+
+    assert.match(attribution, /door_knob\.glb/);
+    assert.match(attribution, /pipotgrz1885/);
+    assert.match(attribution, /Creative Commons Attribution 4\.0/);
+    assert.match(attribution, /https:\/\/creativecommons\.org\/licenses\/by\/4\.0\//);
+  });
+
   it("keeps the vanilla renderer limited to the door and its handle", () => {
     const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
 
@@ -245,6 +254,7 @@ describe("package boundary", () => {
       /const singleRotationDirection = this\.activeSingleHingeSide === "right" \? 1 : -1/
     );
     assert.match(source, /new THREE\.PlaneGeometry\(width, height\)/);
+    assert.doesNotMatch(source, /DOOR_FACE_INSET/);
     assert.doesNotMatch(source, /width: 1\.48/);
   });
 
@@ -273,6 +283,58 @@ describe("package boundary", () => {
 
     assert.match(source, /hasHandle:\s*Boolean\(activeDoorPreset\.handleProfileId\)/);
     assert.match(source, /if \(!hasHandle\) return pivot;/);
+  });
+
+  it("keeps procedural round-knob fallback geometry for missing imported models", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.match(source, /handleProfileId === "knob-round"/);
+    assert.match(source, /new THREE\.SphereGeometry\(/);
+    assert.match(source, /new THREE\.CylinderGeometry\(/);
+  });
+
+  it("keeps procedural handle fallback materials aged and non-glowing", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.match(source, /createAgedHandleMaterial/);
+    assert.doesNotMatch(source, /new THREE\.PointLight\("#ff8844"/);
+  });
+
+  it("mounts handles on both door faces at the same physical x position", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.match(source, /const KNOB_HANDLE_EDGE_INSET = 0\.28/);
+    assert.match(source, /const frontHandleGroup = this\.createHandleGroup/);
+    assert.match(source, /const backHandleGroup = this\.createHandleGroup/);
+    assert.match(source, /face: "front"/);
+    assert.match(source, /face: "back"/);
+    assert.match(source, /width - KNOB_HANDLE_EDGE_INSET/);
+    assert.match(
+      source,
+      /handleGroup\.position\.set\(\s*resolvedHandleX,\s*-0\.02,\s*face === "front" \? DOOR_DEPTH \+ DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET\s*\)/
+    );
+    assert.match(source, /if \(face === "back"\) handleGroup\.rotation\.y = Math\.PI/);
+  });
+
+  it("applies knob-specific transforms to imported round-knob models", () => {
+    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+
+    assert.match(
+      source,
+      /mountImportedHandle\(handleEntry,\s*handleModelUrl,\s*side === "left",\s*handleProfileId\)/
+    );
+    assert.match(source, /handleProfileId === "knob-round"\s*\?\s*Math\.PI \/ 2/);
+    assert.match(source, /const IMPORTED_HANDLE_SURFACE_EMBED = 0\.006/);
+    assert.match(source, /const IMPORTED_KNOB_MODEL_SCALE = 0\.45/);
+    assert.match(
+      source,
+      /handleProfileId === "knob-round"\s*\?\s*IMPORTED_KNOB_MODEL_SCALE/
+    );
+    assert.match(source, /const importedBounds = new THREE\.Box3\(\)\.setFromObject\(wrapper\)/);
+    assert.match(
+      source,
+      /wrapper\.position\.z \+= -importedBounds\.min\.z - IMPORTED_HANDLE_SURFACE_EMBED/
+    );
   });
 
   it("keeps the full vanilla output graph React-free", () => {

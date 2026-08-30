@@ -16,6 +16,11 @@ test("preset catalog opens and closes a vanilla detail modal", async ({
   await expect(
     page.getByRole("img", { name: "1-2 A-1 No-Handle Door animation preview" })
   ).toHaveCount(1);
+  await expect(
+    page.getByRole("img", {
+      name: "1-1 A-2 Yellow Panel Knob Door animation preview",
+    })
+  ).toHaveCount(1);
   await expect(page.getByText("Single Lever Wood")).toHaveCount(0);
   const catalogCanvasCount = await page.locator("canvas").count();
 

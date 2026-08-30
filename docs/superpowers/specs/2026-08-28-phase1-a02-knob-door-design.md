@@ -24,14 +24,15 @@ Add one released preset:
 - animation: `direct-entry`
 - hinge side: `left`
 - handle profile: `knob-round`
+- handle model: `packages/door-lib/src/assets/models/door_knob.glb`
 
 Generate original front and back WebP door textures at the current door texture ratio. The front texture should place the knob/lock plate on the right side. The back texture should place the knob/lock plate on the left side so both faces describe the same physical handle location through the door.
 
-Since no approved knob GLB is currently available in `packages/door-lib/src/assets/models/`, use procedural round-knob geometry in the vanilla renderer for `knob-round`. Keep imported GLB support unchanged for future replacement.
+Use the imported `door_knob.glb` asset for the A02 round knob. The model is a CC-BY-4.0 Sketchfab asset and must be documented in `packages/door-lib/src/assets/models/ATTRIBUTION.md`. Keep procedural round-knob geometry in the vanilla renderer as a fallback for failed or missing imported models.
 
 ## Verification
 
 - Core preset tests must assert the A02 preset metadata, front/back texture URLs, handle profile, and inclusion in the Phase 1 registry.
-- Renderer/package tests must assert that `knob-round` uses procedural knob geometry and does not require an imported GLB.
+- Renderer/package tests must assert that `knob-round` keeps procedural fallback geometry, and handle-model tests must cover single-mesh imported knob fallback.
 - Browser catalog tests must expect the A02 card on the sample home page.
 - Visual QA must inspect closed, half-open, and open states for handle side, back-face symmetry, and reasonable edge material.

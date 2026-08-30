@@ -22,9 +22,11 @@ const STATIC_HINTS = [
   "screw",
   "rosette",
 ];
-const HANDLE_COLOR = "#74685c";
-const HANDLE_METALNESS = 0.65;
-const HANDLE_ROUGHNESS = 0.55;
+const HANDLE_TEXTURE_TINT = "#8f6d3c";
+const HANDLE_METALNESS = 0.08;
+const HANDLE_ROUGHNESS = 0.97;
+const HANDLE_ENV_MAP_INTENSITY = 0;
+const AGED_HANDLE_TEXTURE_SIZE = 64;
 
 export interface PreparedHandleModel {
   object: THREE.Object3D;
@@ -35,6 +37,79 @@ export interface PreparedHandleModel {
 
 const loader = new GLTFLoader();
 const sceneCache = new Map<string, Promise<THREE.Object3D>>();
+let agedHandleTexture: THREE.DataTexture | null = null;
+
+const createAgedHandleTexture = () => {
+  const size = AGED_HANDLE_TEXTURE_SIZE;
+  const data = new Uint8Array(size * size * 4);
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const index = (y * size + x) * 4;
+      const nx = x / size;
+      const ny = y / size;
+      const grain = Math.sin(x * 0.22 + y * 0.08) * 0.5 + 0.5;
+      const tarnishWave =
+        Math.sin(nx * 11.4 + ny * 4.2) * 0.34 +
+        Math.sin(nx * 3.1 - ny * 8.6) * 0.32 +
+        Math.sin((nx + ny) * 7.8) * 0.2 +
+        0.5;
+      const tarnish = Math.max(0, Math.min(1, (tarnishWave - 0.72) / 0.28));
+      const verdigrisPatch = Math.max(
+        0,
+        1 -
+          Math.hypot((nx - 0.28) / 0.2, (ny - 0.72) / 0.16)
+      );
+      const verdigris = Math.pow(verdigrisPatch, 2.4) * 0.72;
+      const wear = 0.96 + grain * 0.08;
+      const brass = [222, 176, 68];
+      const aged = [154, 118, 48];
+      const copperGreen = [104, 132, 92];
+      const agedMix = tarnish * 0.42;
+      const greenMix = verdigris;
+      const brassMix = Math.max(0, 1 - agedMix - greenMix);
+
+      data[index] = Math.min(
+        255,
+        Math.round((brass[0] * brassMix + aged[0] * agedMix + copperGreen[0] * greenMix) * wear)
+      );
+      data[index + 1] = Math.min(
+        255,
+        Math.round((brass[1] * brassMix + aged[1] * agedMix + copperGreen[1] * greenMix) * wear)
+      );
+      data[index + 2] = Math.min(
+        255,
+        Math.round((brass[2] * brassMix + aged[2] * agedMix + copperGreen[2] * greenMix) * wear)
+      );
+      data[index + 3] = 255;
+    }
+  }
+
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.name = "procedural-aged-handle";
+  texture.encoding = THREE.sRGBEncoding;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(0.82, 0.82);
+  texture.needsUpdate = true;
+  return texture;
+};
+
+const getAgedHandleTexture = () => {
+  agedHandleTexture ??= createAgedHandleTexture();
+  return agedHandleTexture;
+};
+
+export const createAgedHandleMaterial = () =>
+  new THREE.MeshStandardMaterial({
+    color: HANDLE_TEXTURE_TINT,
+    emissive: "#000000",
+    emissiveIntensity: 0,
+    envMapIntensity: HANDLE_ENV_MAP_INTENSITY,
+    map: getAgedHandleTexture(),
+    metalness: HANDLE_METALNESS,
+    roughness: HANDLE_ROUGHNESS,
+  });
 
 const toVintageMetal = (material: THREE.Material) => {
   if (
@@ -42,18 +117,22 @@ const toVintageMetal = (material: THREE.Material) => {
     material instanceof THREE.MeshPhysicalMaterial
   ) {
     const next = material.clone();
-    next.color.set(HANDLE_COLOR);
+    next.color.set(HANDLE_TEXTURE_TINT);
+    next.map = getAgedHandleTexture();
     next.metalness = HANDLE_METALNESS;
     next.roughness = HANDLE_ROUGHNESS;
+    next.envMapIntensity = HANDLE_ENV_MAP_INTENSITY;
+    next.emissive.set("#000000");
+    next.emissiveIntensity = 0;
+    if (next instanceof THREE.MeshPhysicalMaterial) {
+      next.clearcoat = 0;
+      next.clearcoatRoughness = 1;
+    }
     next.needsUpdate = true;
     return next;
   }
 
-  return new THREE.MeshStandardMaterial({
-    color: HANDLE_COLOR,
-    metalness: HANDLE_METALNESS,
-    roughness: HANDLE_ROUGHNESS,
-  });
+  return createAgedHandleMaterial();
 };
 
 const pickHandleNode = (scene: THREE.Object3D) => {
@@ -77,7 +156,18 @@ const pickHandleNode = (scene: THREE.Object3D) => {
     }
   });
 
-  return fallback ? { node: fallback, name: fallbackName } : null;
+  if (fallback) return { node: fallback, name: fallbackName };
+
+  const meshes: THREE.Object3D[] = [];
+  scene.traverse((object) => {
+    if ((object as THREE.Mesh).isMesh) meshes.push(object);
+  });
+
+  if (meshes.length === 1) {
+    return { node: meshes[0], name: meshes[0].name };
+  }
+
+  return null;
 };
 
 const getLocalBoundsCenter = (node: THREE.Object3D) => {
