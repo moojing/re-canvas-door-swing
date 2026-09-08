@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getDrawingBufferSize, usesRetroLook } from "../renderLook.ts";
+import { getDrawingBufferSize, usesAgedWoodLook } from "../renderLook.ts";
 
-test("retro look is limited to the yellow panel preset", () => {
-  assert.equal(usesRetroLook("biohazard-1996-a02-yellow-panel-knob-door"), true);
-  assert.equal(usesRetroLook("biohazard-1996-a01-iron-door"), false);
-  assert.equal(usesRetroLook("biohazard-1998-a01-no-handle-door"), false);
+test("wood lighting and tint are limited to the yellow panel preset", () => {
+  assert.equal(usesAgedWoodLook("biohazard-1996-a02-yellow-panel-knob-door"), true);
+  assert.equal(usesAgedWoodLook("biohazard-1996-a01-iron-door"), false);
+  assert.equal(usesAgedWoodLook("biohazard-1998-a01-no-handle-door"), false);
 });
 
 test("retro resolution preserves aspect ratio and ignores device pixel ratio", () => {

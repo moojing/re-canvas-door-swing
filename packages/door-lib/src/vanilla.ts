@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { getDrawingBufferSize, usesRetroLook } from "./core/renderLook.ts";
+import { getDrawingBufferSize, usesAgedWoodLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { getDoorAnimationConfig } from "./core/animationState.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
@@ -163,7 +163,7 @@ class VanillaDoorScene {
   private frontDoorMaterial = createDoorFaceMaterial();
   private backDoorMaterial = createDoorFaceMaterial();
   private handleMaterial = createHandleMaterial();
-  private retro = false;
+  private agedWood = false;
   private readonly ambientLight = new THREE.AmbientLight("#ffffff", 0.25);
   private readonly keyLight = new THREE.DirectionalLight("#fff7ee", 0.75);
   private readonly rimLight = new THREE.DirectionalLight("#8fa8c7", 0.35);
@@ -241,12 +241,12 @@ class VanillaDoorScene {
     cameraPanX: number;
     cameraPanY: number;
   }) {
-    const retro = usesRetroLook(presetId);
-    const lookChanged = this.retro !== retro;
-    this.retro = retro;
-    this.ambientLight.intensity = retro ? 0.46 : 0.25;
-    this.keyLight.intensity = retro ? 0.82 : 0.75;
-    this.rimLight.intensity = retro ? 0.04 : 0.35;
+    const agedWood = usesAgedWoodLook(presetId);
+    const lookChanged = this.agedWood !== agedWood;
+    this.agedWood = agedWood;
+    this.ambientLight.intensity = agedWood ? 0.46 : 0.25;
+    this.keyLight.intensity = agedWood ? 0.82 : 0.75;
+    this.rimLight.intensity = agedWood ? 0.04 : 0.35;
     // Smooth the low-resolution buffer when enlarged, like a softly reconstructed video frame.
     this.renderer.domElement.style.imageRendering = "auto";
     const surfaceKey = [
@@ -315,7 +315,7 @@ class VanillaDoorScene {
     }
 
     const [bufferWidth, bufferHeight] = getDrawingBufferSize(
-      width, height, window.devicePixelRatio || 1, this.retro
+      width, height, window.devicePixelRatio || 1, true
     );
     const canvas = this.renderer.domElement;
     if (canvas.width !== bufferWidth || canvas.height !== bufferHeight) {
@@ -347,10 +347,15 @@ class VanillaDoorScene {
     this.frontDoorMaterial = createDoorFaceMaterial();
     this.backDoorMaterial = createDoorFaceMaterial();
     this.handleMaterial = createHandleMaterial();
-    if (this.retro) {
-      [this.frontDoorMaterial, this.backDoorMaterial].forEach((material) => applyRetroMaterial(material));
-      this.doorMaterials.forEach((material) => applyRetroMaterial(material, true));
-    }
+    [this.frontDoorMaterial, this.backDoorMaterial, ...this.doorMaterials].forEach((material) => {
+      if (this.agedWood) {
+        material.roughness = 1;
+        material.metalness = 0;
+        material.color.set("#e0d29a");
+      }
+      applyRetroMaterial(material, this.agedWood && this.doorMaterials.includes(material));
+    });
+    applyRetroMaterial(this.handleMaterial);
     const doorMaterials = this.doorMaterials;
     this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4));
     this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial]);
@@ -427,7 +432,6 @@ class VanillaDoorScene {
     url: string,
     materials: THREE.MeshStandardMaterial[]
   ) {
-    const retro = this.retro;
     this.textureLoader.load(url, (texture) => {
       if (this.disposed) {
         texture.dispose();
@@ -437,11 +441,9 @@ class VanillaDoorScene {
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
       texture.flipY = false;
-      if (retro) {
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
-        texture.generateMipmaps = false;
-      }
+      texture.minFilter = THREE.NearestFilter;
+      texture.magFilter = THREE.NearestFilter;
+      texture.generateMipmaps = false;
       texture.needsUpdate = true;
       materials.forEach((material) => {
         material.map = texture;
@@ -671,17 +673,19 @@ class VanillaDoorScene {
         if (this.disposed || !handleEntry.group.parent) return;
         const prepared = prepareHandleModel(scene, handleProfileId === "knob-round");
         if (!prepared) return;
-        if (this.retro) {
-          prepared.object.traverse((node) => {
-            if (!(node instanceof THREE.Mesh)) return;
-            const materials = Array.isArray(node.material) ? node.material : [node.material];
-            materials.forEach((material) => {
-              if (!(material instanceof THREE.MeshStandardMaterial)) return;
-              applyRetroMaterial(material);
+        prepared.object.traverse((node) => {
+          if (!(node instanceof THREE.Mesh)) return;
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          materials.forEach((material) => {
+            if (!(material instanceof THREE.MeshStandardMaterial)) return;
+            applyRetroMaterial(material);
+            if (this.agedWood) {
+              material.roughness = 1;
+              material.metalness = 0;
               material.color.set("#b9b66d");
-            });
+            }
           });
-        }
+        });
 
         handleEntry.group.clear();
         const wrapper = new THREE.Group();

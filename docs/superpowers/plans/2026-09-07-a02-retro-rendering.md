@@ -24,3 +24,9 @@ The user approved this direction and explicitly requested implementation after a
 - Split the existing knob asset into a fixed base and axial rotating grip, preserving source triangles and overall scale. Moved front/back knobs outward to a 0.2-unit edge inset so the base clears the recessed panel.
 - Original generated WebP files remain unchanged; no reference frames or videos added to the package.
 - Preview: http://127.0.0.1:5173/.
+
+## Shared pixel treatment (2026-09-08)
+
+Extended 360px soft reconstruction, 192×384 texture sampling and 30% ordered dithering to every library-rendered preset and animation. This covers catalog previews, detail modals, full-screen transitions and the development animation verifier. The two iron presets retain their existing lights and material colors/roughness; yellow-wood lighting, brass tint and stile edge sampling remain specific to A02. Procedural and imported handles share the pixel shader. No motion timing, sound or public API changes in this extension.
+
+Final brightness tuning lifts material midtones using `c + 0.45*c*(1-c)` before dithering, preserving black/white endpoints. Final verification: 34 core, 14 package and 11 browser tests passed; lint has three existing warnings and build retains its existing chunk-size warning. Preview screenshot: `docs/screenshots/2026-09-08-retro-door.png`.

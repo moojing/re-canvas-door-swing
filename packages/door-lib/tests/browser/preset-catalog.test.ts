@@ -159,3 +159,18 @@ test("yellow panel uses a coarse drawing buffer and survives timeline seeking", 
   await expect(page.getByRole("dialog").locator("canvas")).toHaveCSS("image-rendering", "auto");
   expect(errors).toEqual([]);
 });
+
+for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
+  test(`${name} shares the soft 360p pixel treatment`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto("/");
+    await page.getByRole("button", { name: `Open ${name}`, exact: true }).click();
+    const canvas = page.getByRole("dialog", { name }).locator("canvas");
+    await expect(canvas).toHaveAttribute("height", "360");
+    await expect(canvas).toHaveCSS("image-rendering", "auto");
+    await page.getByRole("slider", { name: "Animation progress" }).fill("55");
+    await expect(canvas).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}
