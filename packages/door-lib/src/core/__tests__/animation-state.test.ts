@@ -75,3 +75,15 @@ describe("core animation state", () => {
     assertClose(complete.cameraPosition[2], 0.46);
   });
 });
+
+it("turns the direct-entry knob slowly through 65 degrees before the leaf opens", () => {
+  const config = getDoorAnimationConfig("direct-entry");
+  const angleAt = (progress: number) => config.getState(progress, {
+    linearProgress: progress,
+    handleProfileId: "knob-round",
+  }).handleAngle ?? 0;
+  assertClose(angleAt(0.14), 0);
+  assertClose(angleAt(0.245), 32.5 * Math.PI / 180);
+  assertClose(angleAt(0.35), 65 * Math.PI / 180);
+  assertClose(angleAt(1), 0);
+});

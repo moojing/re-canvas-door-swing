@@ -154,3 +154,49 @@ describe("imported handle model", () => {
     assert.equal(`#${material.emissive.getHexString()}`, "#000000");
   });
 });
+
+it("shipped knob keeps its base fixed while the grip turns about its shaft", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const bytes = await readFile(new URL("../assets/models/door_knob.glb", import.meta.url));
+  const jsonLength = bytes.readUInt32LE(12);
+  const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
+  const binary = bytes.subarray(28 + jsonLength);
+  // Reconstruct the shipped geometry and transforms without browser texture loading.
+  const nodes: THREE.Object3D[] = gltf.nodes.map((node: { name?: string; mesh?: number; matrix?: number[]; rotation?: number[] }) => {
+    let object: THREE.Object3D = new THREE.Group();
+    if (node.mesh !== undefined) {
+      const primitive = gltf.meshes[node.mesh].primitives[0];
+      const accessor = gltf.accessors[primitive.attributes.POSITION];
+      const view = gltf.bufferViews[accessor.bufferView];
+      const offset = (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+      const positions = new Float32Array(accessor.count * 3);
+      for (let i = 0; i < positions.length; i++) positions[i] = binary.readFloatLE(offset + i * 4);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      object = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial());
+    }
+    object.name = node.name ?? "";
+    if (node.matrix) object.applyMatrix4(new THREE.Matrix4().fromArray(node.matrix));
+    if (node.rotation) object.quaternion.fromArray(node.rotation);
+    return object;
+  });
+  gltf.nodes.forEach((node: { children?: number[] }, index: number) => {
+    node.children?.forEach((child) => nodes[index].add(nodes[child]));
+  });
+  const prepared = prepareHandleModel(nodes[0]);
+  assert.ok(prepared);
+  assert.equal(prepared.pressTargets.length, 1);
+  assert.equal(prepared.pressTargets[0].node.name, "grip");
+  const base = prepared.object.getObjectByName("knob_base");
+  assert.ok(base);
+  prepared.object.updateMatrixWorld(true);
+  const before = base.matrixWorld.clone();
+  const grip = prepared.pressTargets[0].node;
+  const shaftPoint = new THREE.Vector3(0, 0, 1).applyMatrix4(grip.matrixWorld);
+  const surfacePoint = new THREE.Vector3(1, 0, 0).applyMatrix4(grip.matrixWorld);
+  grip.rotation.z += 65 * Math.PI / 180;
+  prepared.object.updateMatrixWorld(true);
+  assert.deepEqual(base.matrixWorld.elements, before.elements);
+  assert.ok(shaftPoint.distanceTo(new THREE.Vector3(0, 0, 1).applyMatrix4(grip.matrixWorld)) < 1e-6);
+  assert.ok(surfacePoint.distanceTo(new THREE.Vector3(1, 0, 0).applyMatrix4(grip.matrixWorld)) > 0.1);
+});

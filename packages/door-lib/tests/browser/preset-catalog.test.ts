@@ -132,3 +132,45 @@ test("transition destination has a direct-visit fallback", async ({ page }) => {
   await page.getByRole("link", { name: "Return to preset catalog" }).click();
   await expect(page).toHaveURL(/\/$/);
 });
+
+test("yellow panel uses a coarse drawing buffer and survives timeline seeking", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open 1-1 A-2 Yellow Panel Knob Door" }).click();
+  const dialog = page.getByRole("dialog", { name: "1-1 A-2 Yellow Panel Knob Door" });
+  const canvas = dialog.locator("canvas");
+  await expect(canvas).toHaveCSS("image-rendering", "auto");
+  await expect(canvas).toHaveAttribute("height", "360");
+  const timeline = page.getByRole("slider", { name: "Animation progress" });
+  for (const progress of ["0", "50", "80"]) {
+    await timeline.fill(progress);
+    await expect(timeline).toHaveValue(progress);
+    await expect(canvas).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(timeline).toHaveValue("0");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole("button", { name: "Open 1-1 A-1 Iron Door" }).click();
+  await expect(page.getByRole("dialog").locator("canvas")).toHaveCSS("image-rendering", "auto");
+  expect(errors).toEqual([]);
+});
+
+for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
+  test(`${name} shares the soft 360p pixel treatment`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto("/");
+    await page.getByRole("button", { name: `Open ${name}`, exact: true }).click();
+    const canvas = page.getByRole("dialog", { name }).locator("canvas");
+    await expect(canvas).toHaveAttribute("height", "360");
+    await expect(canvas).toHaveCSS("image-rendering", "auto");
+    await page.getByRole("slider", { name: "Animation progress" }).fill("55");
+    await expect(canvas).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}

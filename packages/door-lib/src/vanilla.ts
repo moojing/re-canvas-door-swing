@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { getDrawingBufferSize, usesAgedWoodLook } from "./core/renderLook.ts";
+import { applyRetroMaterial } from "./retroMaterial.ts";
 import { getDoorAnimationConfig } from "./core/animationState.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
 import { resolveDoorSurfaceTextureUrls } from "./core/surfaceTextures.ts";
@@ -59,7 +61,7 @@ const DOOR_DEPTH = 0.16;
 const DOOR_SURFACE_OFFSET = 0.002;
 const IMPORTED_HANDLE_SURFACE_EMBED = 0.006;
 const IMPORTED_KNOB_MODEL_SCALE = 0.45;
-const KNOB_HANDLE_EDGE_INSET = 0.28;
+const KNOB_HANDLE_EDGE_INSET = 0.2;
 
 const clampProgress = (progress: number) => {
   if (!Number.isFinite(progress)) return 0;
@@ -161,6 +163,10 @@ class VanillaDoorScene {
   private frontDoorMaterial = createDoorFaceMaterial();
   private backDoorMaterial = createDoorFaceMaterial();
   private handleMaterial = createHandleMaterial();
+  private agedWood = false;
+  private readonly ambientLight = new THREE.AmbientLight("#ffffff", 0.25);
+  private readonly keyLight = new THREE.DirectionalLight("#fff7ee", 0.75);
+  private readonly rimLight = new THREE.DirectionalLight("#8fa8c7", 0.35);
   private disposed = false;
 
   constructor(className: string) {
@@ -172,7 +178,7 @@ class VanillaDoorScene {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setClearColor("#000000");
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(1);
     this.renderer.domElement.style.display = "block";
     this.renderer.domElement.style.width = "100%";
     this.renderer.domElement.style.height = "100%";
@@ -197,13 +203,9 @@ class VanillaDoorScene {
     this.label.style.pointerEvents = "none";
     this.element.append(this.label);
 
-    this.scene.add(new THREE.AmbientLight("#ffffff", 0.25));
-    const keyLight = new THREE.DirectionalLight("#fff7ee", 0.75);
-    keyLight.position.set(2, 5, 5);
-    this.scene.add(keyLight);
-    const rimLight = new THREE.DirectionalLight("#8fa8c7", 0.35);
-    rimLight.position.set(-3, 2, -4);
-    this.scene.add(rimLight);
+    this.keyLight.position.set(2, 5, 5);
+    this.rimLight.position.set(-3, 2, -4);
+    this.scene.add(this.ambientLight, this.keyLight, this.rimLight);
     this.scene.add(this.doorRoot);
 
     if (typeof ResizeObserver !== "undefined") {
@@ -213,6 +215,7 @@ class VanillaDoorScene {
   }
 
   render({
+    presetId,
     state,
     config,
     surfaceTextureUrls,
@@ -225,6 +228,7 @@ class VanillaDoorScene {
     cameraPanX,
     cameraPanY,
   }: {
+    presetId: DoorEntrancePresetId;
     state: DoorAnimationState;
     config: DoorAnimationConfig;
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls;
@@ -237,12 +241,21 @@ class VanillaDoorScene {
     cameraPanX: number;
     cameraPanY: number;
   }) {
+    const agedWood = usesAgedWoodLook(presetId);
+    const lookChanged = this.agedWood !== agedWood;
+    this.agedWood = agedWood;
+    this.ambientLight.intensity = agedWood ? 0.46 : 0.25;
+    this.keyLight.intensity = agedWood ? 0.82 : 0.75;
+    this.rimLight.intensity = agedWood ? 0.04 : 0.35;
+    // Smooth the low-resolution buffer when enlarged, like a softly reconstructed video frame.
+    this.renderer.domElement.style.imageRendering = "auto";
     const surfaceKey = [
       surfaceTextureUrls.frontTextureUrl,
       surfaceTextureUrls.edgeTextureUrl,
       surfaceTextureUrls.backTextureUrl,
     ].join("|");
     if (
+      lookChanged ||
       this.activeAnimation !== config.id ||
       this.activeSurfaceTextureKey !== surfaceKey ||
       this.activeHandleModelUrl !== handleModelUrl ||
@@ -301,9 +314,14 @@ class VanillaDoorScene {
       this.element.style.height = `${height}px`;
     }
 
+    const [bufferWidth, bufferHeight] = getDrawingBufferSize(
+      width, height, window.devicePixelRatio || 1, true
+    );
     const canvas = this.renderer.domElement;
-    if (canvas.width !== width || canvas.height !== height) {
-      this.renderer.setSize(width, height, false);
+    if (canvas.width !== bufferWidth || canvas.height !== bufferHeight) {
+      this.renderer.setSize(bufferWidth, bufferHeight, false);
+    }
+    if (this.camera.aspect !== width / height) {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
     }
@@ -329,6 +347,15 @@ class VanillaDoorScene {
     this.frontDoorMaterial = createDoorFaceMaterial();
     this.backDoorMaterial = createDoorFaceMaterial();
     this.handleMaterial = createHandleMaterial();
+    [this.frontDoorMaterial, this.backDoorMaterial, ...this.doorMaterials].forEach((material) => {
+      if (this.agedWood) {
+        material.roughness = 1;
+        material.metalness = 0;
+        material.color.set("#e0d29a");
+      }
+      applyRetroMaterial(material, this.agedWood && this.doorMaterials.includes(material));
+    });
+    applyRetroMaterial(this.handleMaterial);
     const doorMaterials = this.doorMaterials;
     this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4));
     this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial]);
@@ -414,6 +441,9 @@ class VanillaDoorScene {
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
       texture.flipY = false;
+      texture.minFilter = THREE.NearestFilter;
+      texture.magFilter = THREE.NearestFilter;
+      texture.generateMipmaps = false;
       texture.needsUpdate = true;
       materials.forEach((material) => {
         material.map = texture;
@@ -521,7 +551,7 @@ class VanillaDoorScene {
     const resolvedHandleX =
       handleProfileId === "knob-round"
         ? Math.sign(handleX) *
-          Math.min(Math.abs(handleX) + 0.46, width - KNOB_HANDLE_EDGE_INSET)
+          (width - KNOB_HANDLE_EDGE_INSET)
         : handleX;
     handleGroup.position.set(
       resolvedHandleX,
@@ -641,8 +671,21 @@ class VanillaDoorScene {
     void loadHandleScene(url)
       .then((scene) => {
         if (this.disposed || !handleEntry.group.parent) return;
-        const prepared = prepareHandleModel(scene);
+        const prepared = prepareHandleModel(scene, handleProfileId === "knob-round");
         if (!prepared) return;
+        prepared.object.traverse((node) => {
+          if (!(node instanceof THREE.Mesh)) return;
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          materials.forEach((material) => {
+            if (!(material instanceof THREE.MeshStandardMaterial)) return;
+            applyRetroMaterial(material);
+            if (this.agedWood) {
+              material.roughness = 1;
+              material.metalness = 0;
+              material.color.set("#b9b66d");
+            }
+          });
+        });
 
         handleEntry.group.clear();
         const wrapper = new THREE.Group();
@@ -657,7 +700,9 @@ class VanillaDoorScene {
           wrapper.position.z += -importedBounds.min.z - IMPORTED_HANDLE_SURFACE_EMBED;
         }
         handleEntry.group.add(wrapper);
-        handleEntry.pressRotationMultiplier = prepared.pressRotationMultiplier;
+        handleEntry.pressRotationMultiplier = handleProfileId === "knob-round"
+          ? undefined
+          : prepared.pressRotationMultiplier;
         handleEntry.pressTargets = prepared.pressTargets;
         this.renderer.render(this.scene, this.camera);
       })
@@ -885,6 +930,7 @@ export const mountDoorEntrance = (
       handleProfileId: activeDoorPreset.handleProfileId,
     });
     scene.render({
+      presetId: activeDoorPreset.id,
       state,
       config,
       surfaceTextureUrls: resolvedSurfaceTextureUrls,

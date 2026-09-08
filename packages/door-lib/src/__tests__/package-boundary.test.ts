@@ -303,7 +303,7 @@ describe("package boundary", () => {
   it("mounts handles on both door faces at the same physical x position", () => {
     const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
 
-    assert.match(source, /const KNOB_HANDLE_EDGE_INSET = 0\.28/);
+    assert.match(source, /const KNOB_HANDLE_EDGE_INSET = 0\.2/);
     assert.match(source, /const frontHandleGroup = this\.createHandleGroup/);
     assert.match(source, /const backHandleGroup = this\.createHandleGroup/);
     assert.match(source, /face: "front"/);
