@@ -151,9 +151,9 @@ const handleMotionByProfile: Record<
     maxPressAngleDeg: 38,
     timingsByAnimation: {
       "direct-entry": {
-        pressStart: 0.3,
-        pressEnd: 0.4,
-        bounceEnd: 0.5,
+        pressStart: 0.14,
+        pressEnd: 0.35,
+        bounceEnd: 0.44,
         releaseStart: 0.9,
         releaseEnd: 1,
         downBounce: 0.06,
@@ -197,8 +197,17 @@ const getHandlePressAngle = ({
     handleMotionByProfile[profileId] ??
     handleMotionByProfile[DEFAULT_HANDLE_PROFILE_ID];
   const timing = profile.timingsByAnimation[animation];
-  const normalized = getHandlePressWithBounce(progress, timing);
-  return normalized * ((profile.maxPressAngleDeg * Math.PI) / 180);
+  const slowKnob = profileId === "knob-round" && animation === "direct-entry";
+  // Smoothstep spreads the turn across the full 1.05 seconds instead of
+  // the exponential curve reaching most of its angle immediately.
+  const turn = clamp(
+    (progress - (timing.pressStart ?? 0)) / (timing.pressEnd - (timing.pressStart ?? 0)),
+    0, 1
+  );
+  const normalized = slowKnob && progress <= timing.pressEnd
+    ? turn * turn * (3 - 2 * turn)
+    : getHandlePressWithBounce(progress, timing);
+  return normalized * (((slowKnob ? 65 : profile.maxPressAngleDeg) * Math.PI) / 180);
 };
 
 export const directEntryConfig: DoorAnimationConfig = {

@@ -225,7 +225,8 @@ export const loadHandleScene = (url: string) => {
 };
 
 export const prepareHandleModel = (
-  sourceScene: THREE.Object3D
+  sourceScene: THREE.Object3D,
+  useWholeModelScale = false
 ): PreparedHandleModel | null => {
   const scene = sourceScene.clone(true);
   scene.updateMatrixWorld(true);
@@ -267,7 +268,7 @@ export const prepareHandleModel = (
       return true;
     })
     .map((node) => ({ node, baseRotation: node.rotation.clone() }));
-  const scaleBasis = getScaleBasisSize(picked.node, pressTargets);
+  const scaleBasis = getScaleBasisSize(picked.node, useWholeModelScale ? [] : pressTargets);
 
   return {
     object: picked.node,
