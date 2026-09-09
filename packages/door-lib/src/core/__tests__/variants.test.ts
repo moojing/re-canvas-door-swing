@@ -97,6 +97,7 @@ describe("core door entrance presets", () => {
         "biohazard-1996-a01-iron-door",
         "biohazard-1998-a01-no-handle-door",
         "biohazard-1996-a02-yellow-panel-knob-door",
+        "biohazard-1996-b02-blue-panel-double-door",
       ]
     );
 
@@ -231,4 +232,14 @@ describe("core door entrance presets", () => {
       /Unknown door entrance preset/
     );
   });
+});
+
+it("releases the blue six-panel double door with round knobs", () => {
+  const preset = getDoorEntrancePreset("biohazard-1996-b02-blue-panel-double-door" as never);
+  assert.equal(preset.type, "double");
+  assert.equal(preset.motion, "hinge-double");
+  assert.equal(preset.animation, "double-swing");
+  assert.equal(preset.handleProfileId, "knob-round");
+  assert.ok(preset.frontTextureUrl);
+  assert.ok(preset.backTextureUrl);
 });
