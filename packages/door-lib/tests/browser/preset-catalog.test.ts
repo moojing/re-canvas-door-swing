@@ -178,6 +178,9 @@ for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
 test("blue double door has a playable catalog preset", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
   await page.goto("/");
   await expect(page.getByRole("img", { name: "1-1 B-2 Blue Panel Double Door animation preview" }).locator("canvas")).toBeVisible();
   await page.getByRole("button", { name: "Open 1-1 B-2 Blue Panel Double Door", exact: true }).click();
