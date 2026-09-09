@@ -174,3 +174,23 @@ for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
     expect(errors).toEqual([]);
   });
 }
+
+test("blue double door has a playable catalog preset", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await expect(page.getByRole("img", { name: "1-1 B-2 Blue Panel Double Door animation preview" }).locator("canvas")).toBeVisible();
+  await page.getByRole("button", { name: "Open 1-1 B-2 Blue Panel Double Door", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "1-1 B-2 Blue Panel Double Door" });
+  await expect(dialog.locator("canvas")).toHaveAttribute("height", "360");
+  const slider = page.getByRole("slider", { name: "Animation progress" });
+  for (const progress of ["30", "55", "75"]) {
+    await slider.fill(progress);
+    await expect(slider).toHaveValue(progress);
+  }
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(slider).toHaveValue("0");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

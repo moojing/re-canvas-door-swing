@@ -164,6 +164,8 @@ class VanillaDoorScene {
   private backDoorMaterial = createDoorFaceMaterial();
   private handleMaterial = createHandleMaterial();
   private agedWood = false;
+  private knobBackplate = false;
+  private readonly retroRasterSize = new THREE.Vector2(360, 360);
   private readonly ambientLight = new THREE.AmbientLight("#ffffff", 0.25);
   private readonly keyLight = new THREE.DirectionalLight("#fff7ee", 0.75);
   private readonly rimLight = new THREE.DirectionalLight("#8fa8c7", 0.35);
@@ -242,7 +244,9 @@ class VanillaDoorScene {
     cameraPanY: number;
   }) {
     const agedWood = usesAgedWoodLook(presetId);
-    const lookChanged = this.agedWood !== agedWood;
+    const knobBackplate = presetId === "biohazard-1996-b02-blue-panel-double-door";
+    const lookChanged = this.agedWood !== agedWood || this.knobBackplate !== knobBackplate;
+    this.knobBackplate = knobBackplate;
     this.agedWood = agedWood;
     this.ambientLight.intensity = agedWood ? 0.46 : 0.25;
     this.keyLight.intensity = agedWood ? 0.82 : 0.75;
@@ -317,6 +321,7 @@ class VanillaDoorScene {
     const [bufferWidth, bufferHeight] = getDrawingBufferSize(
       width, height, window.devicePixelRatio || 1, true
     );
+    this.retroRasterSize.set(bufferWidth, bufferHeight);
     const canvas = this.renderer.domElement;
     if (canvas.width !== bufferWidth || canvas.height !== bufferHeight) {
       this.renderer.setSize(bufferWidth, bufferHeight, false);
@@ -353,9 +358,19 @@ class VanillaDoorScene {
         material.metalness = 0;
         material.color.set("#e0d29a");
       }
-      applyRetroMaterial(material, this.agedWood && this.doorMaterials.includes(material));
+      if (this.knobBackplate) {
+        material.roughness = 1;
+        material.metalness = 0;
+        material.color.set("#ffffff");
+      }
+      applyRetroMaterial(
+        material,
+        (this.agedWood || this.knobBackplate) && this.doorMaterials.includes(material),
+        this.knobBackplate ? this.retroRasterSize : undefined,
+        this.knobBackplate
+      );
     });
-    applyRetroMaterial(this.handleMaterial);
+    applyRetroMaterial(this.handleMaterial, false, this.knobBackplate ? this.retroRasterSize : undefined);
     const doorMaterials = this.doorMaterials;
     this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4));
     this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial]);
@@ -480,16 +495,18 @@ class VanillaDoorScene {
   }) {
     const pivot = new THREE.Group();
     pivot.position.x = pivotX;
+    // Keep a narrow visible seam between the closed B02 leaves.
+    const leafWidth = this.knobBackplate ? width - 0.025 : width;
 
     const door = new THREE.Mesh(
-      new THREE.BoxGeometry(width, height, DOOR_DEPTH),
+      new THREE.BoxGeometry(leafWidth, height, DOOR_DEPTH),
       this.doorMaterials
     );
     door.position.set(doorCenterX, 0, DOOR_DEPTH / 2);
     pivot.add(door);
 
     const front = new THREE.Mesh(
-      new THREE.PlaneGeometry(width, height),
+      new THREE.PlaneGeometry(leafWidth, height),
       this.frontDoorMaterial
     );
     front.position.set(doorCenterX, 0, DOOR_DEPTH + DOOR_SURFACE_OFFSET);
@@ -497,7 +514,7 @@ class VanillaDoorScene {
     pivot.add(front);
 
     const back = new THREE.Mesh(
-      new THREE.PlaneGeometry(width, height),
+      new THREE.PlaneGeometry(leafWidth, height),
       this.backDoorMaterial
     );
     const shouldMirrorBackTexture = mirrorBackTexture || mirrorTextureX;
@@ -559,6 +576,16 @@ class VanillaDoorScene {
       face === "front" ? DOOR_DEPTH + DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET
     );
     if (face === "back") handleGroup.rotation.y = Math.PI;
+    if (this.knobBackplate) {
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.55, 0.025), this.handleMaterial);
+      plate.name = "fixed-backplate";
+      plate.position.set(0, -0.09, 0.0125);
+      handleGroup.add(plate);
+      const keyhole = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.075, 0.006),
+        new THREE.MeshBasicMaterial({ color: "#171510" }));
+      keyhole.position.set(0, -0.17, 0.016);
+      plate.add(keyhole);
+    }
     let pressTargets:
       | Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
       | undefined;
@@ -678,7 +705,7 @@ class VanillaDoorScene {
           const materials = Array.isArray(node.material) ? node.material : [node.material];
           materials.forEach((material) => {
             if (!(material instanceof THREE.MeshStandardMaterial)) return;
-            applyRetroMaterial(material);
+            applyRetroMaterial(material, false, this.knobBackplate ? this.retroRasterSize : undefined);
             if (this.agedWood) {
               material.roughness = 1;
               material.metalness = 0;
@@ -687,7 +714,9 @@ class VanillaDoorScene {
           });
         });
 
+        const backplate = handleEntry.group.getObjectByName("fixed-backplate");
         handleEntry.group.clear();
+        if (backplate) handleEntry.group.add(backplate);
         const wrapper = new THREE.Group();
         const scale =
           prepared.scale *

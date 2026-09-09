@@ -87,3 +87,17 @@ it("turns the direct-entry knob slowly through 65 degrees before the leaf opens"
   assertClose(angleAt(0.35), 65 * Math.PI / 180);
   assertClose(angleAt(1), 0);
 });
+
+it("matches single and double knob angles at the same elapsed turn time", () => {
+  const single = getDoorAnimationConfig("direct-entry");
+  const double = getDoorAnimationConfig("double-swing");
+  for (const milliseconds of [0, 700, 900, 1225, 1500, 1750, 1900, 2200]) {
+    const angleAt = (config: typeof single) => {
+      const progress = milliseconds / config.duration;
+      return config.getState(config.easing?.(progress) ?? progress, {
+        linearProgress: progress, handleProfileId: "knob-round",
+      }).handleAngle ?? 0;
+    };
+    assertClose(angleAt(double), angleAt(single));
+  }
+});

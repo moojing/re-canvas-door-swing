@@ -171,9 +171,10 @@ const handleMotionByProfile: Record<
         motionSpeed: 0.85,
       },
       "double-swing": {
-        pressStart: 0.3,
-        pressEnd: 0.4,
-        bounceEnd: 0.5,
+        // Match the single door in seconds despite the 5.5s total duration.
+        pressStart: 700 / 5500,
+        pressEnd: 1750 / 5500,
+        bounceEnd: 2200 / 5500,
         releaseStart: 0.9,
         releaseEnd: 1,
         downBounce: 0.06,
@@ -197,7 +198,8 @@ const getHandlePressAngle = ({
     handleMotionByProfile[profileId] ??
     handleMotionByProfile[DEFAULT_HANDLE_PROFILE_ID];
   const timing = profile.timingsByAnimation[animation];
-  const slowKnob = profileId === "knob-round" && animation === "direct-entry";
+  const slowKnob = profileId === "knob-round" &&
+    (animation === "direct-entry" || animation === "double-swing");
   // Smoothstep spreads the turn across the full 1.05 seconds instead of
   // the exponential curve reaching most of its angle immediately.
   const turn = clamp(

@@ -33,3 +33,19 @@ Implementation plan:
 | 鉸鏈單開 × 無配件 | `biohazard-1996-a01-iron-door` | Implemented for `1-1/a01/a01-s1鐵門.mp4`; left hinge, texture not mirrored. |
 | 鉸鏈單開 × 無配件 | `biohazard-1998-a01-no-handle-door` | Implemented for `1-2/a01/a01單門-無把手.mp4`; right hinge, mirrored from the same A01 runtime textures. |
 | 鉸鏈單開 × 喇叭鎖 | `biohazard-1996-a02-yellow-panel-knob-door` | Implemented for `1-1/a02/a02-s5黃目字門.mp4`; left hinge, generated front/back textures, imported round knob model with procedural fallback. |
+
+## B02 double-door representative
+
+- Ticket #37: `1-1/b02/b02-s3方塊門.mp4` now has the runtime preset `biohazard-1996-b02-blue-panel-double-door`.
+- Reuses the existing `double-swing` timeline and licensed, split `door_knob.glb`; each leaf has a knob on both faces, with fixed rectangular backplates/keyholes and rotating grips.
+- New original six-panel blue-gray wood texture generated with ImageGen; WebP q85, 887×1774. One hardware-free texture is shared across front/back, with existing back UV compensation. Rear appearance is an authored counterpart, not a claim of exact game-back reconstruction.
+- Source generation: `exec-e253c35e-7164-4c77-ae18-6dc75fc42ed8.png`. Runtime asset: `packages/door-lib/src/assets/textures/biohazard-1996-b02-blue-panel-double-door.webp`.
+- Edges sample the solid wood stile, and closed leaves retain a narrow central seam. Uses the shared soft 360p pixel treatment and existing licensed audio.
+- Only the first representative in #37 is implemented; the other selected doors remain pending.
+- Follow-up: B02 knob turn matches A02 in elapsed time: starts at 0.7s, reaches 65° at 1.75s, with the same smoothstep curve and settling phase. The 5.5s double-door timeline remains unchanged.
+
+B02 的顯示效果補充（2026-09-09）：依本機原片的柔化亮邊與移動邊線觀感，
+在投影座標加入半個渲染像素的格點量化，並對門板貼圖加入四向取樣的輕微
+柔化與中高亮度的中性提亮。這是視覺近似，並非已確認原遊戲使用的技術。
+量化使用場景自身的 drawing buffer 尺寸，resize 時同步更新；不使用時間或
+亂數，因此暫停時不會自行震動。效果目前限於 B02，保持 360px 與平滑放大。
