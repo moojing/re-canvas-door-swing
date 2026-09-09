@@ -498,10 +498,11 @@ class VanillaDoorScene {
     // Keep a narrow visible seam between the closed B02 leaves.
     const leafWidth = this.knobBackplate ? width - 0.025 : width;
 
-    const door = new THREE.Mesh(
-      new THREE.BoxGeometry(leafWidth, height, DOOR_DEPTH),
-      this.doorMaterials
-    );
+    const edgeGeometry = new THREE.BoxGeometry(leafWidth, height, DOOR_DEPTH);
+    // The separate textured planes own the front/back surfaces. Keeping the
+    // untextured box caps lets snapped triangles occlude them at oblique angles.
+    edgeGeometry.groups = edgeGeometry.groups.filter((group) => (group.materialIndex ?? 0) < 4);
+    const door = new THREE.Mesh(edgeGeometry, this.doorMaterials);
     door.position.set(doorCenterX, 0, DOOR_DEPTH / 2);
     pivot.add(door);
 
