@@ -23,10 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build library and sample
-        run: |
-          npm run build:lib
-          npm run build:sample
+      - name: Build published beta sample
+        run: npm run build:beta --workspace retro-horror-door-sample -- 0.2.0-beta.0
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

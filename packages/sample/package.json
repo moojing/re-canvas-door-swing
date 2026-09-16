@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:social-preview": "node --test social-preview.test.mjs",
-    "dev:beta": "node beta-sample.mjs"
+    "dev:beta": "node beta-sample.mjs",
+    "build:beta": "node build-beta-sample.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

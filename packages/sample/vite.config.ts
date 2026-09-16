@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { writeFileSync } from "node:fs";
 import path from "path";
 
 // https://vitejs.dev/config/
@@ -13,7 +14,20 @@ export default defineConfig(({ mode }) => {
       host: "127.0.0.1",
       port: 5173,
     },
-    plugins: [react()],
+    plugins: [
+      react(),
+      ...(process.env.DOOR_BETA_BUILD_MODULE_IDS_FILE
+        ? [{
+            name: "record-beta-build-module-ids",
+            generateBundle() {
+              writeFileSync(
+                process.env.DOOR_BETA_BUILD_MODULE_IDS_FILE,
+                JSON.stringify([...this.getModuleIds()])
+              );
+            },
+          }]
+        : []),
+    ],
     resolve: {
       conditions: env.VITE_DOOR_ASSET_MODE === "cdn" ? ["module", "browser"] : ["module", "browser", "door-local"],
       alias: {
