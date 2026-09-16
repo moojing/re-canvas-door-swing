@@ -31,7 +31,7 @@ Open `http://127.0.0.1:5173/`.
   vanilla renderer so the preview and interactive scene use the same geometry,
   materials, lighting, and opening behavior.
 - Library-owned default textures and sounds are bundled from
-  `packages/door-lib/src/assets/`. Files in this package's `public/` directory
+  `packages/door-assets/`. Files in this package's `public/` directory
   are sample assets only.
 
 ## Verification

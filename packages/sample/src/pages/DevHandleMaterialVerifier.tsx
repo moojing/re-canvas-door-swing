@@ -186,7 +186,7 @@ const DevHandleMaterialVerifier = () => {
             Door Knob Material
           </h1>
           <p className="mt-2 font-mono text-xs text-[#aa9f90]">
-            packages/door-lib/src/assets/models/door_knob.glb
+            packages/door-assets/models/door_knob.glb
           </p>
         </div>
         <Link

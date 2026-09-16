@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import {
   dirname,
   extname,
@@ -174,6 +174,24 @@ const assertOutputGraphReactFree = ({
 };
 
 describe("package boundary", () => {
+  it("ships no media files or assets dependency in the main package", () => {
+    const files = readdirSync(distRoot, { recursive: true }).map(String);
+    assert.deepEqual(files.filter(file => /\.(png|webp|mp3|glb)$/.test(file)), []);
+    const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+    assert.equal(manifest.dependencies?.["retro-horror-door-assets"], undefined);
+    for (const file of files.filter(file => /\.(js|cjs|ts|cts)$/.test(file))) {
+      const source = readFileSync(dist(file), "utf8");
+      assert.doesNotMatch(source, /["']#door-assets["']/);
+      assert.deepEqual(
+        collectImportSpecifiers(source).filter(specifier =>
+          referencesPackage(specifier, "retro-horror-door-assets")
+        ),
+        [],
+        `${file} must inline asset modules and declarations`
+      );
+    }
+    assert.match(readFileSync(dist("index.d.ts"), "utf8"), /assetBaseUrl\?: string/);
+  });
   it("does not publish the removed React adapter or its peer dependencies", () => {
     const manifest = packageJson();
 

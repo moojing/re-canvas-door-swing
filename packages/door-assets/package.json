@@ -1,0 +1,35 @@
+{
+  "name": "retro-horror-door-assets",
+  "version": "0.1.0-beta.0",
+  "description": "Runtime textures, models and sounds for retro-horror-door",
+  "private": false,
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "cdn.js",
+    "base.js",
+    "base.d.ts",
+    "textures",
+    "models",
+    "sounds"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "prepack": "npm run build"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./cdn": {
+      "types": "./index.d.ts",
+      "default": "./cdn.js"
+    },
+    "./base": {
+      "types": "./base.d.ts",
+      "default": "./base.js"
+    }
+  }
+}

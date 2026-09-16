@@ -1,0 +1,10 @@
+import { DEFAULT_ASSET_BASE_URL } from "./base.js";
+export const doorWood = `${DEFAULT_ASSET_BASE_URL}/textures/door-1.png`;
+export const biohazard1996A01IronDoorFront = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a01-iron-door-front.webp`;
+export const biohazard1996A01IronDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a01-iron-door-back.webp`;
+export const biohazard1996A02YellowPanelKnobDoorFront = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a02-yellow-panel-knob-door-front.webp`;
+export const biohazard1996A02YellowPanelKnobDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a02-yellow-panel-knob-door-back.webp`;
+export const biohazard1996B02BluePanel = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-b02-blue-panel-double-door.webp`;
+export const doorHandleSingle = `${DEFAULT_ASSET_BASE_URL}/models/door_handle_single.glb`;
+export const doorKnob = `${DEFAULT_ASSET_BASE_URL}/models/door_knob.glb`;
+export const doorOpenClose = `${DEFAULT_ASSET_BASE_URL}/sounds/freesound_community-main-door-opening-closing-38280.mp3`;
