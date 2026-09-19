@@ -1,0 +1,9 @@
+export { default as doorWood } from "./textures/door-1.png";
+export { default as biohazard1996A01IronDoorFront } from "./textures/biohazard-1996-a01-iron-door-front.webp";
+export { default as biohazard1996A01IronDoorBack } from "./textures/biohazard-1996-a01-iron-door-back.webp";
+export { default as biohazard1996A02YellowPanelKnobDoorFront } from "./textures/biohazard-1996-a02-yellow-panel-knob-door-front.webp";
+export { default as biohazard1996A02YellowPanelKnobDoorBack } from "./textures/biohazard-1996-a02-yellow-panel-knob-door-back.webp";
+export { default as biohazard1996B02BluePanel } from "./textures/biohazard-1996-b02-blue-panel-double-door.webp";
+export { default as doorHandleSingle } from "./models/door_handle_single.glb";
+export { default as doorKnob } from "./models/door_knob.glb";
+export { default as doorOpenClose } from "./sounds/freesound_community-main-door-opening-closing-38280.mp3";

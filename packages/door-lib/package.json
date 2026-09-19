@@ -1,6 +1,6 @@
 {
   "name": "retro-horror-door",
-  "version": "0.1.0",
+  "version": "0.2.0-beta.0",
   "private": false,
   "type": "module",
   "main": "./dist/index.cjs",
@@ -27,9 +27,11 @@
     "dev": "npm run build -- --watch",
     "lint": "tsc --noEmit",
     "test": "npm run test:core",
-    "test:core": "node --disable-warning=ExperimentalWarning --experimental-strip-types --import ./src/__tests__/asset-loader.mjs --test src/core/__tests__/*.test.ts src/__tests__/handleModel.test.ts",
+    "test:core": "node --disable-warning=ExperimentalWarning --experimental-strip-types --import ./src/__tests__/asset-loader.mjs --test src/core/__tests__/*.test.ts src/__tests__/handleModel.test.ts && npm run test:local-assets",
     "test:package": "npm run build && node --disable-warning=ExperimentalWarning --experimental-strip-types --test src/__tests__/package-boundary.test.ts",
-    "test:browser": "npm run build && playwright test --config tests/browser/playwright.config.ts"
+    "test:browser": "npm run build && playwright test --config tests/browser/playwright.config.ts",
+    "prepack": "npm run build",
+    "test:local-assets": "node --conditions=door-local --experimental-strip-types --import ./src/__tests__/asset-loader.mjs --test src/__tests__/local-assets.test.ts"
   },
   "peerDependencies": {
     "three": "^0.133.1"
@@ -38,6 +40,13 @@
     "@playwright/test": "^1.62.1",
     "@types/three": "^0.160.0",
     "tsup": "^8.3.5",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "retro-horror-door-assets": "0.1.0-beta.0"
+  },
+  "imports": {
+    "#door-assets": {
+      "door-local": "retro-horror-door-assets",
+      "default": "retro-horror-door-assets/cdn"
+    }
   }
 }

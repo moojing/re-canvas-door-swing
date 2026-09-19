@@ -1,3 +1,4 @@
+import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
 import { getDrawingBufferSize, usesAgedWoodLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
@@ -29,6 +30,8 @@ import {
 
 interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
   target: HTMLElement | null;
+  /** Base directory for library-owned textures, models and sounds. */
+  assetBaseUrl?: string;
   autoPlay?: boolean;
   className?: string;
   onComplete?: () => void;
@@ -761,7 +764,16 @@ export const mountDoorEntrance = (
     throw new Error("mountDoorEntrance: target element is required");
   }
 
-  let activeDoorPreset = resolveDoorEntrancePresetSelection(options);
+  const assetUrl = (url: string) => resolveAssetUrl(url, options.assetBaseUrl)!;
+  const presetAssets = (preset: DoorEntrancePreset) => ({
+    ...preset,
+    frontTextureUrl: resolveAssetUrl(preset.frontTextureUrl, options.assetBaseUrl),
+    edgeTextureUrl: resolveAssetUrl(preset.edgeTextureUrl, options.assetBaseUrl),
+    backTextureUrl: resolveAssetUrl(preset.backTextureUrl, options.assetBaseUrl),
+    handleModelUrl: resolveAssetUrl(preset.handleModelUrl, options.assetBaseUrl),
+    soundUrl: resolveAssetUrl(preset.soundUrl, options.assetBaseUrl),
+  });
+  let activeDoorPreset = presetAssets(resolveDoorEntrancePresetSelection(options));
   let activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
   let progress = 0;
   let isAnimating = false;
@@ -786,9 +798,9 @@ export const mountDoorEntrance = (
         edgeTextureUrl: options.textureUrl,
         backTextureUrl: options.textureUrl,
       }
-    : resolveDoorSurfaceTextureUrls(activeDoorPreset, DEFAULT_TEXTURE_URL);
+    : resolveDoorSurfaceTextureUrls(activeDoorPreset, assetUrl(DEFAULT_TEXTURE_URL));
   let resolvedSoundUrl = toPublicAssetUrl(
-    options.soundUrl ?? activeDoorPreset.soundUrl ?? DEFAULT_SOUND_URL
+    options.soundUrl ?? activeDoorPreset.soundUrl ?? assetUrl(DEFAULT_SOUND_URL)
   );
 
   if (resolvedSoundUrl) {
@@ -994,7 +1006,7 @@ export const mountDoorEntrance = (
 
   const resolvePreset = (nextPreset?: DoorEntrancePresetId) => {
     activeDoorPreset = nextPreset
-      ? resolveDoorEntrancePresetSelection({ preset: nextPreset })
+      ? presetAssets(resolveDoorEntrancePresetSelection({ preset: nextPreset }))
       : activeDoorPreset;
     activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
     resolvedSurfaceTextureUrls = options.textureUrl
@@ -1003,9 +1015,9 @@ export const mountDoorEntrance = (
           edgeTextureUrl: options.textureUrl,
           backTextureUrl: options.textureUrl,
         }
-      : resolveDoorSurfaceTextureUrls(activeDoorPreset, DEFAULT_TEXTURE_URL);
+      : resolveDoorSurfaceTextureUrls(activeDoorPreset, assetUrl(DEFAULT_TEXTURE_URL));
     resolvedSoundUrl = toPublicAssetUrl(
-      options.soundUrl ?? activeDoorPreset.soundUrl ?? DEFAULT_SOUND_URL
+      options.soundUrl ?? activeDoorPreset.soundUrl ?? assetUrl(DEFAULT_SOUND_URL)
     );
     if (resolvedSoundUrl && audio.src !== resolvedSoundUrl) {
       audio.src = resolvedSoundUrl;

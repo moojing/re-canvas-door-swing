@@ -1,3 +1,4 @@
+export { DEFAULT_ASSET_BASE_URL } from "./core/assetUrls.ts";
 export { mountDoorEntrance } from "./vanilla";
 export type {
   DoorEntranceHandle,

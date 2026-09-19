@@ -157,7 +157,7 @@ describe("imported handle model", () => {
 
 it("shipped knob keeps its base fixed while the grip turns about its shaft", async () => {
   const { readFile } = await import("node:fs/promises");
-  const bytes = await readFile(new URL("../assets/models/door_knob.glb", import.meta.url));
+  const bytes = await readFile(new URL("../../../door-assets/models/door_knob.glb", import.meta.url));
   const jsonLength = bytes.readUInt32LE(12);
   const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
   const binary = bytes.subarray(28 + jsonLength);
