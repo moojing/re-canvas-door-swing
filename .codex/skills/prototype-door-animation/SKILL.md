@@ -1,6 +1,6 @@
 ---
 name: prototype-door-animation
-description: Use when creating or revising a 3D door animation or re-canvas-door-swing preset, including checking gallery references, deciding whether animation already exists, generating front/back door textures, adding handle models, and launching the sample for visual verification.
+description: Use when creating or revising a 3D door animation or re-canvas-door-swing preset, including checking gallery references, applying the project's retro low-resolution rendering, generating front/back door textures, adding handle models, and launching the sample for visual verification.
 ---
 
 # Prototype Door Animation
@@ -33,12 +33,23 @@ Before changing a preset, verify both repos exist locally. Use the gallery repo 
 
 ## Asset Rules
 
-- Keep library-owned runtime assets under `packages/door-lib/src/assets/`.
+- Keep publishable runtime files in `packages/door-assets/textures/`, `models/`, or `sounds/`. `packages/door-lib/src/assets/` only re-exports their URLs for library source.
+- When adding a runtime file, export it from `packages/door-assets/index.js`, `cdn.js`, and `index.d.ts`, re-export it from the relevant `packages/door-lib/src/assets/` module, then wire that URL into the released preset. This keeps local development imports and the published CDN asset URL in sync.
 - Keep sample-only assets under `packages/sample/public/` only when they are not part of the published library.
 - Do not add source videos, frame grabs, gallery thumbnails, or classification metadata to the package.
 - Prefer compressed production formats such as WebP for door textures.
 - Record useful generation/provenance notes in project docs when the repo already has a place for them.
 - Never imitate a named film, game, or proprietary asset exactly; create an original texture guided by observed structure, material, age, and layout.
+
+## Retro Low-Resolution Rendering
+
+The library's visual style is a softly reconstructed low-resolution 3D image, not sharp nearest-neighbor sprite art. When editing door textures, materials, handles, or renderer settings, preserve this shared treatment.
+
+- Use the existing `applyRetroMaterial` path for all visible door and handle materials. It samples panel textures at 192×384, applies a subtle 5-bit 2×2 ordered dither, and retains true black silhouettes. Do not bake a second dither pattern or color quantization into generated texture files.
+- Keep the renderer's low-resolution drawing buffer and smooth enlargement (`imageRendering = "auto"`). Do not switch to `pixelated` or nearest-neighbor scaling unless the user explicitly asks for hard pixel edges.
+- Generate textures with clear large-scale forms, restrained fine detail, and readable midtones. Let the runtime shader provide the pixel structure instead of simulating screen pixels, scanlines, compression artefacts, or UI overlays in the bitmap.
+- Reuse `packages/door-lib/src/retroMaterial.ts` and `packages/door-lib/src/core/renderLook.ts` rather than creating a preset-specific shader, palette pipeline, or output scale.
+- Check the closed, half-open, and fully-open states at the sample's actual display size. Confirm the dither remains subtle, the door edge and handle share the same treatment, and dark materials stay legible without turning the background grey.
 
 ## Geometry And Material Guidance
 
@@ -70,6 +81,7 @@ Before reporting completion:
 | Door side texture is missing | Generate/mix an edge treatment in code from the door material. |
 | Accessory model is required | Check docs, then assets; if absent, ask the user to download the specific model. |
 | Opposite-hand variant | Prefer hinge-side and mirror metadata over duplicate textures. |
+| New texture or material | Keep coarse, low-resolution forms; let the shared retro material apply dithering and smooth enlargement. |
 | Old demo appears on sample home | Remove or hide it from the public preset registry, not with a sample-only duplicated list. |
 | No frame | Keep only the moving door leaf/leaves and allowed handle/accessory geometry. |
 | Handle turns first | Use or add a handle phase before the door-angle phase; rotate around the handle base. |
