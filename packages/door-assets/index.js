@@ -1,6 +1,8 @@
 export { default as doorWood } from "./textures/door-1.png";
 export { default as biohazard1996A01IronDoorFront } from "./textures/biohazard-1996-a01-iron-door-front.webp";
 export { default as biohazard1996A01IronDoorBack } from "./textures/biohazard-1996-a01-iron-door-back.webp";
+export { default as biohazard1999A01ParkingDoorFront } from "./textures/biohazard-1999-a01-parking-door-front.jpg";
+export { default as biohazard1999A01ParkingDoorBack } from "./textures/biohazard-1999-a01-parking-door-back.jpg";
 export { default as biohazard1996A02YellowPanelKnobDoorFront } from "./textures/biohazard-1996-a02-yellow-panel-knob-door-front.webp";
 export { default as biohazard1996A02YellowPanelKnobDoorBack } from "./textures/biohazard-1996-a02-yellow-panel-knob-door-back.webp";
 export { default as biohazard1996B02BluePanel } from "./textures/biohazard-1996-b02-blue-panel-double-door.webp";

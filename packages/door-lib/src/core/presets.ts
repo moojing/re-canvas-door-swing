@@ -7,6 +7,8 @@ import {
   biohazard1996B02BluePanel,
   biohazard1996A01IronDoorBack,
   biohazard1996A01IronDoorFront,
+  biohazard1999A01ParkingDoorBack,
+  biohazard1999A01ParkingDoorFront,
   biohazard1996A02YellowPanelKnobDoorBack,
   biohazard1996A02YellowPanelKnobDoorFront,
 } from "../assets/textures/index.ts";
@@ -43,6 +45,19 @@ export const doorEntrancePresetMap: Record<
     animation: "direct-entry",
     hingeSide: "right",
     mirrorTextureX: true,
+  },
+  "biohazard-1999-a01-parking-door": {
+    id: "biohazard-1999-a01-parking-door",
+    label: "1-3 A-1 Parking Door",
+    type: "single",
+    motion: "hinge-single",
+    material: "aged-painted-steel",
+    frontTextureUrl: biohazard1999A01ParkingDoorFront,
+    edgeTextureUrl: biohazard1999A01ParkingDoorFront,
+    backTextureUrl: biohazard1999A01ParkingDoorBack,
+    animation: "approach-hold-entry",
+    hingeSide: "left",
+    mirrorTextureX: false,
   },
   "biohazard-1996-a02-yellow-panel-knob-door": {
     id: "biohazard-1996-a02-yellow-panel-knob-door",

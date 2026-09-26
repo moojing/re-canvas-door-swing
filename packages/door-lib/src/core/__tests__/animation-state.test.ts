@@ -6,6 +6,22 @@ const assertClose = (actual: number, expected: number) => {
   assert.equal(Math.abs(actual - expected) < 0.000001, true);
 };
 
+it("approaches the closed parking leaf, holds, then opens before passing through", () => {
+  const config = getDoorAnimationConfig("approach-hold-entry");
+  const at = (ms: number) => config.getState(ms / config.duration);
+  assert.equal(config.easing, undefined);
+  assert.ok(at(800).cameraPosition[2] < at(0).cameraPosition[2]);
+  for (const ms of [0, 800, 1600, 2400, 3360]) {
+    assert.equal(at(ms).doorAngle, 0);
+    assert.equal(at(ms).handleAngle, 0);
+  }
+  assert.deepEqual(at(1600).cameraPosition, at(3360).cameraPosition);
+  assertClose(at(3840).doorAngle, 0.5);
+  assertClose(at(4320).doorAngle, 1);
+  assert.ok(at(4800).cameraPosition[2] < at(4320).cameraPosition[2]);
+  assert.equal(at(5000).fadeOut, 1);
+});
+
 describe("core animation state", () => {
   it("maps direct-entry milestones through opening, approach, and fade", () => {
     const config = getDoorAnimationConfig("direct-entry");

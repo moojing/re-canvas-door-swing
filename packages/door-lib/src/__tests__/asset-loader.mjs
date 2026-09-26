@@ -1,6 +1,6 @@
 import { registerHooks } from "node:module";
 
-const ASSET_EXTENSION_PATTERN = /\.(glb|mp3|png|webp)$/;
+const ASSET_EXTENSION_PATTERN = /\.(glb|mp3|png|webp|jpg)$/;
 
 registerHooks({
   resolve(specifier, context, nextResolve) {

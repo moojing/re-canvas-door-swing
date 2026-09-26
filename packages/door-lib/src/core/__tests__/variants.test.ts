@@ -65,6 +65,31 @@ describe("core door entrance presets", () => {
     assert.equal(preset.backTextureUrl, source.backTextureUrl);
   });
 
+  it("publishes the Phase 1 parking door with its own authored surfaces", () => {
+    const preset = getDoorEntrancePreset(
+      "biohazard-1999-a01-parking-door" as never
+    );
+
+    assert.equal(preset.id, "biohazard-1999-a01-parking-door");
+    assert.equal(preset.label, "1-3 A-1 Parking Door");
+    assert.equal(preset.type, "single");
+    assert.equal(preset.motion, "hinge-single");
+    assert.equal(preset.handleProfileId, undefined);
+    assert.equal(preset.handleModelUrl, undefined);
+    assert.equal(preset.material, "aged-painted-steel");
+    assert.equal(preset.animation, "approach-hold-entry");
+    assert.equal(preset.hingeSide, "left");
+    assert.equal(preset.mirrorTextureX, false);
+    assert.match(
+      preset.frontTextureUrl ?? "",
+      /biohazard-1999-a01-parking-door-front\.jpg$/
+    );
+    assert.match(
+      preset.backTextureUrl ?? "",
+      /biohazard-1999-a01-parking-door-back\.jpg$/
+    );
+  });
+
   it("publishes the Phase 1 Biohazard A-2 yellow panel door as a round-knob preset", () => {
     const preset = getDoorEntrancePreset(
       "biohazard-1996-a02-yellow-panel-knob-door" as never
@@ -96,6 +121,7 @@ describe("core door entrance presets", () => {
       [
         "biohazard-1996-a01-iron-door",
         "biohazard-1998-a01-no-handle-door",
+        "biohazard-1999-a01-parking-door",
         "biohazard-1996-a02-yellow-panel-knob-door",
         "biohazard-1996-b02-blue-panel-double-door",
       ]

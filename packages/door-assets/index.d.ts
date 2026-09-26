@@ -1,6 +1,8 @@
 export declare const doorWood: string;
 export declare const biohazard1996A01IronDoorFront: string;
 export declare const biohazard1996A01IronDoorBack: string;
+export declare const biohazard1999A01ParkingDoorFront: string;
+export declare const biohazard1999A01ParkingDoorBack: string;
 export declare const biohazard1996A02YellowPanelKnobDoorFront: string;
 export declare const biohazard1996A02YellowPanelKnobDoorBack: string;
 export declare const biohazard1996B02BluePanel: string;

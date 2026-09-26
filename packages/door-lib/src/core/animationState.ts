@@ -98,7 +98,7 @@ const handleMotionByProfile: Record<
   {
     maxPressAngleDeg: number;
     timingsByAnimation: Record<
-      DoorAnimationId,
+      Exclude<DoorAnimationId, "approach-hold-entry">,
       {
         pressStart?: number;
         pressEnd: number;
@@ -191,7 +191,7 @@ const getHandlePressAngle = ({
   progress,
 }: {
   profileId?: HandleProfileId;
-  animation: DoorAnimationId;
+  animation: Exclude<DoorAnimationId, "approach-hold-entry">;
   progress: number;
 }) => {
   const profile =
@@ -260,6 +260,32 @@ export const directEntryConfig: DoorAnimationConfig = {
       cameraPosition: [0, 0, cameraZ],
       cameraTarget: [0, 0, 0],
       fadeOut,
+    };
+  },
+};
+
+// A handle-free entrance: approach the closed leaf, pause, then swing and pass.
+// Timings are linear seconds; applying the direct-entry global easing would
+// erase the closed-door approach and distort the pause.
+export const approachHoldEntryConfig: DoorAnimationConfig = {
+  id: "approach-hold-entry",
+  label: "Approach and Enter",
+  duration: 5000,
+  progressMarkers: [0, 0.32, 0.672, 0.864, 1],
+  soundStartProgress: 0.672,
+  soundEndProgress: 0.96,
+  soundSourceStartProgress: 0.06,
+  getState: (rawProgress) => {
+    const p = clamp(rawProgress, 0, 1);
+    const approach = clamp(p / 0.32, 0, 1);
+    const opening = clamp((p - 0.672) / 0.192, 0, 1);
+    const passage = clamp((p - 0.864) / 0.136, 0, 1);
+    return {
+      doorAngle: opening,
+      handleAngle: 0,
+      cameraPosition: [0, 0, 8 - 1.75 * approach - 0.85 * opening - 4.9 * passage],
+      cameraTarget: [0, 0, 0],
+      fadeOut: p === 1 ? 1 : clamp((p - 0.928) / 0.072, 0, 1),
     };
   },
 };
@@ -382,6 +408,7 @@ export const doubleSwingConfig: DoorAnimationConfig = {
 
 export const doorAnimationConfigs: DoorAnimationConfig[] = [
   directEntryConfig,
+  approachHoldEntryConfig,
   singleTopDownConfig,
   doubleSwingConfig,
 ];
