@@ -175,7 +175,7 @@ for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
   });
 }
 
-test("blue double door has a playable catalog preset", async ({ page }) => {
+test("blue double door has a playable catalog preset", async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
@@ -196,4 +196,25 @@ test("blue double door has a playable catalog preset", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("parking door shares Direct Entry and supports playback, seek, and reset", async ({ page }, testInfo) => {
+  await page.goto("/dev/animations");
+  await expect(page.getByRole("link", { name: /Approach and Enter/ })).toHaveCount(0);
+  await page.getByRole("link", { name: /Direct Entry/ }).click();
+  await page.getByRole("button", { name: "1-3 A-1 Parking Door", exact: true }).click();
+  await expect(page).toHaveURL(/direct-entry\?preset=biohazard-1999-a01-parking-door/);
+  const play = page.getByRole("button", { name: "Play", exact: true });
+  const timeline = page.getByRole("slider", { name: "Animation progress" });
+  await expect(play).toBeEnabled();
+  await expect(page.locator("canvas")).toBeVisible();
+  await timeline.fill("50");
+  await expect(timeline).toHaveValue("50");
+  await page.screenshot({ path: testInfo.outputPath("parking-direct-entry-half.png") });
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(timeline).toHaveValue("0");
+  await play.click();
+  await expect(timeline).toHaveValue("100", { timeout: 10000 });
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(timeline).toHaveValue("0");
 });

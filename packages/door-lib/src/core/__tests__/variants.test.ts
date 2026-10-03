@@ -77,7 +77,7 @@ describe("core door entrance presets", () => {
     assert.equal(preset.handleProfileId, undefined);
     assert.equal(preset.handleModelUrl, undefined);
     assert.equal(preset.material, "aged-painted-steel");
-    assert.equal(preset.animation, "approach-hold-entry");
+    assert.equal(preset.animation, "direct-entry");
     assert.equal(preset.hingeSide, "left");
     assert.equal(preset.mirrorTextureX, false);
     assert.match(

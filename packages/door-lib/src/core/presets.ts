@@ -55,7 +55,7 @@ export const doorEntrancePresetMap: Record<
     frontTextureUrl: biohazard1999A01ParkingDoorFront,
     edgeTextureUrl: biohazard1999A01ParkingDoorFront,
     backTextureUrl: biohazard1999A01ParkingDoorBack,
-    animation: "approach-hold-entry",
+    animation: "direct-entry",
     hingeSide: "left",
     mirrorTextureX: false,
   },

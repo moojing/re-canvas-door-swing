@@ -33,7 +33,7 @@ Implementation plan:
 | --- | --- | --- |
 | 鉸鏈單開 × 無配件 | `biohazard-1996-a01-iron-door` | Implemented for `1-1/a01/a01-s1鐵門.mp4`; left hinge, texture not mirrored. |
 | 鉸鏈單開 × 無配件 | `biohazard-1998-a01-no-handle-door` | Implemented for `1-2/a01/a01單門-無把手.mp4`; right hinge, mirrored from the same A01 runtime textures. |
-| 鉸鏈單開 × 無配件 | `biohazard-1999-a01-parking-door` | In development for `1-3/a01/a01-s2停車場門.mp4`; left hinge, authored olive-steel surfaces and `approach-hold-entry` timeline. Renderer visual verification remains pending. |
+| 鉸鏈單開 × 無配件 | `biohazard-1999-a01-parking-door` | In development for `1-3/a01/a01-s2停車場門.mp4`; left hinge, authored olive-steel surfaces and the shared `direct-entry` timeline. Era-specific timing is deferred to a separate animation-settings discussion. |
 
 ### Parking-door motion reference (2026-09-26)
 

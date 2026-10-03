@@ -1,7 +1,6 @@
 export type Vector3Tuple = [number, number, number];
 
 export type DoorAnimationId =
-  | "approach-hold-entry"
   | "direct-entry"
   | "single-top-down-entry"
   | "double-swing";
