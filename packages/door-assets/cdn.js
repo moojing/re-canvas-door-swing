@@ -2,6 +2,8 @@ import { DEFAULT_ASSET_BASE_URL } from "./base.js";
 export const doorWood = `${DEFAULT_ASSET_BASE_URL}/textures/door-1.png`;
 export const biohazard1996A01IronDoorFront = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a01-iron-door-front.webp`;
 export const biohazard1996A01IronDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a01-iron-door-back.webp`;
+export const biohazard1999A01ParkingDoorFront = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1999-a01-parking-door-front.jpg`;
+export const biohazard1999A01ParkingDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1999-a01-parking-door-back.jpg`;
 export const biohazard1996A02YellowPanelKnobDoorFront = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a02-yellow-panel-knob-door-front.webp`;
 export const biohazard1996A02YellowPanelKnobDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-a02-yellow-panel-knob-door-back.webp`;
 export const biohazard1996B02BluePanel = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-b02-blue-panel-double-door.webp`;

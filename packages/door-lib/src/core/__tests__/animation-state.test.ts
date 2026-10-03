@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getDoorAnimationConfig } from "../animationState.ts";
+import { doorAnimationConfigs, getDoorAnimationConfig } from "../animationState.ts";
 
 const assertClose = (actual: number, expected: number) => {
   assert.equal(Math.abs(actual - expected) < 0.000001, true);
@@ -100,4 +100,10 @@ it("matches single and double knob angles at the same elapsed turn time", () => 
     };
     assertClose(angleAt(double), angleAt(single));
   }
+});
+
+it("lists the shared entry animations without a separate parking-door animation", () => {
+  assert.deepEqual(doorAnimationConfigs.map(({ id }) => id), [
+    "direct-entry", "single-top-down-entry", "double-swing",
+  ]);
 });

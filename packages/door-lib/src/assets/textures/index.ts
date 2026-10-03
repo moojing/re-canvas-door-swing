@@ -1,1 +1,1 @@
-export { doorWood, biohazard1996A01IronDoorFront, biohazard1996A01IronDoorBack, biohazard1996A02YellowPanelKnobDoorFront, biohazard1996A02YellowPanelKnobDoorBack, biohazard1996B02BluePanel } from "#door-assets";
+export { doorWood, biohazard1996A01IronDoorFront, biohazard1996A01IronDoorBack, biohazard1999A01ParkingDoorFront, biohazard1999A01ParkingDoorBack, biohazard1996A02YellowPanelKnobDoorFront, biohazard1996A02YellowPanelKnobDoorBack, biohazard1996B02BluePanel } from "#door-assets";

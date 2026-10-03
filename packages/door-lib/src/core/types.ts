@@ -19,11 +19,13 @@ export type DoorHingeSide = "left" | "right";
 export type DoorMaterialId =
   | "wood-panel-aged"
   | "aged-wood-panel"
+  | "aged-painted-steel"
   | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
   | "biohazard-1996-a01-iron-door"
   | "biohazard-1998-a01-no-handle-door"
+  | "biohazard-1999-a01-parking-door"
   | "biohazard-1996-a02-yellow-panel-knob-door"
   | "biohazard-1996-b02-blue-panel-double-door";
 
