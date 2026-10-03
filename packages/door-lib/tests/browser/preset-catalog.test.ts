@@ -175,7 +175,7 @@ for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
   });
 }
 
-test("blue double door has a playable catalog preset", async ({ page }, testInfo) => {
+test("blue double door has a playable catalog preset", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {

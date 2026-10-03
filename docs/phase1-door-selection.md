@@ -33,7 +33,9 @@ Implementation plan:
 | --- | --- | --- |
 | 鉸鏈單開 × 無配件 | `biohazard-1996-a01-iron-door` | Implemented for `1-1/a01/a01-s1鐵門.mp4`; left hinge, texture not mirrored. |
 | 鉸鏈單開 × 無配件 | `biohazard-1998-a01-no-handle-door` | Implemented for `1-2/a01/a01單門-無把手.mp4`; right hinge, mirrored from the same A01 runtime textures. |
-| 鉸鏈單開 × 無配件 | `biohazard-1999-a01-parking-door` | In development for `1-3/a01/a01-s2停車場門.mp4`; left hinge, authored olive-steel surfaces and the shared `direct-entry` timeline. Era-specific timing is deferred to a separate animation-settings discussion. |
+| 鉸鏈單開 × 無配件 | `biohazard-1999-a01-parking-door` | Implemented for `1-3/a01/a01-s2停車場門.mp4`; left hinge, authored olive-steel surfaces and the shared `direct-entry` timeline. Era-specific timing is deferred to a separate animation-settings discussion. |
+
+| 鉸鏈單開 × 喇叭鎖 | `biohazard-1996-a02-yellow-panel-knob-door` | Implemented for `1-1/a02/a02-s5黃目字門.mp4`; left hinge, generated front/back textures, imported round knob model with procedural fallback. |
 
 ### Parking-door motion reference (2026-09-26)
 
@@ -49,13 +51,13 @@ This observation, rather than the gallery's accessory classification alone,
 supports the static hardware treatment. Finer motion cannot be ruled out from
 the 6.25 fps preview. The rear surface is authored, not an exact reconstruction.
 
-The five-second runtime approximates the isolated first entrance: 0–1.6s
-approach, 1.6–3.36s hold, 3.36–4.32s opening, then passage and fade. It reuses
-single-leaf geometry and the shared retro shader. Unlike `direct-entry`, camera
-approach occurs while the door remains closed. Source frames stay outside the
-package. Local browser verification is pending because server binding is denied
-in this environment; passing unit tests is not a visual match certification.
-| 鉸鏈單開 × 喇叭鎖 | `biohazard-1996-a02-yellow-panel-knob-door` | Implemented for `1-1/a02/a02-s5黃目字門.mp4`; left hinge, generated front/back textures, imported round knob model with procedural fallback. |
+The current runtime uses the existing five-second `direct-entry` timeline and does
+not reproduce the reference's closed-door approach and pause. Those timing
+differences are reserved for the planned era animation settings. The door reuses
+single-leaf geometry and the shared retro shader. Source frames stay outside
+the package. The local browser run verified rendering, playback, seeking, and
+resetting against this PR branch; the screenshot in `docs/images/` shows the
+halfway state.
 
 ## B02 double-door representative
 
