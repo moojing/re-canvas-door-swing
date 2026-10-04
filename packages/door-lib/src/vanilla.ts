@@ -4,7 +4,10 @@ import { getDrawingBufferSize, usesAgedWoodLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { getDoorAnimationConfig } from "./core/animationState.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
-import { resolveDoorSurfaceTextureUrls } from "./core/surfaceTextures.ts";
+import {
+  resolveDoorSurfaceTextureUrls,
+  shouldMirrorBackTextureX,
+} from "./core/surfaceTextures.ts";
 import type {
   DoorAnimationState,
   DoorAnimationConfig,
@@ -158,7 +161,7 @@ class VanillaDoorScene {
   private activeHandleModelUrl?: string;
   private activeHandleProfileId?: HandleProfileId;
   private activeHasHandle?: boolean;
-  private activeMirrorBackTexture?: boolean;
+  private activeMirrorBackTextureX?: boolean;
   private activeMirrorTextureX?: boolean;
   private activeSingleHingeSide: DoorHingeSide = "left";
   private activeSingleSwingDirection: DoorSwingDirection = "toward-viewer";
@@ -234,7 +237,7 @@ class VanillaDoorScene {
     handleModelUrl,
     handleProfileId,
     hasHandle,
-    mirrorBackTexture,
+    mirrorBackTextureX,
     mirrorTextureX,
     hingeSide,
     swingDirection,
@@ -248,7 +251,7 @@ class VanillaDoorScene {
     handleModelUrl?: string;
     handleProfileId?: HandleProfileId;
     hasHandle: boolean;
-    mirrorBackTexture: boolean;
+    mirrorBackTextureX: boolean;
     mirrorTextureX: boolean;
     hingeSide: DoorHingeSide;
     swingDirection: DoorSwingDirection;
@@ -277,7 +280,7 @@ class VanillaDoorScene {
       this.activeHandleModelUrl !== handleModelUrl ||
       this.activeHandleProfileId !== handleProfileId ||
       this.activeHasHandle !== hasHandle ||
-      this.activeMirrorBackTexture !== mirrorBackTexture ||
+      this.activeMirrorBackTextureX !== mirrorBackTextureX ||
       this.activeMirrorTextureX !== mirrorTextureX ||
       this.activeSingleHingeSide !== hingeSide
     ) {
@@ -287,7 +290,7 @@ class VanillaDoorScene {
         handleModelUrl,
         handleProfileId,
         hasHandle,
-        mirrorBackTexture,
+        mirrorBackTextureX,
         mirrorTextureX,
         hingeSide
       );
@@ -296,7 +299,7 @@ class VanillaDoorScene {
       this.activeHandleModelUrl = handleModelUrl;
       this.activeHandleProfileId = handleProfileId;
       this.activeHasHandle = hasHandle;
-      this.activeMirrorBackTexture = mirrorBackTexture;
+      this.activeMirrorBackTextureX = mirrorBackTextureX;
       this.activeMirrorTextureX = mirrorTextureX;
       this.activeSingleHingeSide = hingeSide;
     }
@@ -351,7 +354,7 @@ class VanillaDoorScene {
     handleModelUrl: string | undefined,
     handleProfileId: HandleProfileId | undefined,
     hasHandle: boolean,
-    mirrorBackTexture: boolean,
+    mirrorBackTextureX: boolean,
     mirrorTextureX: boolean,
     hingeSide: DoorHingeSide
   ) {
@@ -400,7 +403,7 @@ class VanillaDoorScene {
         handleModelUrl,
         handleProfileId,
         hasHandle,
-        mirrorBackTexture,
+        mirrorBackTextureX,
         mirrorTextureX,
       });
       left.name = "left-door";
@@ -416,7 +419,7 @@ class VanillaDoorScene {
         handleModelUrl,
         handleProfileId,
         hasHandle,
-        mirrorBackTexture,
+        mirrorBackTextureX,
         mirrorTextureX,
       });
       right.name = "right-door";
@@ -436,7 +439,7 @@ class VanillaDoorScene {
             handleModelUrl,
             handleProfileId,
             hasHandle,
-            mirrorBackTexture,
+            mirrorBackTextureX,
             mirrorTextureX,
           })
         : this.createDoorLeaf({
@@ -449,7 +452,7 @@ class VanillaDoorScene {
             handleModelUrl,
             handleProfileId,
             hasHandle,
-            mirrorBackTexture,
+            mirrorBackTextureX,
             mirrorTextureX,
           });
     single.name = "single-door";
@@ -491,7 +494,7 @@ class VanillaDoorScene {
     handleModelUrl,
     handleProfileId,
     hasHandle,
-    mirrorBackTexture,
+    mirrorBackTextureX,
     mirrorTextureX,
   }: {
     width: number;
@@ -503,7 +506,7 @@ class VanillaDoorScene {
     handleModelUrl?: string;
     handleProfileId?: HandleProfileId;
     hasHandle: boolean;
-    mirrorBackTexture: boolean;
+    mirrorBackTextureX: boolean;
     mirrorTextureX: boolean;
   }) {
     const pivot = new THREE.Group();
@@ -531,8 +534,7 @@ class VanillaDoorScene {
       new THREE.PlaneGeometry(leafWidth, height),
       this.backDoorMaterial
     );
-    const shouldMirrorBackTexture = mirrorBackTexture || mirrorTextureX;
-    if (shouldMirrorBackTexture) mirrorPlaneTextureX(back.geometry);
+    if (mirrorBackTextureX) mirrorPlaneTextureX(back.geometry);
     back.position.set(doorCenterX, 0, -DOOR_SURFACE_OFFSET);
     back.rotation.y = Math.PI;
     pivot.add(back);
@@ -994,7 +996,12 @@ export const mountDoorEntrance = (
       ),
       handleProfileId: activeDoorPreset.handleProfileId,
       hasHandle: Boolean(activeDoorPreset.handleProfileId),
-      mirrorBackTexture: Boolean(activeDoorPreset.backTextureUrl) && !options.textureUrl,
+      mirrorBackTextureX: shouldMirrorBackTextureX({
+        frontMirrored: activeDoorPreset.mirrorTextureX ?? false,
+        hasDistinctBackTexture:
+          resolvedSurfaceTextureUrls.backTextureUrl !==
+          resolvedSurfaceTextureUrls.frontTextureUrl,
+      }),
       mirrorTextureX: activeDoorPreset.mirrorTextureX ?? false,
       hingeSide: activeDoorPreset.hingeSide ?? "left",
       swingDirection:

@@ -7,7 +7,10 @@ import {
   getDoorEntrancePreset,
   resolveDoorEntrancePresetSelection,
 } from "../presets.ts";
-import { resolveDoorSurfaceTextureUrls } from "../surfaceTextures.ts";
+import {
+  resolveDoorSurfaceTextureUrls,
+  shouldMirrorBackTextureX,
+} from "../surfaceTextures.ts";
 
 describe("core door entrance presets", () => {
   it("returns a complete playable preset by id", () => {
@@ -192,6 +195,40 @@ describe("core door entrance presets", () => {
       edgeTextureUrl: "/textures/legacy-door.png",
       backTextureUrl: "/textures/legacy-door.png",
     });
+  });
+
+  it("aligns baked front and back details at the same physical door edge", () => {
+    const cases = [
+      ["biohazard-1996-a01-iron-door", 1],
+      ["biohazard-1998-a01-no-handle-door", -1],
+      ["biohazard-1999-a01-parking-door", 1],
+    ] as const;
+
+    for (const [presetId, expectedHandleSide] of cases) {
+      const preset = getDoorEntrancePreset(presetId);
+      const frontMirrored = preset.mirrorTextureX ?? false;
+      const backMirrored = shouldMirrorBackTextureX({
+        frontMirrored,
+        hasDistinctBackTexture: preset.backTextureUrl !== preset.frontTextureUrl,
+      });
+      // Front assets place their detail on the right; authored back assets
+      // place it on the left. The back plane itself faces the other way.
+      const frontPhysicalSide = frontMirrored ? -1 : 1;
+      const backPhysicalSide = backMirrored ? -1 : 1;
+      assert.equal(frontPhysicalSide, expectedHandleSide, presetId);
+      assert.equal(backPhysicalSide, expectedHandleSide, presetId);
+    }
+
+    assert.equal(
+      shouldMirrorBackTextureX({ frontMirrored: false, hasDistinctBackTexture: false }),
+      true,
+      "reusing the front image on the back still needs a UV flip"
+    );
+    assert.equal(
+      shouldMirrorBackTextureX({ frontMirrored: true, hasDistinctBackTexture: false }),
+      false,
+      "a mirrored front image and reused back image must cancel the UV flip"
+    );
   });
 
   it("resolves random selection from presets matching the requested filters", () => {

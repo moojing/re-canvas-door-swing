@@ -281,18 +281,14 @@ describe("package boundary", () => {
 
     assert.match(
       source,
-      /mirrorBackTexture:\s*Boolean\(activeDoorPreset\.backTextureUrl\) && !options\.textureUrl/
+      /mirrorBackTextureX:\s*shouldMirrorBackTextureX\(/
+    );
+    assert.match(
+      source,
+      /resolvedSurfaceTextureUrls\.backTextureUrl !==\s*resolvedSurfaceTextureUrls\.frontTextureUrl/
     );
     assert.match(source, /if \(mirrorTextureX\) mirrorPlaneTextureX\(front\.geometry\);/);
-    assert.match(
-      source,
-      /const shouldMirrorBackTexture = mirrorBackTexture \|\| mirrorTextureX/
-    );
-    assert.match(
-      source,
-      /if \(shouldMirrorBackTexture\) mirrorPlaneTextureX\(back\.geometry\);/
-    );
-    assert.doesNotMatch(source, /mirrorBackTexture !== mirrorTextureX/);
+    assert.match(source, /if \(mirrorBackTextureX\) mirrorPlaneTextureX\(back\.geometry\);/);
     assert.doesNotMatch(source, /;\s*mirrorPlaneTextureX\(back\.geometry\);\s*back\.position/s);
   });
 
