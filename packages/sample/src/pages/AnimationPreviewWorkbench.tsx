@@ -12,6 +12,11 @@ const formatTime = (milliseconds: number) => {
   return `${String(Math.floor(totalSeconds / 60)).padStart(2, "0")}:${String(totalSeconds % 60).padStart(2, "0")}`;
 };
 
+const swingDirectionOptions: Array<{ value: DoorSwingDirection; label: string }> = [
+  { value: "toward-viewer", label: "Toward viewer" },
+  { value: "away-from-viewer", label: "Away from viewer" },
+];
+
 const AnimationPreviewWorkbench = ({
   animation,
   preset,
@@ -114,23 +119,32 @@ const AnimationPreviewWorkbench = ({
 
         {preset.type === "single" && (
           <div className="mt-6 space-y-6 border-t border-[#4b3928] pt-6">
-            <div>
-              <label htmlFor="preview-swing-direction" className="block text-sm font-semibold text-[#e9dfcd]">
+            <div role="group" aria-labelledby="preview-swing-direction-label">
+              <p id="preview-swing-direction-label" className="text-sm font-semibold text-[#e9dfcd]">
                 Swing direction
-              </label>
-              <select
-                id="preview-swing-direction"
-                value={swingDirection}
-                onChange={(event) => {
-                  const next = event.target.value as DoorSwingDirection;
-                  setSwingDirection(next);
-                  doorRef.current?.setPreviewOverrides({ swingDirection: next });
-                }}
-                className="mt-2 w-full border border-[#765939] bg-[#1d1610] px-3 py-2 text-sm text-[#f1e7d6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
-              >
-                <option value="toward-viewer">Toward viewer</option>
-                <option value="away-from-viewer">Away from viewer</option>
-              </select>
+              </p>
+              <div className="mt-2 grid grid-cols-2 overflow-hidden border border-[#765939]">
+                {swingDirectionOptions.map(({ value, label }, index) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={swingDirection === value}
+                    onClick={() => {
+                      setSwingDirection(value);
+                      doorRef.current?.setPreviewOverrides({ swingDirection: value });
+                    }}
+                    className={`min-h-11 px-2 py-2 text-center text-xs font-semibold focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] sm:text-sm ${
+                      index === 0 ? "border-r border-[#765939]" : ""
+                    } ${
+                      swingDirection === value
+                        ? "bg-[#c98d48] text-[#100c08]"
+                        : "bg-[#1d1610] text-[#d8c9b5] hover:bg-[#322518]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               type="button"

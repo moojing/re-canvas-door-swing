@@ -55,7 +55,7 @@
 - [x] Add a failing browser test for the selected single-door preset that seeks to a frame, changes Swing direction, observes the control value and a changed canvas without progress reset, then restores the authored value. Assert the direction control is absent for the double door.
 - [x] Run the focused test and confirm it fails because the controls are missing.
 - [x] Make the detail player a preset-keyed child so changing presets initializes control state from the new authored preset. Keep fixed metadata and the released usage snippet separate from preview-only controls.
-- [x] Wire each control to `setPreviewOverrides` and implement Restore preset values. Preserve Play, Reset, timeline seek, and sound-after-gesture behavior.
+- [x] Wire the two-option direction toggle to `setPreviewOverrides` and implement Restore preset values. Preserve Play, Reset, timeline seek, and sound-after-gesture behavior.
 - [x] Run focused tests and visually inspect both A-1 presets at closed, half-open, and fully-open positions in the local sample.
 - [x] Commit the UI change.
 

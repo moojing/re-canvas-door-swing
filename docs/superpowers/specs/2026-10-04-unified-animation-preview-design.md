@@ -17,7 +17,7 @@ Use one animation detail page for interactive preset preview. Let a user adjust 
 
 - Show the selected preset's name and fixed metadata: animation, motion, hinge side, material, handle, and authored swing direction.
 - Keep Play, Reset, and timeline seek. Reset returns the playback position to zero; a separate **Restore preset values** action resets the preview controls.
-- For single-hinge presets, offer a Storybook-like control for `swingDirection` (`toward-viewer` or `away-from-viewer`). Hide it for double doors until their motion is separately designed.
+- For single-hinge presets, offer a two-option toggle for `swingDirection` (`toward-viewer` or `away-from-viewer`). Hide it for double doors until their motion is separately designed.
 - A control change redraws the current animation frame immediately without resetting the progress, rebuilding textures, or writing to the preset registry. The current control values remain in page state while this preset stays selected; changing presets initializes controls from the new preset.
 - Preview adjustments are local to the detail page. Reloading returns to released preset values. The code example remains the released `mountDoorEntrance({ preset })` call and is labeled as such.
 
