@@ -14,7 +14,6 @@ import {
 
 export type FullScreenDoorTransitionRequest = {
   preset: DoorEntrancePresetId;
-  destination: string;
 };
 
 export type FullScreenDoorTransitionHandle = {
@@ -23,25 +22,22 @@ export type FullScreenDoorTransitionHandle = {
 
 type FullScreenDoorTransitionProps = {
   onActiveChange: (active: boolean) => void;
-  onComplete: (request: FullScreenDoorTransitionRequest) => void;
 };
 
 const FullScreenDoorTransition = forwardRef<
   FullScreenDoorTransitionHandle,
   FullScreenDoorTransitionProps
->(({ onActiveChange, onComplete }, ref) => {
+>(({ onActiveChange }, ref) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<DoorEntranceHandle | null>(null);
-  const requestRef = useRef<FullScreenDoorTransitionRequest | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const runningRef = useRef(false);
   const completedRef = useRef(false);
   const onActiveChangeRef = useRef(onActiveChange);
-  const onCompleteRef = useRef(onComplete);
   const [active, setActive] = useState(false);
 
   onActiveChangeRef.current = onActiveChange;
-  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     const target = targetRef.current;
@@ -53,14 +49,12 @@ const FullScreenDoorTransition = forwardRef<
       autoPlay: false,
       className: "h-full w-full border-0 bg-black",
       onComplete: () => {
-        const request = requestRef.current;
-        if (!runningRef.current || completedRef.current || !request) return;
+        if (!runningRef.current || completedRef.current) return;
 
         completedRef.current = true;
         runningRef.current = false;
         onActiveChangeRef.current(false);
         setActive(false);
-        onCompleteRef.current(request);
       },
     });
     doorRef.current = door;
@@ -72,7 +66,12 @@ const FullScreenDoorTransition = forwardRef<
   }, []);
 
   useLayoutEffect(() => {
-    if (active) regionRef.current?.focus();
+    if (active) {
+      regionRef.current?.focus();
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
   }, [active]);
 
   useImperativeHandle(
@@ -84,7 +83,9 @@ const FullScreenDoorTransition = forwardRef<
 
         runningRef.current = true;
         completedRef.current = false;
-        requestRef.current = request;
+        previousFocusRef.current = document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
         onActiveChangeRef.current(true);
         setActive(true);
         door.reset(request.preset);
@@ -98,7 +99,7 @@ const FullScreenDoorTransition = forwardRef<
     <div
       ref={regionRef}
       role="status"
-      aria-label="Page transition in progress"
+      aria-label="Full-screen preview in progress"
       aria-live="polite"
       aria-hidden={active ? undefined : true}
       tabIndex={-1}

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("unified animation navigation keeps the selected catalog preset and returns home", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Open 1-2 A-1 No-Handle Door" }).click();
+  await page.getByRole("link", { name: "Open detail design for 1-2 A-1 No-Handle Door" }).click();
 
   await expect(page).toHaveURL(/\/dev\/animations\/direct-entry\?preset=biohazard-1998-a01-no-handle-door$/);
   await expect(page.getByRole("heading", { name: "Direct Entry" })).toBeVisible();
@@ -89,7 +89,7 @@ test("preset catalog opens the shared animation detail page", async ({
   const catalogCanvasCount = await page.locator("canvas").count();
 
   await page
-    .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
+    .getByRole("link", { name: "Open detail design for 1-1 A-1 Iron Door" })
     .click();
 
   await expect(page).toHaveURL(/\/dev\/animations\/direct-entry\?preset=biohazard-1996-a01-iron-door$/);
@@ -98,12 +98,28 @@ test("preset catalog opens the shared animation detail page", async ({
   await expect(page.locator("canvas")).toHaveCount(catalogCanvasCount);
 });
 
+test("every preset card makes detail design primary and full-screen preview secondary", async ({ page }) => {
+  await page.goto("/");
+
+  const cards = page.locator("article");
+  expect(await cards.count()).toBeGreaterThan(0);
+  for (const card of await cards.all()) {
+    const label = await card.getByRole("heading").innerText();
+    const detail = card.getByRole("link", { name: `Open detail design for ${label}` });
+    const preview = card.getByRole("button", { name: `Preview ${label} full-screen` });
+    await expect(detail).toHaveAttribute("href", /\/dev\/animations\/[^?]+\?preset=/);
+    await expect(detail).toHaveCSS("background-color", "rgb(201, 141, 72)");
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  }
+});
+
 test("shared detail page lets users scrub the animation timeline", async ({
   page,
 }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
+    .getByRole("link", { name: "Open detail design for 1-1 A-1 Iron Door" })
     .click();
 
   const timeline = page.getByRole("slider", {
@@ -122,7 +138,7 @@ test("mobile animation detail keeps Back within the viewport", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
+    .getByRole("link", { name: "Open detail design for 1-1 A-1 Iron Door" })
     .click();
 
   const back = page.getByRole("link", { name: "Back to catalog" });
@@ -133,19 +149,18 @@ test("mobile animation detail keeps Back within the viewport", async ({
   expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(390);
 });
 
-test("full-screen transition plays the selected preset before navigating", async ({
+test("full-screen preview plays the selected preset then returns to the catalog", async ({
   page,
 }) => {
   await page.goto("/");
 
-  await page
-    .getByRole("button", {
-      name: "Start full-screen transition with 1-1 A-1 Iron Door",
-    })
-    .click();
+  const previewButton = page.getByRole("button", {
+    name: "Preview 1-1 A-1 Iron Door full-screen",
+  });
+  await previewButton.click();
 
   const transition = page.getByRole("status", {
-    name: "Page transition in progress",
+    name: "Full-screen preview in progress",
   });
   await expect(transition).toBeVisible();
   await expect(transition).toBeFocused();
@@ -153,29 +168,27 @@ test("full-screen transition plays the selected preset before navigating", async
   await expect(page.getByRole("main")).toHaveAttribute("inert", "");
   await expect(transition.locator("audio")).toHaveJSProperty("paused", false);
 
-  await expect(page).toHaveURL(/\/transition-complete$/, { timeout: 10_000 });
   await expect(
-    page.getByRole("heading", { name: "Destination reached" })
-  ).toBeVisible();
-  await expect(page.getByText("1-1 A-1 Iron Door", { exact: true })).toBeVisible();
-
-  await page.getByRole("link", { name: "Return to preset catalog" }).click();
+    page.getByRole("status", { name: "Full-screen preview in progress", includeHidden: true })
+  ).toHaveAttribute("aria-hidden", "true", { timeout: 10_000 });
   await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("main")).not.toHaveAttribute("inert", "");
+  await expect(previewButton).toBeFocused();
 });
 
-test("full-screen transition does not start a second run", async ({ page }) => {
+test("full-screen preview does not start a second run", async ({ page }) => {
   await page.goto("/");
   const startButton = page.getByRole("button", {
-    name: "Start full-screen transition with 1-1 A-1 Iron Door",
+    name: "Preview 1-1 A-1 Iron Door full-screen",
   });
   await startButton.click();
 
   await expect(startButton).toBeDisabled();
   await expect(
-    page.getByRole("status", { name: "Page transition in progress" })
+    page.getByRole("status", { name: "Full-screen preview in progress" })
   ).toHaveCount(1);
   await expect(
-    page.getByRole("status", { name: "Page transition in progress" }).locator("canvas")
+    page.getByRole("status", { name: "Full-screen preview in progress" }).locator("canvas")
   ).toHaveCount(1);
 });
 
@@ -198,7 +211,7 @@ test("yellow panel uses a coarse drawing buffer and survives timeline seeking", 
     if (message.type() === "error") errors.push(message.text());
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Open 1-1 A-2 Yellow Panel Knob Door" }).click();
+  await page.getByRole("link", { name: "Open detail design for 1-1 A-2 Yellow Panel Knob Door" }).click();
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveCSS("image-rendering", "auto");
   await expect(canvas).toHaveAttribute("height", "360");
@@ -211,7 +224,7 @@ test("yellow panel uses a coarse drawing buffer and survives timeline seeking", 
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(timeline).toHaveValue("0");
   await page.getByRole("link", { name: "Back to catalog" }).click();
-  await page.getByRole("button", { name: "Open 1-1 A-1 Iron Door" }).click();
+  await page.getByRole("link", { name: "Open detail design for 1-1 A-1 Iron Door" }).click();
   await expect(page.locator("canvas")).toHaveCSS("image-rendering", "auto");
   expect(errors).toEqual([]);
 });
@@ -221,7 +234,7 @@ for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
-    await page.getByRole("button", { name: `Open ${name}`, exact: true }).click();
+    await page.getByRole("link", { name: `Open detail design for ${name}`, exact: true }).click();
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveAttribute("height", "360");
     await expect(canvas).toHaveCSS("image-rendering", "auto");
@@ -239,7 +252,7 @@ test("blue double door has a playable catalog preset", async ({ page }) => {
   });
   await page.goto("/");
   await expect(page.getByRole("img", { name: "1-1 B-2 Blue Panel Double Door animation preview" }).locator("canvas")).toBeVisible();
-  await page.getByRole("button", { name: "Open 1-1 B-2 Blue Panel Double Door", exact: true }).click();
+  await page.getByRole("link", { name: "Open detail design for 1-1 B-2 Blue Panel Double Door", exact: true }).click();
   await expect(page.locator("canvas")).toHaveAttribute("height", "360");
   const slider = page.getByRole("slider", { name: "Animation progress" });
   for (const progress of ["30", "55", "75"]) {
