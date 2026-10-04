@@ -26,6 +26,47 @@ test("unified animation navigation returns to the animation list and handles dir
   await expect(page).toHaveURL(/\/dev\/animations$/);
 });
 
+test("animation detail controls redraw the held frame and restore authored values", async ({ page }) => {
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1996-a01-iron-door");
+  const canvas = page.locator("canvas");
+  const timeline = page.getByRole("slider", { name: "Animation progress" });
+  await timeline.fill("45");
+  const authored = await canvas.screenshot();
+
+  await page.getByRole("combobox", { name: "Swing direction" }).selectOption("toward-viewer");
+  await expect(timeline).toHaveValue("45");
+  const reversed = await canvas.screenshot();
+  expect(Buffer.compare(reversed, authored)).not.toBe(0);
+
+  const angle = page.getByRole("slider", { name: "Maximum opening angle" });
+  await angle.fill("45");
+  await expect(page.getByText("45°", { exact: true })).toBeVisible();
+  const narrowed = await canvas.screenshot();
+  expect(Buffer.compare(narrowed, reversed)).not.toBe(0);
+
+  await page.getByRole("button", { name: "Restore preset values" }).click();
+  await expect(page.getByRole("combobox", { name: "Swing direction" })).toHaveValue("away-from-viewer");
+  await expect(angle).toHaveValue("90");
+  await expect(timeline).toHaveValue("45");
+  expect(Buffer.compare(await canvas.screenshot(), authored)).toBe(0);
+
+  await angle.fill("60");
+  await page.reload();
+  await expect(page.getByRole("combobox", { name: "Swing direction" })).toHaveValue("away-from-viewer");
+  await expect(page.getByRole("slider", { name: "Maximum opening angle" })).toHaveValue("90");
+  await page.getByRole("button", { name: "1-3 A-1 Parking Door" }).click();
+  await expect(page.getByRole("combobox", { name: "Swing direction" })).toHaveValue("toward-viewer");
+  await expect(page.getByRole("slider", { name: "Maximum opening angle" })).toHaveValue("90");
+  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("0");
+  await page.getByRole("button", { name: "1-1 A-1 Iron Door" }).click();
+  await expect(page.getByRole("combobox", { name: "Swing direction" })).toHaveValue("away-from-viewer");
+  await expect(page.getByRole("slider", { name: "Maximum opening angle" })).toHaveValue("90");
+
+  await page.goto("/dev/animations/double-swing?preset=biohazard-1996-b02-blue-panel-double-door");
+  await expect(page.getByRole("combobox", { name: "Swing direction" })).toHaveCount(0);
+  await expect(page.getByRole("slider", { name: "Maximum opening angle" })).toHaveCount(0);
+});
+
 test("preset catalog opens the shared animation detail page", async ({
   page,
 }) => {
