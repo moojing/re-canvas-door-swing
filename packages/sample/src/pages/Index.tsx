@@ -66,10 +66,10 @@ const PresetCard = ({
         <Link
           to={`/dev/animations/${preset.animation}?preset=${preset.id}`}
           state={{ from: "/" }}
-          aria-label={`Open detail design for ${preset.label}`}
+          aria-label={`View details for ${preset.label}`}
           className="flex min-h-11 w-full items-center justify-between border border-[#c98d48] bg-[#c98d48] px-5 text-sm font-bold text-[#100c08] transition-colors hover:bg-[#dda762] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907]"
         >
-          Open detail design
+          View details
           <ArrowUpRight aria-hidden="true" size={16} />
         </Link>
         <button
@@ -149,7 +149,7 @@ const Index = () => {
               Playable door presets
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-[#aa9f90] sm:text-base">
-              每張卡代表一組已定義、可發布的門組合。進入 detail design 查看設定，或全螢幕預覽動畫。
+              每張卡代表一組已定義、可發布的門組合。查看動畫細節與設定，或全螢幕預覽動畫。
             </p>
           </header>
 
