@@ -278,7 +278,8 @@ test("parking door shares Direct Entry and supports playback, seek, and reset", 
   await expect(page.locator("canvas")).toBeVisible();
   await timeline.fill("50");
   await expect(timeline).toHaveValue("50");
-  await page.screenshot({ path: testInfo.outputPath("parking-direct-entry-half.png") });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath("parking-direct-entry-half.png"), fullPage: true });
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(timeline).toHaveValue("0");
   await play.click();

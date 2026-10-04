@@ -15,14 +15,14 @@ npm run build:lib        # 建置一次 library（tsup）
 npm run dev              # 啟動 sample（使用已建置的 library）
 ```
 
-開啟 `http://127.0.0.1:5173/` 可瀏覽所有已發布的 preset。每張卡會顯示 renderer 的初始畫面；按下 **Open preset** 會以 modal 開啟相同的 vanilla renderer，並提供播放控制、音效與可拖曳的時間軸。較早的技術 PoC 位於 `/poc`，獨立的 HTML 範例位於 `/samples/vanilla.html`。
+開啟 `http://127.0.0.1:5173/` 可瀏覽所有已發布的 preset。每張卡會顯示 renderer 的初始畫面；按下 **View details** 會進入所選 preset 的動畫詳細頁，提供播放控制、音效、可拖曳的時間軸及預覽設定。**Full-screen preview** 會在 catalog 上方播放動畫。舊的技術 PoC 路由已退役；獨立的 HTML 範例位於 `/samples/vanilla.html`。
 
 常用指令：
 
 - `npm run dev:lib`：監看並重建 library
 - `npm run dev:sample`：啟動 sample 的 Vite 開發伺服器
 - `npm run build`：依序建置 library 與 sample
-- `npm run lint`：執行 sample lint
+- `npm run lint`：執行 library typecheck 與 sample lint
 - `npm run gallery:check`：檢查已發布的評估 gallery 是否一致，並確認主 repo 未重新加入重複的評估文件
 
 ## Library 測試
@@ -31,7 +31,7 @@ door library 透過分層測試維持 framework-free：
 
 - `npm run test:lib:core`：覆蓋 framework-free 的動畫狀態、preset、音效與 controller 行為。
 - `npm run test:lib:package`：檢查公開 package exports，並確認預設 `retro-horror-door` entry 和 `retro-horror-door/vanilla` output graph 不含 React。
-- `npm run test:lib:browser`：執行純 HTML mount 與 preset catalog 的 browser coverage，包括 canvas rendering、播放、音效、modal lifecycle、時間軸 seek 及 mobile close control。
+- `npm run test:lib:browser`：執行純 HTML mount 與 preset catalog 的 browser coverage，包括 canvas rendering、詳細頁導覽、播放、音效、時間軸 seek、全螢幕預覽及 mobile layout。
 - `npm run verify:lib` / `npm run verify:lib:core`：執行目前的 core 驗證流程：library typecheck、build 與 core tests。
 - `npm run verify:lib:boundary`：執行 package-boundary 測試層。
 - `npm run verify:lib:browser`：執行 core verification 加上 browser smoke tests。

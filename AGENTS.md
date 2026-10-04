@@ -8,8 +8,8 @@ The repository is an npm workspaces monorepo:
   default API is vanilla JS + Three.js; it must remain React-free.
 - `packages/sample/` is a Vite + React app used to develop and visually verify
   the library. The catalog lives in `src/pages/Index.tsx`, with the renderer
-  preview and modal in adjacent page modules. The old PoC routes have been
-  retired now that direct-entry presets render through the library.
+  preview and animation detail workbench in adjacent page modules. The old PoC
+  routes have been retired now that direct-entry presets render through the library.
 - `packages/door-lib/src/core/` contains framework-free types, timeline state,
   preset selection, and texture resolution. `src/vanilla.ts` owns DOM mounting,
   the renderer, playback, and sound.
@@ -27,7 +27,7 @@ Run commands from the repository root:
 - `npm run test:lib:core` - core behavior tests
 - `npm run test:lib:package` - published entry and React-free boundary tests
 - `npm run test:lib:browser` - Playwright coverage for the vanilla sample and
-  catalog modal
+  catalog/detail page
 - `npm run verify:lib:browser` - core verification plus browser coverage
 
 ## Library Conventions
@@ -51,10 +51,10 @@ Run commands from the repository root:
 - The sample home page lists `doorEntrancePresets`; do not duplicate registry
   data in the sample.
 - Card previews must render the actual preset at its initial state through
-  `mountDoorEntrance`. Detail playback opens in a modal, not a lower-page
-  section or a separate fake preview.
-- Keep Play, Reset, timeline seek, Escape close, overlay close, and mobile
-  close-button behavior working. Sound begins after the Play user gesture.
+  `mountDoorEntrance`. The primary card action opens the selected preset on the
+  animation detail route; the secondary action plays a full-screen preview.
+- Keep Play, Reset, timeline seek, Back navigation, and mobile detail layout
+  working. Sound begins after the Play user gesture.
 
 ## Testing and Pull Requests
 
