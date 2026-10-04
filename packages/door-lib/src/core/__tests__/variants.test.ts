@@ -35,6 +35,7 @@ describe("core door entrance presets", () => {
     assert.equal(preset.material, "rusted-iron-riveted-panel");
     assert.equal(preset.animation, "direct-entry");
     assert.equal(preset.hingeSide, "left");
+    assert.equal(preset.swingDirection, "away-from-viewer");
     assert.equal(preset.mirrorTextureX, false);
     assert.match(
       preset.frontTextureUrl ?? "",
@@ -59,6 +60,7 @@ describe("core door entrance presets", () => {
     assert.equal(preset.material, "rusted-iron-riveted-panel");
     assert.equal(preset.animation, "direct-entry");
     assert.equal(preset.hingeSide, "right");
+    assert.equal(preset.swingDirection, "away-from-viewer");
     assert.equal(preset.mirrorTextureX, true);
     assert.equal(preset.frontTextureUrl, source.frontTextureUrl);
     assert.equal(preset.edgeTextureUrl, source.edgeTextureUrl);

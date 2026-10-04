@@ -16,6 +16,8 @@ export type DoorEntranceMotion =
 
 export type DoorHingeSide = "left" | "right";
 
+export type DoorSwingDirection = "toward-viewer" | "away-from-viewer";
+
 export type DoorMaterialId =
   | "wood-panel-aged"
   | "aged-wood-panel"
@@ -51,6 +53,7 @@ export interface DoorEntrancePreset extends DoorSurfaceTextureUrls {
   material: DoorMaterialId;
   animation: DoorAnimationId;
   hingeSide?: DoorHingeSide;
+  swingDirection?: DoorSwingDirection;
   mirrorTextureX?: boolean;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;

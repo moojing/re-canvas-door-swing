@@ -16,6 +16,7 @@ import type {
   DoorEntrancePreset,
   DoorEntrancePresetSelection,
   DoorHingeSide,
+  DoorSwingDirection,
   DoorMaterialId,
   HandleProfileId,
   ResolvedDoorSurfaceTextureUrls,
@@ -45,12 +46,18 @@ interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
   cameraPanY?: number;
 }
 
+interface DoorPreviewOverrides {
+  swingDirection?: DoorSwingDirection;
+  maxOpenAngleDeg?: number;
+}
+
 interface MountedDoorEntrance {
   play: (preset?: DoorEntrancePresetId) => void;
   stop: () => void;
   reset: (preset?: DoorEntrancePresetId) => void;
   seek: (progress: number, preset?: DoorEntrancePresetId) => void;
   seekSound: (progress: number) => void;
+  setPreviewOverrides: (overrides: DoorPreviewOverrides) => void;
   unmount: () => void;
 }
 
@@ -155,6 +162,8 @@ class VanillaDoorScene {
   private activeMirrorBackTexture?: boolean;
   private activeMirrorTextureX?: boolean;
   private activeSingleHingeSide: DoorHingeSide = "left";
+  private activeSingleSwingDirection: DoorSwingDirection = "toward-viewer";
+  private activeSingleMaxOpenAngleDeg = 90;
   private activeAnimation?: DoorAnimationId;
   private activeHandleGroups: Array<{
     group: THREE.Group;
@@ -230,6 +239,8 @@ class VanillaDoorScene {
     mirrorBackTexture,
     mirrorTextureX,
     hingeSide,
+    swingDirection,
+    maxOpenAngleDeg,
     cameraPanX,
     cameraPanY,
   }: {
@@ -243,6 +254,8 @@ class VanillaDoorScene {
     mirrorBackTexture: boolean;
     mirrorTextureX: boolean;
     hingeSide: DoorHingeSide;
+    swingDirection: DoorSwingDirection;
+    maxOpenAngleDeg: number;
     cameraPanX: number;
     cameraPanY: number;
   }) {
@@ -292,6 +305,8 @@ class VanillaDoorScene {
       this.activeSingleHingeSide = hingeSide;
     }
 
+    this.activeSingleSwingDirection = swingDirection;
+    this.activeSingleMaxOpenAngleDeg = maxOpenAngleDeg;
     this.applyDoorState(config.id, state);
     this.applyCameraState(state, cameraPanX, cameraPanY);
     this.fadeOverlay.style.opacity = String(clampProgress(state.fadeOut));
@@ -669,7 +684,10 @@ class VanillaDoorScene {
       if (right) right.rotation.y = (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
     } else if (single) {
       const singleRotationDirection = this.activeSingleHingeSide === "right" ? 1 : -1;
-      single.rotation.y = singleRotationDirection * state.doorAngle * maxAngle;
+      const swingDirection = this.activeSingleSwingDirection === "away-from-viewer" ? -1 : 1;
+      const openAngle = (this.activeSingleMaxOpenAngleDeg * Math.PI) / 180;
+      single.rotation.y =
+        swingDirection * singleRotationDirection * state.doorAngle * openAngle;
     }
 
     this.activeHandleGroups.forEach((handleEntry) => {
@@ -774,6 +792,7 @@ export const mountDoorEntrance = (
     soundUrl: resolveAssetUrl(preset.soundUrl, options.assetBaseUrl),
   });
   let activeDoorPreset = presetAssets(resolveDoorEntrancePresetSelection(options));
+  let previewOverrides: DoorPreviewOverrides = {};
   let activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
   let progress = 0;
   let isAnimating = false;
@@ -971,6 +990,11 @@ export const mountDoorEntrance = (
       linearProgress: progress,
       handleProfileId: activeDoorPreset.handleProfileId,
     });
+    const angleOverride = previewOverrides.maxOpenAngleDeg;
+    const maxOpenAngleDeg =
+      typeof angleOverride === "number" && Number.isFinite(angleOverride)
+      ? Math.min(Math.max(angleOverride, 15), 120)
+      : 90;
     scene.render({
       presetId: activeDoorPreset.id,
       state,
@@ -984,6 +1008,11 @@ export const mountDoorEntrance = (
       mirrorBackTexture: Boolean(activeDoorPreset.backTextureUrl) && !options.textureUrl,
       mirrorTextureX: activeDoorPreset.mirrorTextureX ?? false,
       hingeSide: activeDoorPreset.hingeSide ?? "left",
+      swingDirection:
+        previewOverrides.swingDirection ??
+        activeDoorPreset.swingDirection ??
+        "toward-viewer",
+      maxOpenAngleDeg,
       cameraPanX: options.cameraPanX ?? 0,
       cameraPanY: options.cameraPanY ?? 0,
     });
@@ -1158,6 +1187,11 @@ export const mountDoorEntrance = (
       soundStarted = false;
       emitSoundProgress();
     },
+    setPreviewOverrides: (overrides) => {
+      if (disposed) return;
+      previewOverrides = { ...overrides };
+      renderProgress(progress);
+    },
     unmount: () => {
       if (disposed) return;
       disposed = true;
@@ -1201,4 +1235,4 @@ export const mountDoorEntrance = (
   return api;
 };
 
-export type { DoorEntranceHandle, MountDoorEntranceOptions, MountedDoorEntrance };
+export type { DoorEntranceHandle, DoorPreviewOverrides, MountDoorEntranceOptions, MountedDoorEntrance };

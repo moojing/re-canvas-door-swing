@@ -2,6 +2,7 @@ export { DEFAULT_ASSET_BASE_URL } from "./core/assetUrls.ts";
 export { mountDoorEntrance } from "./vanilla";
 export type {
   DoorEntranceHandle,
+  DoorPreviewOverrides,
   MountDoorEntranceOptions,
   MountedDoorEntrance,
 } from "./vanilla";
@@ -30,6 +31,7 @@ export type {
   DoorEntranceSoundState,
   DoorSurfaceTextureUrls,
   DoorHingeSide,
+  DoorSwingDirection,
   ResolvedDoorSurfaceTextureUrls,
   DoorMaterialId,
   HandleProfileId,

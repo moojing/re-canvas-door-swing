@@ -1,11 +1,12 @@
 import "../index.css";
-import { mountDoorEntrance, type DoorEntrancePresetId } from "retro-horror-door";
+import { mountDoorEntrance, type DoorEntrancePresetId, type DoorPreviewOverrides } from "retro-horror-door";
 
 type MountedDoorEntrance = ReturnType<typeof mountDoorEntrance>;
 type DoorEntranceTestApi = {
   play: () => void;
   reset: () => void;
   seek: (progress: number) => void;
+  preview: (overrides: DoorPreviewOverrides) => void;
   unmount: () => void;
   ready: () => boolean;
   progress: () => number;
@@ -91,6 +92,7 @@ const boot = () => {
       play,
       reset: () => app?.reset(getSelectedPreset()),
       seek: (progress) => app?.seek(progress, getSelectedPreset()),
+      preview: (overrides) => app?.setPreviewOverrides(overrides),
       unmount: () => {
         app?.unmount();
         app = null;

@@ -31,6 +31,7 @@ export const doorEntrancePresetMap: Record<
     backTextureUrl: biohazard1996A01IronDoorBack,
     animation: "direct-entry",
     hingeSide: "left",
+    swingDirection: "away-from-viewer",
     mirrorTextureX: false,
   },
   "biohazard-1998-a01-no-handle-door": {
@@ -44,6 +45,7 @@ export const doorEntrancePresetMap: Record<
     backTextureUrl: biohazard1996A01IronDoorBack,
     animation: "direct-entry",
     hingeSide: "right",
+    swingDirection: "away-from-viewer",
     mirrorTextureX: true,
   },
   "biohazard-1999-a01-parking-door": {
