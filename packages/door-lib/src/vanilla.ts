@@ -48,7 +48,6 @@ interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
 
 interface DoorPreviewOverrides {
   swingDirection?: DoorSwingDirection;
-  maxOpenAngleDeg?: number;
 }
 
 interface MountedDoorEntrance {
@@ -163,7 +162,6 @@ class VanillaDoorScene {
   private activeMirrorTextureX?: boolean;
   private activeSingleHingeSide: DoorHingeSide = "left";
   private activeSingleSwingDirection: DoorSwingDirection = "toward-viewer";
-  private activeSingleMaxOpenAngleDeg = 90;
   private activeAnimation?: DoorAnimationId;
   private activeHandleGroups: Array<{
     group: THREE.Group;
@@ -240,7 +238,6 @@ class VanillaDoorScene {
     mirrorTextureX,
     hingeSide,
     swingDirection,
-    maxOpenAngleDeg,
     cameraPanX,
     cameraPanY,
   }: {
@@ -255,7 +252,6 @@ class VanillaDoorScene {
     mirrorTextureX: boolean;
     hingeSide: DoorHingeSide;
     swingDirection: DoorSwingDirection;
-    maxOpenAngleDeg: number;
     cameraPanX: number;
     cameraPanY: number;
   }) {
@@ -306,7 +302,6 @@ class VanillaDoorScene {
     }
 
     this.activeSingleSwingDirection = swingDirection;
-    this.activeSingleMaxOpenAngleDeg = maxOpenAngleDeg;
     this.applyDoorState(config.id, state);
     this.applyCameraState(state, cameraPanX, cameraPanY);
     this.fadeOverlay.style.opacity = String(clampProgress(state.fadeOut));
@@ -685,9 +680,8 @@ class VanillaDoorScene {
     } else if (single) {
       const singleRotationDirection = this.activeSingleHingeSide === "right" ? 1 : -1;
       const swingDirection = this.activeSingleSwingDirection === "away-from-viewer" ? -1 : 1;
-      const openAngle = (this.activeSingleMaxOpenAngleDeg * Math.PI) / 180;
       single.rotation.y =
-        swingDirection * singleRotationDirection * state.doorAngle * openAngle;
+        swingDirection * singleRotationDirection * state.doorAngle * maxAngle;
     }
 
     this.activeHandleGroups.forEach((handleEntry) => {
@@ -990,11 +984,6 @@ export const mountDoorEntrance = (
       linearProgress: progress,
       handleProfileId: activeDoorPreset.handleProfileId,
     });
-    const angleOverride = previewOverrides.maxOpenAngleDeg;
-    const maxOpenAngleDeg =
-      typeof angleOverride === "number" && Number.isFinite(angleOverride)
-      ? Math.min(Math.max(angleOverride, 15), 120)
-      : 90;
     scene.render({
       presetId: activeDoorPreset.id,
       state,
@@ -1012,7 +1001,6 @@ export const mountDoorEntrance = (
         previewOverrides.swingDirection ??
         activeDoorPreset.swingDirection ??
         "toward-viewer",
-      maxOpenAngleDeg,
       cameraPanX: options.cameraPanX ?? 0,
       cameraPanY: options.cameraPanY ?? 0,
     });

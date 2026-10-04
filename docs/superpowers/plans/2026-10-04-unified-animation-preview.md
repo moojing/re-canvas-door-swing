@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace duplicate interactive preview surfaces with one animation detail page and add live, local-only swing direction and maximum angle controls.
+**Goal:** Replace duplicate interactive preview surfaces with one animation detail page and add a live, local-only swing direction control.
 
 **Architecture:** Keep published presets as the source of truth. Extend the vanilla mounted handle with a narrow `setPreviewOverrides` method that redraws the current frame, then use that method from the existing animation detail route. Navigate both the catalog and animation list to that route with validated preset selection and a safe return destination.
 
@@ -22,10 +22,10 @@
 - Modify: `packages/sample/src/sample/vanillaEntry.ts` (test-mode API bridge)
 - Test: `packages/door-lib/tests/browser/vanilla-smoke.test.ts`
 
-- [x] Add a failing browser test that seeks a single door to a half-open frame, applies a new `swingDirection` and `maxOpenAngleDeg` through a test-mode bridge to the mounted handle, and verifies the canvas changes without resetting progress or replacing the canvas. Cover restoring `{}` and invalid angle clamping with a focused unit check if practical.
+- [x] Add a failing browser test that seeks a single door to a half-open frame, applies a new `swingDirection` through a test-mode bridge to the mounted handle, and verifies the canvas changes without resetting progress or replacing the canvas. Cover restoring `{}`.
 - [x] Run the focused Playwright test using the local sample server and confirm it fails for missing preview override behavior.
-- [x] Add `DoorPreviewOverrides` with `swingDirection?` and `maxOpenAngleDeg?`, export it, and add `setPreviewOverrides(overrides)` to `DoorEntranceHandle`. Store override state per mounted instance; replace it on each call and redraw current progress.
-- [x] Use the override direction or the authored preset direction; default missing directions to `toward-viewer`. Use 90 degrees unless the preview angle is set, fall back to 90 for non-finite values, and clamp finite values to 15–120 degrees. Leave double-door rotation unchanged.
+- [x] Add `DoorPreviewOverrides` with `swingDirection?`, export it, and add `setPreviewOverrides(overrides)` to `DoorEntranceHandle`. Store override state per mounted instance; replace it on each call and redraw current progress.
+- [x] Use the override direction or the authored preset direction; default missing directions to `toward-viewer`. Keep the fixed 90-degree opening angle and double-door rotation unchanged.
 - [x] Run focused browser, core, and package tests; confirm the canvas is stable, progress is retained, and old behavior still passes.
 - [x] Commit the focused library change with a conventional message.
 
@@ -52,7 +52,7 @@
 - Modify: `packages/sample/src/pages/DevAnimationVerifier.tsx`
 - Modify: `packages/door-lib/tests/browser/preset-catalog.test.ts`
 
-- [x] Add a failing browser test for the selected single-door preset that seeks to a frame, changes Swing direction and Maximum opening angle, observes the control values and a changed canvas without progress reset, then restores authored values. Assert controls are absent for the double door.
+- [x] Add a failing browser test for the selected single-door preset that seeks to a frame, changes Swing direction, observes the control value and a changed canvas without progress reset, then restores the authored value. Assert the direction control is absent for the double door.
 - [x] Run the focused test and confirm it fails because the controls are missing.
 - [x] Make the detail player a preset-keyed child so changing presets initializes control state from the new authored preset. Keep fixed metadata and the released usage snippet separate from preview-only controls.
 - [x] Wire each control to `setPreviewOverrides` and implement Restore preset values. Preserve Play, Reset, timeline seek, and sound-after-gesture behavior.

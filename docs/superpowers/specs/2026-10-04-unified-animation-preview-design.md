@@ -2,7 +2,7 @@
 
 ## Goal
 
-Use one animation detail page for interactive preset preview. Let a user adjust single-door swing direction and maximum opening angle immediately, without changing the released preset registry.
+Use one animation detail page for interactive preset preview. Let a user adjust single-door swing direction immediately, without changing the released preset registry.
 
 ## Navigation
 
@@ -15,17 +15,17 @@ Use one animation detail page for interactive preset preview. Let a user adjust 
 
 ## Detail page
 
-- Show the selected preset's name and fixed metadata: animation, motion, hinge side, material, handle, authored swing direction, and authored maximum angle (90 degrees).
+- Show the selected preset's name and fixed metadata: animation, motion, hinge side, material, handle, and authored swing direction.
 - Keep Play, Reset, and timeline seek. Reset returns the playback position to zero; a separate **Restore preset values** action resets the preview controls.
-- For single-hinge presets, offer Storybook-like controls for `swingDirection` (`toward-viewer` or `away-from-viewer`) and maximum opening angle (15–120 degrees, default 90). Hide these controls for double doors until their motion is separately designed. Clamp values from the preview API to this range.
+- For single-hinge presets, offer a Storybook-like control for `swingDirection` (`toward-viewer` or `away-from-viewer`). Hide it for double doors until their motion is separately designed.
 - A control change redraws the current animation frame immediately without resetting the progress, rebuilding textures, or writing to the preset registry. The current control values remain in page state while this preset stays selected; changing presets initializes controls from the new preset.
 - Preview adjustments are local to the detail page. Reloading returns to released preset values. The code example remains the released `mountDoorEntrance({ preset })` call and is labeled as such.
 
 ## Library boundary
 
 - Keep `DoorEntrancePreset` as a released full combination. The existing optional `swingDirection` describes the authored direction; missing values retain the current `toward-viewer` behavior.
-- Add a narrow preview override object to the mounted vanilla handle, with `swingDirection` and `maxOpenAngleDeg`. Applying it replaces previous overrides and redraws at the current progress. `{}` restores the preset values. This does not expose arbitrary motion, handle, or material mixing.
-- The default opening angle remains 90 degrees. Non-finite preview angles fall back to 90 degrees; finite values clamp to 15–120 degrees.
+- Add a narrow preview override object to the mounted vanilla handle, with only `swingDirection`. Applying it replaces previous overrides and redraws at the current progress. `{}` restores the preset value. This does not expose arbitrary motion, handle, or material mixing.
+- The opening angle remains the animation's fixed 90 degrees.
 - Existing Play, Reset, sound-after-gesture, and full-screen transition behavior remain unchanged.
 
 ## Verification

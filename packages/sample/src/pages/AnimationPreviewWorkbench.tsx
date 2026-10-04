@@ -7,8 +7,6 @@ import {
   type DoorSwingDirection,
 } from "retro-horror-door";
 
-const DEFAULT_OPEN_ANGLE = 90;
-
 const formatTime = (milliseconds: number) => {
   const totalSeconds = Math.floor(milliseconds / 1000);
   return `${String(Math.floor(totalSeconds / 60)).padStart(2, "0")}:${String(totalSeconds % 60).padStart(2, "0")}`;
@@ -25,7 +23,6 @@ const AnimationPreviewWorkbench = ({
   const doorRef = useRef<DoorEntranceHandle | null>(null);
   const authoredDirection = preset.swingDirection ?? "toward-viewer";
   const [swingDirection, setSwingDirection] = useState<DoorSwingDirection>(authoredDirection);
-  const [maxOpenAngleDeg, setMaxOpenAngleDeg] = useState(DEFAULT_OPEN_ANGLE);
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -127,7 +124,7 @@ const AnimationPreviewWorkbench = ({
                 onChange={(event) => {
                   const next = event.target.value as DoorSwingDirection;
                   setSwingDirection(next);
-                  doorRef.current?.setPreviewOverrides({ swingDirection: next, maxOpenAngleDeg });
+                  doorRef.current?.setPreviewOverrides({ swingDirection: next });
                 }}
                 className="mt-2 w-full border border-[#765939] bg-[#1d1610] px-3 py-2 text-sm text-[#f1e7d6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
               >
@@ -135,39 +132,10 @@ const AnimationPreviewWorkbench = ({
                 <option value="away-from-viewer">Away from viewer</option>
               </select>
             </div>
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <label htmlFor="preview-max-angle" className="text-sm font-semibold text-[#e9dfcd]">
-                  Maximum opening angle
-                </label>
-                <output htmlFor="preview-max-angle" className="font-mono text-sm text-[#d9aa6b]">
-                  {maxOpenAngleDeg}°
-                </output>
-              </div>
-              <input
-                id="preview-max-angle"
-                type="range"
-                min="15"
-                max="120"
-                step="1"
-                value={maxOpenAngleDeg}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setMaxOpenAngleDeg(next);
-                  doorRef.current?.setPreviewOverrides({ swingDirection, maxOpenAngleDeg: next });
-                }}
-                className="mt-3 h-2 w-full accent-[#c98d48]"
-              />
-              <div className="mt-1 flex justify-between font-mono text-[0.65rem] text-[#827665]">
-                <span>15°</span>
-                <span>120°</span>
-              </div>
-            </div>
             <button
               type="button"
               onClick={() => {
                 setSwingDirection(authoredDirection);
-                setMaxOpenAngleDeg(DEFAULT_OPEN_ANGLE);
                 doorRef.current?.setPreviewOverrides({});
               }}
               className="border border-[#8d683e] px-3 py-2 text-sm font-semibold text-[#ddc6a8] hover:border-[#d39952] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
@@ -188,7 +156,6 @@ const AnimationPreviewWorkbench = ({
             <dt className="text-[#827665]">Material</dt><dd className="break-words text-right text-[#d8c9b5]">{preset.material}</dd>
             <dt className="text-[#827665]">Handle</dt><dd className="text-right text-[#d8c9b5]">{preset.handleProfileId ?? "none"}</dd>
             <dt className="text-[#827665]">Swing direction</dt><dd className="text-right text-[#d8c9b5]">{preset.type === "single" ? authoredDirection : "—"}</dd>
-            <dt className="text-[#827665]">Maximum angle</dt><dd className="text-right text-[#d8c9b5]">{preset.type === "single" ? "90°" : "—"}</dd>
           </dl>
           <p className="mt-6 text-xs font-semibold text-[#aa9f90]">Published preset usage</p>
           <code className="mt-2 block overflow-x-auto border border-[#4b3928] bg-[#070504] p-3 font-mono text-[0.68rem] leading-5 text-[#d8c9b5]">
