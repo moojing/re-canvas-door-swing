@@ -25,7 +25,7 @@ Use one animation detail page for interactive preset preview. Let a user adjust 
 
 - Keep `DoorEntrancePreset` as a released full combination. The existing optional `swingDirection` describes the authored direction; missing values retain the current `toward-viewer` behavior.
 - Add a narrow preview override object to the mounted vanilla handle, with `swingDirection` and `maxOpenAngleDeg`. Applying it replaces previous overrides and redraws at the current progress. `{}` restores the preset values. This does not expose arbitrary motion, handle, or material mixing.
-- The default opening angle remains 90 degrees. Validate the preview angle so invalid or out-of-range values cannot create an uncontrolled transform.
+- The default opening angle remains 90 degrees. Non-finite preview angles fall back to 90 degrees; finite values clamp to 15–120 degrees.
 - Existing Play, Reset, sound-after-gesture, and full-screen transition behavior remain unchanged.
 
 ## Verification
