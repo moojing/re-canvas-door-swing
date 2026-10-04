@@ -1,6 +1,32 @@
 import { expect, test } from "@playwright/test";
 
-test("preset catalog opens and closes a vanilla detail modal", async ({
+test("unified animation navigation keeps the selected catalog preset and returns home", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open 1-2 A-1 No-Handle Door" }).click();
+
+  await expect(page).toHaveURL(/\/dev\/animations\/direct-entry\?preset=biohazard-1998-a01-no-handle-door$/);
+  await expect(page.getByRole("heading", { name: "Direct Entry" })).toBeVisible();
+  await expect(page.getByText("biohazard-1998-a01-no-handle-door", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "1-1 A-1 Iron Door", exact: true }).click();
+  await expect(page).toHaveURL(/preset=biohazard-1996-a01-iron-door$/);
+
+  await page.getByRole("link", { name: "Back to catalog" }).click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("unified animation navigation returns to the animation list and handles direct visits", async ({ page }) => {
+  await page.goto("/dev/animations");
+  await page.getByRole("link", { name: /Direct Entry/ }).click();
+  await page.getByRole("link", { name: "Back to Animations" }).click();
+  await expect(page).toHaveURL(/\/dev\/animations$/);
+
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1996-b02-blue-panel-double-door");
+  await expect(page.getByText("biohazard-1996-a01-iron-door", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Back to Animations" }).click();
+  await expect(page).toHaveURL(/\/dev\/animations$/);
+});
+
+test("preset catalog opens the shared animation detail page", async ({
   page,
 }) => {
   await page.goto("/");
@@ -28,17 +54,13 @@ test("preset catalog opens and closes a vanilla detail modal", async ({
     .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
     .click();
 
-  const dialog = page.getByRole("dialog", { name: "1-1 A-1 Iron Door" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator("canvas")).toBeVisible();
-
-  await page.getByRole("button", { name: "Close preset detail" }).click();
-
-  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/dev\/animations\/direct-entry\?preset=biohazard-1996-a01-iron-door$/);
+  await expect(page.locator("canvas")).toBeVisible();
+  await page.getByRole("link", { name: "Back to catalog" }).click();
   await expect(page.locator("canvas")).toHaveCount(catalogCanvasCount);
 });
 
-test("preset detail lets users scrub the animation timeline", async ({
+test("shared detail page lets users scrub the animation timeline", async ({
   page,
 }) => {
   await page.goto("/");
@@ -56,7 +78,7 @@ test("preset detail lets users scrub the animation timeline", async ({
   await expect(page.getByText("50%", { exact: true })).toBeVisible();
 });
 
-test("mobile preset detail keeps its close control within the viewport", async ({
+test("mobile animation detail keeps Back within the viewport", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -65,10 +87,8 @@ test("mobile preset detail keeps its close control within the viewport", async (
     .getByRole("button", { name: "Open 1-1 A-1 Iron Door" })
     .click();
 
-  const closeButton = page.getByRole("button", {
-    name: "Close preset detail",
-  });
-  const bounds = await closeButton.boundingBox();
+  const back = page.getByRole("link", { name: "Back to catalog" });
+  const bounds = await back.boundingBox();
 
   expect(bounds).not.toBeNull();
   expect(bounds?.x).toBeGreaterThanOrEqual(0);
@@ -141,8 +161,7 @@ test("yellow panel uses a coarse drawing buffer and survives timeline seeking", 
   });
   await page.goto("/");
   await page.getByRole("button", { name: "Open 1-1 A-2 Yellow Panel Knob Door" }).click();
-  const dialog = page.getByRole("dialog", { name: "1-1 A-2 Yellow Panel Knob Door" });
-  const canvas = dialog.locator("canvas");
+  const canvas = page.locator("canvas");
   await expect(canvas).toHaveCSS("image-rendering", "auto");
   await expect(canvas).toHaveAttribute("height", "360");
   const timeline = page.getByRole("slider", { name: "Animation progress" });
@@ -153,10 +172,9 @@ test("yellow panel uses a coarse drawing buffer and survives timeline seeking", 
   }
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(timeline).toHaveValue("0");
-  await page.keyboard.press("Escape");
-  await expect(dialog).toHaveCount(0);
+  await page.getByRole("link", { name: "Back to catalog" }).click();
   await page.getByRole("button", { name: "Open 1-1 A-1 Iron Door" }).click();
-  await expect(page.getByRole("dialog").locator("canvas")).toHaveCSS("image-rendering", "auto");
+  await expect(page.locator("canvas")).toHaveCSS("image-rendering", "auto");
   expect(errors).toEqual([]);
 });
 
@@ -166,7 +184,7 @@ for (const name of ["1-1 A-1 Iron Door", "1-2 A-1 No-Handle Door"]) {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
     await page.getByRole("button", { name: `Open ${name}`, exact: true }).click();
-    const canvas = page.getByRole("dialog", { name }).locator("canvas");
+    const canvas = page.locator("canvas");
     await expect(canvas).toHaveAttribute("height", "360");
     await expect(canvas).toHaveCSS("image-rendering", "auto");
     await page.getByRole("slider", { name: "Animation progress" }).fill("55");
@@ -184,8 +202,7 @@ test("blue double door has a playable catalog preset", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("img", { name: "1-1 B-2 Blue Panel Double Door animation preview" }).locator("canvas")).toBeVisible();
   await page.getByRole("button", { name: "Open 1-1 B-2 Blue Panel Double Door", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "1-1 B-2 Blue Panel Double Door" });
-  await expect(dialog.locator("canvas")).toHaveAttribute("height", "360");
+  await expect(page.locator("canvas")).toHaveAttribute("height", "360");
   const slider = page.getByRole("slider", { name: "Animation progress" });
   for (const progress of ["30", "55", "75"]) {
     await slider.fill(progress);
@@ -193,8 +210,7 @@ test("blue double door has a playable catalog preset", async ({ page }) => {
   }
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(slider).toHaveValue("0");
-  await page.keyboard.press("Escape");
-  await expect(dialog).toHaveCount(0);
+  await page.getByRole("link", { name: "Back to catalog" }).click();
   expect(errors).toEqual([]);
 });
 

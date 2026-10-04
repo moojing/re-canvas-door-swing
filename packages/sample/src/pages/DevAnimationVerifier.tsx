@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import {
   doorAnimationConfigs,
   doorEntrancePresets,
@@ -22,6 +23,7 @@ const formatTime = (milliseconds: number) => {
 
 const DevAnimationVerifier = () => {
   const { animationId = "" } = useParams();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const targetRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<DoorEntranceHandle | null>(null);
@@ -36,6 +38,8 @@ const DevAnimationVerifier = () => {
   const preset = known
     ? resolveVerifierPreset(animationId, presets, searchParams.get("preset"))
     : null;
+  const requestedReturn = (location.state as { from?: unknown } | null)?.from;
+  const returnTo = requestedReturn === "/" ? "/" : "/dev/animations";
 
   useEffect(() => {
     const target = targetRef.current;
@@ -66,6 +70,13 @@ const DevAnimationVerifier = () => {
   return (
     <main className="min-h-screen bg-[#070504] px-5 py-8 text-[#e9dfcd] sm:px-8 lg:px-10">
       <SampleHeader />
+      <Link
+        to={returnTo}
+        className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#c98d48] hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
+      >
+        <ArrowLeft aria-hidden="true" size={16} />
+        {returnTo === "/" ? "Back to catalog" : "Back to Animations"}
+      </Link>
       <p className="mt-10 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
         Developer verify
       </p>
@@ -107,6 +118,7 @@ const DevAnimationVerifier = () => {
             <section className="mt-4 border-y border-[#4b3928] py-4" aria-label="Animation timeline">
               <div className="flex justify-between text-xs text-[#aa9f90]">
                 <span>{formatTime(animation.duration * progress)}</span>
+                <span>{Math.round(progress * 100)}%</span>
                 <span>{formatTime(animation.duration)}</span>
               </div>
               <input
@@ -134,7 +146,7 @@ const DevAnimationVerifier = () => {
                   <button
                     type="button"
                     aria-pressed={option.id === preset.id}
-                    onClick={() => setSearchParams({ preset: option.id })}
+                    onClick={() => setSearchParams({ preset: option.id }, { state: { from: returnTo } })}
                     className={`border px-3 py-2 text-sm ${
                       option.id === preset.id
                         ? "border-[#c98d48] text-[#f1e7d6]"

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,7 +12,6 @@ import FullScreenDoorTransition, {
 } from "@/components/FullScreenDoorTransition";
 import SampleHeader from "@/components/SampleHeader";
 import { presetsForAnimation } from "@/dev/animationPresets";
-import PresetDetailModal from "./PresetDetailModal";
 import PresetAnimationPreview from "./PresetAnimationPreview";
 
 const formatValue = (value: string) =>
@@ -132,13 +131,14 @@ const AnimationSection = ({
 const Index = () => {
   const navigate = useNavigate();
   const transitionRef = useRef<FullScreenDoorTransitionHandle>(null);
-  const [selectedPresetId, setSelectedPresetId] =
-    useState<DoorEntrancePresetId | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const selectedPreset = doorEntrancePresets.find(
-    (preset) => preset.id === selectedPresetId
-  );
-  const closeDetail = useCallback(() => setSelectedPresetId(null), []);
+  const openPreset = (presetId: DoorEntrancePresetId) => {
+    const preset = doorEntrancePresets.find((entry) => entry.id === presetId);
+    if (!preset) return;
+    navigate(`/dev/animations/${preset.animation}?preset=${preset.id}`, {
+      state: { from: "/" },
+    });
+  };
   const startTransition = (presetId: DoorEntrancePresetId) => {
     if (isTransitioning) return;
 
@@ -179,16 +179,13 @@ const Index = () => {
                 animation={animation}
                 presets={presets}
                 isTransitioning={isTransitioning}
-                onOpen={setSelectedPresetId}
+                onOpen={openPreset}
                 onStart={startTransition}
               />
             );
           })}
         </div>
 
-        {selectedPreset && (
-          <PresetDetailModal preset={selectedPreset} onClose={closeDetail} />
-        )}
       </main>
       <FullScreenDoorTransition
         ref={transitionRef}
