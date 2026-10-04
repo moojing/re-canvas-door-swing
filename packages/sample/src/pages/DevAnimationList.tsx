@@ -24,6 +24,7 @@ const DevAnimationList = () => (
           <li key={animation.id}>
             <Link
               to={`/dev/animations/${animation.id}`}
+              state={{ from: "/dev/animations" }}
               className="flex h-full flex-col overflow-hidden border border-[#5f4933]/60 bg-[#0c0907] hover:border-[#c98d48]"
             >
               <div className="relative h-56 overflow-hidden border-b border-[#5f4933]/45 bg-[#090705]">

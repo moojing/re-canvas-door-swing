@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   doorAnimationConfigs,
   doorEntrancePresets,
@@ -12,7 +12,6 @@ import FullScreenDoorTransition, {
 } from "@/components/FullScreenDoorTransition";
 import SampleHeader from "@/components/SampleHeader";
 import { presetsForAnimation } from "@/dev/animationPresets";
-import PresetDetailModal from "./PresetDetailModal";
 import PresetAnimationPreview from "./PresetAnimationPreview";
 
 const formatValue = (value: string) =>
@@ -23,13 +22,11 @@ const formatValue = (value: string) =>
 
 const PresetCard = ({
   preset,
-  isTransitioning,
-  onOpen,
+  isPreviewing,
   onStart,
 }: {
   preset: DoorEntrancePreset;
-  isTransitioning: boolean;
-  onOpen: () => void;
+  isPreviewing: boolean;
   onStart: () => void;
 }) => (
   <article className="flex min-h-[340px] flex-col overflow-hidden border border-[#5f4933]/60 bg-[#0c0907]">
@@ -66,23 +63,23 @@ const PresetCard = ({
         </div>
       </dl>
       <div className="mt-auto border-t border-[#4b3928]/65 pt-5">
-        <button
-          type="button"
-          aria-label={`Open ${preset.label}`}
-          onClick={onOpen}
-          className="flex w-full items-center justify-between text-left text-xs font-semibold uppercase tracking-[0.14em] text-[#c98d48] transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907]"
+        <Link
+          to={`/dev/animations/${preset.animation}?preset=${preset.id}`}
+          state={{ from: "/" }}
+          aria-label={`View details for ${preset.label}`}
+          className="flex min-h-11 w-full items-center justify-between border border-[#c98d48] bg-[#c98d48] px-5 text-sm font-bold text-[#100c08] transition-colors hover:bg-[#dda762] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907]"
         >
-          Open preset
+          View details
           <ArrowUpRight aria-hidden="true" size={16} />
-        </button>
+        </Link>
         <button
           type="button"
-          disabled={isTransitioning}
-          aria-label={`Start full-screen transition with ${preset.label}`}
+          disabled={isPreviewing}
+          aria-label={`Preview ${preset.label} full-screen`}
           onClick={onStart}
-          className="mt-4 min-h-11 w-full border border-[#c98d48] bg-[#c98d48] px-5 text-sm font-bold text-[#100c08] transition-colors hover:bg-[#dda762] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-3 min-h-11 w-full border border-[#5f4933] bg-transparent px-5 text-sm font-semibold text-[#d8c9b5] transition-colors hover:border-[#c98d48] hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] focus-visible:ring-offset-4 focus-visible:ring-offset-[#0c0907] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Start full-screen transition
+          Full-screen preview
         </button>
       </div>
     </div>
@@ -92,14 +89,12 @@ const PresetCard = ({
 const AnimationSection = ({
   animation,
   presets,
-  isTransitioning,
-  onOpen,
+  isPreviewing,
   onStart,
 }: {
   animation: (typeof doorAnimationConfigs)[number];
   presets: readonly DoorEntrancePreset[];
-  isTransitioning: boolean;
-  onOpen: (id: DoorEntrancePresetId) => void;
+  isPreviewing: boolean;
   onStart: (id: DoorEntrancePresetId) => void;
 }) => (
     <section
@@ -120,8 +115,7 @@ const AnimationSection = ({
           <PresetCard
             key={preset.id}
             preset={preset}
-            isTransitioning={isTransitioning}
-            onOpen={() => onOpen(preset.id)}
+            isPreviewing={isPreviewing}
             onStart={() => onStart(preset.id)}
           />
         ))}
@@ -130,28 +124,18 @@ const AnimationSection = ({
   );
 
 const Index = () => {
-  const navigate = useNavigate();
   const transitionRef = useRef<FullScreenDoorTransitionHandle>(null);
-  const [selectedPresetId, setSelectedPresetId] =
-    useState<DoorEntrancePresetId | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const selectedPreset = doorEntrancePresets.find(
-    (preset) => preset.id === selectedPresetId
-  );
-  const closeDetail = useCallback(() => setSelectedPresetId(null), []);
-  const startTransition = (presetId: DoorEntrancePresetId) => {
-    if (isTransitioning) return;
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const startPreview = (presetId: DoorEntrancePresetId) => {
+    if (isPreviewing) return;
 
-    transitionRef.current?.play({
-      preset: presetId,
-      destination: "/transition-complete",
-    });
+    transitionRef.current?.play({ preset: presetId });
   };
 
   return (
     <>
       <main
-        inert={isTransitioning ? "" : undefined}
+        inert={isPreviewing ? "" : undefined}
         className="min-h-screen bg-[#070504] text-[#e9dfcd]"
       >
         <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10 lg:py-20">
@@ -165,7 +149,7 @@ const Index = () => {
               Playable door presets
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-[#aa9f90] sm:text-base">
-              每張卡代表一組已定義、可發布的門組合。開啟 preset 以檢視實際播放與其固定設定。
+              每張卡代表一組已定義、可發布的門組合。查看動畫細節與設定，或全螢幕預覽動畫。
             </p>
           </header>
 
@@ -178,24 +162,17 @@ const Index = () => {
                 key={animation.id}
                 animation={animation}
                 presets={presets}
-                isTransitioning={isTransitioning}
-                onOpen={setSelectedPresetId}
-                onStart={startTransition}
+                isPreviewing={isPreviewing}
+                onStart={startPreview}
               />
             );
           })}
         </div>
 
-        {selectedPreset && (
-          <PresetDetailModal preset={selectedPreset} onClose={closeDetail} />
-        )}
       </main>
       <FullScreenDoorTransition
         ref={transitionRef}
-        onActiveChange={setIsTransitioning}
-        onComplete={({ preset, destination }) =>
-          navigate(destination, { state: { presetId: preset } })
-        }
+        onActiveChange={setIsPreviewing}
       />
     </>
   );

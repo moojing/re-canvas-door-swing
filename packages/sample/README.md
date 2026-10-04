@@ -19,16 +19,20 @@ Open `http://127.0.0.1:5173/`.
 ## Routes
 
 - `/`: playable preset catalog. Each card is a real initial renderer frame.
-  Selecting a card opens a modal with Play, Reset, timeline seeking, sound,
-  and the `mountDoorEntrance` usage for that preset.
+  View details opens the selected preset on its animation detail page;
+  Full-screen preview plays the animation over the catalog.
+- `/dev/animations`: animation list. Its cards open `/dev/animations/:animationId`.
+- `/dev/animations/:animationId`: shared detail page with Play, Reset, timeline
+  seeking, preview-only swing direction controls for single doors, Back
+  navigation, and the published `mountDoorEntrance` usage.
 - `/samples/vanilla.html`: minimal non-React mounting example.
 
 ## Development notes
 
 - The catalog reads `doorEntrancePresets` from the published library entry.
   Do not duplicate the preset registry in the sample.
-- `PresetAnimationPreview.tsx` and `PresetDetailModal.tsx` both mount the
-  vanilla renderer so the preview and interactive scene use the same geometry,
+- `PresetAnimationPreview.tsx` and `AnimationPreviewWorkbench.tsx` both mount the
+  vanilla renderer so the catalog and detail page use the same geometry,
   materials, lighting, and opening behavior.
 - Library-owned default textures and sounds are bundled from
   `packages/door-assets/`. Files in this package's `public/` directory
@@ -42,5 +46,5 @@ npm run lint
 npm run build
 ```
 
-The browser suite covers the catalog modal, timeline, initial canvas preview,
-audio after Play, and the standalone vanilla sample.
+The browser suite covers catalog navigation, detail controls, the full-screen
+preview, initial canvas frames, audio after Play, and the standalone vanilla sample.

@@ -57,10 +57,11 @@ export interface DoorAnimationConfig {
 - `packages/sample` 的 `/` 是目前的 preset catalog，不再是 PoC 導覽頁。
 - 每張卡由 `PresetAnimationPreview.tsx` 以同一個 `mountDoorEntrance` renderer
   畫出 progress `0` 的真實門板初始畫面；不可用另外維護的靜態縮圖取代。
-- 選擇卡片後，`PresetDetailModal.tsx` 會在 modal 內重新 mount 同一個 preset，
-  提供播放、重設、時間軸 seek、音效與呼叫範例。這不是捲動到頁面下方的 detail
-  section。
-- 歷史 PoC 集中在 `/poc` 與其子路徑，保留作技術實驗，不代表已發布的 runtime preset。
+- 卡片的主要操作會開啟 `/dev/animations/:animationId?preset=...`，由
+  `AnimationPreviewWorkbench.tsx` 重新 mount 所選 preset，提供播放、重設、
+  時間軸 seek、預覽用 swing direction、音效與呼叫範例；Back 會回到來源頁。
+- 卡片的次要操作是全螢幕預覽，播放結束後回到 catalog。
+- 歷史 `/poc` 路由已退役；已發布的 runtime preset 以 catalog 與動畫詳細頁檢視。
 
 ## 新增動畫的操作流程
 1) **新增 timeline config**：在 `src/core/animationState.ts` 新增 `id`、`label`、`description`、`duration` 與 `getState`。
@@ -99,9 +100,9 @@ The library manifest must not expose React-related peer dependencies or a
 ### Browser Smoke Tests
 Run `npm run test:lib:browser` to exercise both vanilla surfaces in a browser:
 the plain HTML sample must mount and clean up, while the preset catalog must
-render real canvas previews, open and close its detail modal, support timeline
-seeking, unlock sound from the Play gesture, and keep the mobile close control
-inside the viewport.
+render real canvas previews, navigate to the selected animation detail page,
+support timeline seeking and Back navigation, unlock sound from the Play gesture,
+and keep the mobile detail controls inside the viewport.
 
 `npm run verify:lib:browser` runs the core verification path first, then the
 browser smoke tests. It requires local dev server binding and an installed

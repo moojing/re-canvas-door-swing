@@ -4,7 +4,10 @@ import { getDrawingBufferSize, usesAgedWoodLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { getDoorAnimationConfig } from "./core/animationState.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
-import { resolveDoorSurfaceTextureUrls } from "./core/surfaceTextures.ts";
+import {
+  resolveDoorSurfaceTextureUrls,
+  shouldMirrorBackTextureX,
+} from "./core/surfaceTextures.ts";
 import type {
   DoorAnimationState,
   DoorAnimationConfig,
@@ -16,6 +19,7 @@ import type {
   DoorEntrancePreset,
   DoorEntrancePresetSelection,
   DoorHingeSide,
+  DoorSwingDirection,
   DoorMaterialId,
   HandleProfileId,
   ResolvedDoorSurfaceTextureUrls,
@@ -45,12 +49,17 @@ interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
   cameraPanY?: number;
 }
 
+interface DoorPreviewOverrides {
+  swingDirection?: DoorSwingDirection;
+}
+
 interface MountedDoorEntrance {
   play: (preset?: DoorEntrancePresetId) => void;
   stop: () => void;
   reset: (preset?: DoorEntrancePresetId) => void;
   seek: (progress: number, preset?: DoorEntrancePresetId) => void;
   seekSound: (progress: number) => void;
+  setPreviewOverrides: (overrides: DoorPreviewOverrides) => void;
   unmount: () => void;
 }
 
@@ -152,9 +161,10 @@ class VanillaDoorScene {
   private activeHandleModelUrl?: string;
   private activeHandleProfileId?: HandleProfileId;
   private activeHasHandle?: boolean;
-  private activeMirrorBackTexture?: boolean;
+  private activeMirrorBackTextureX?: boolean;
   private activeMirrorTextureX?: boolean;
   private activeSingleHingeSide: DoorHingeSide = "left";
+  private activeSingleSwingDirection: DoorSwingDirection = "toward-viewer";
   private activeAnimation?: DoorAnimationId;
   private activeHandleGroups: Array<{
     group: THREE.Group;
@@ -227,9 +237,10 @@ class VanillaDoorScene {
     handleModelUrl,
     handleProfileId,
     hasHandle,
-    mirrorBackTexture,
+    mirrorBackTextureX,
     mirrorTextureX,
     hingeSide,
+    swingDirection,
     cameraPanX,
     cameraPanY,
   }: {
@@ -240,9 +251,10 @@ class VanillaDoorScene {
     handleModelUrl?: string;
     handleProfileId?: HandleProfileId;
     hasHandle: boolean;
-    mirrorBackTexture: boolean;
+    mirrorBackTextureX: boolean;
     mirrorTextureX: boolean;
     hingeSide: DoorHingeSide;
+    swingDirection: DoorSwingDirection;
     cameraPanX: number;
     cameraPanY: number;
   }) {
@@ -268,7 +280,7 @@ class VanillaDoorScene {
       this.activeHandleModelUrl !== handleModelUrl ||
       this.activeHandleProfileId !== handleProfileId ||
       this.activeHasHandle !== hasHandle ||
-      this.activeMirrorBackTexture !== mirrorBackTexture ||
+      this.activeMirrorBackTextureX !== mirrorBackTextureX ||
       this.activeMirrorTextureX !== mirrorTextureX ||
       this.activeSingleHingeSide !== hingeSide
     ) {
@@ -278,7 +290,7 @@ class VanillaDoorScene {
         handleModelUrl,
         handleProfileId,
         hasHandle,
-        mirrorBackTexture,
+        mirrorBackTextureX,
         mirrorTextureX,
         hingeSide
       );
@@ -287,11 +299,12 @@ class VanillaDoorScene {
       this.activeHandleModelUrl = handleModelUrl;
       this.activeHandleProfileId = handleProfileId;
       this.activeHasHandle = hasHandle;
-      this.activeMirrorBackTexture = mirrorBackTexture;
+      this.activeMirrorBackTextureX = mirrorBackTextureX;
       this.activeMirrorTextureX = mirrorTextureX;
       this.activeSingleHingeSide = hingeSide;
     }
 
+    this.activeSingleSwingDirection = swingDirection;
     this.applyDoorState(config.id, state);
     this.applyCameraState(state, cameraPanX, cameraPanY);
     this.fadeOverlay.style.opacity = String(clampProgress(state.fadeOut));
@@ -341,7 +354,7 @@ class VanillaDoorScene {
     handleModelUrl: string | undefined,
     handleProfileId: HandleProfileId | undefined,
     hasHandle: boolean,
-    mirrorBackTexture: boolean,
+    mirrorBackTextureX: boolean,
     mirrorTextureX: boolean,
     hingeSide: DoorHingeSide
   ) {
@@ -390,7 +403,7 @@ class VanillaDoorScene {
         handleModelUrl,
         handleProfileId,
         hasHandle,
-        mirrorBackTexture,
+        mirrorBackTextureX,
         mirrorTextureX,
       });
       left.name = "left-door";
@@ -406,7 +419,7 @@ class VanillaDoorScene {
         handleModelUrl,
         handleProfileId,
         hasHandle,
-        mirrorBackTexture,
+        mirrorBackTextureX,
         mirrorTextureX,
       });
       right.name = "right-door";
@@ -426,7 +439,7 @@ class VanillaDoorScene {
             handleModelUrl,
             handleProfileId,
             hasHandle,
-            mirrorBackTexture,
+            mirrorBackTextureX,
             mirrorTextureX,
           })
         : this.createDoorLeaf({
@@ -439,7 +452,7 @@ class VanillaDoorScene {
             handleModelUrl,
             handleProfileId,
             hasHandle,
-            mirrorBackTexture,
+            mirrorBackTextureX,
             mirrorTextureX,
           });
     single.name = "single-door";
@@ -481,7 +494,7 @@ class VanillaDoorScene {
     handleModelUrl,
     handleProfileId,
     hasHandle,
-    mirrorBackTexture,
+    mirrorBackTextureX,
     mirrorTextureX,
   }: {
     width: number;
@@ -493,7 +506,7 @@ class VanillaDoorScene {
     handleModelUrl?: string;
     handleProfileId?: HandleProfileId;
     hasHandle: boolean;
-    mirrorBackTexture: boolean;
+    mirrorBackTextureX: boolean;
     mirrorTextureX: boolean;
   }) {
     const pivot = new THREE.Group();
@@ -521,8 +534,7 @@ class VanillaDoorScene {
       new THREE.PlaneGeometry(leafWidth, height),
       this.backDoorMaterial
     );
-    const shouldMirrorBackTexture = mirrorBackTexture || mirrorTextureX;
-    if (shouldMirrorBackTexture) mirrorPlaneTextureX(back.geometry);
+    if (mirrorBackTextureX) mirrorPlaneTextureX(back.geometry);
     back.position.set(doorCenterX, 0, -DOOR_SURFACE_OFFSET);
     back.rotation.y = Math.PI;
     pivot.add(back);
@@ -669,7 +681,9 @@ class VanillaDoorScene {
       if (right) right.rotation.y = (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
     } else if (single) {
       const singleRotationDirection = this.activeSingleHingeSide === "right" ? 1 : -1;
-      single.rotation.y = singleRotationDirection * state.doorAngle * maxAngle;
+      const swingDirection = this.activeSingleSwingDirection === "away-from-viewer" ? -1 : 1;
+      single.rotation.y =
+        swingDirection * singleRotationDirection * state.doorAngle * maxAngle;
     }
 
     this.activeHandleGroups.forEach((handleEntry) => {
@@ -774,6 +788,7 @@ export const mountDoorEntrance = (
     soundUrl: resolveAssetUrl(preset.soundUrl, options.assetBaseUrl),
   });
   let activeDoorPreset = presetAssets(resolveDoorEntrancePresetSelection(options));
+  let previewOverrides: DoorPreviewOverrides = {};
   let activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
   let progress = 0;
   let isAnimating = false;
@@ -981,9 +996,18 @@ export const mountDoorEntrance = (
       ),
       handleProfileId: activeDoorPreset.handleProfileId,
       hasHandle: Boolean(activeDoorPreset.handleProfileId),
-      mirrorBackTexture: Boolean(activeDoorPreset.backTextureUrl) && !options.textureUrl,
+      mirrorBackTextureX: shouldMirrorBackTextureX({
+        frontMirrored: activeDoorPreset.mirrorTextureX ?? false,
+        hasDistinctBackTexture:
+          resolvedSurfaceTextureUrls.backTextureUrl !==
+          resolvedSurfaceTextureUrls.frontTextureUrl,
+      }),
       mirrorTextureX: activeDoorPreset.mirrorTextureX ?? false,
       hingeSide: activeDoorPreset.hingeSide ?? "left",
+      swingDirection:
+        previewOverrides.swingDirection ??
+        activeDoorPreset.swingDirection ??
+        "toward-viewer",
       cameraPanX: options.cameraPanX ?? 0,
       cameraPanY: options.cameraPanY ?? 0,
     });
@@ -1158,6 +1182,11 @@ export const mountDoorEntrance = (
       soundStarted = false;
       emitSoundProgress();
     },
+    setPreviewOverrides: (overrides) => {
+      if (disposed) return;
+      previewOverrides = { ...overrides };
+      renderProgress(progress);
+    },
     unmount: () => {
       if (disposed) return;
       disposed = true;
@@ -1201,4 +1230,4 @@ export const mountDoorEntrance = (
   return api;
 };
 
-export type { DoorEntranceHandle, MountDoorEntranceOptions, MountedDoorEntrance };
+export type { DoorEntranceHandle, DoorPreviewOverrides, MountDoorEntranceOptions, MountedDoorEntrance };

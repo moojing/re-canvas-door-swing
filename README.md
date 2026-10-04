@@ -16,16 +16,17 @@ npm run dev              # runs the sample app (uses the built lib)
 ```
 
 Open `http://127.0.0.1:5173/` to browse every published preset. Each card
-shows the renderer's initial frame; **Open preset** opens a modal with the
-same vanilla renderer, playback controls, sound, and a seekable timeline.
-The older technical PoCs remain available at `/poc`, and the standalone HTML
+shows the renderer's initial frame; **View details** opens the selected preset
+on its animation detail page, with playback controls, sound, a seekable timeline,
+and preview-only settings. **Full-screen preview** plays over the catalog.
+The retired technical PoC routes are no longer available; the standalone HTML
 example is at `/samples/vanilla.html`.
 
 Useful scripts:
 - `npm run dev:lib` (watch build for the library)
 - `npm run dev:sample` (Vite dev server for the sample app)
 - `npm run build` (build lib then sample)
-- `npm run lint` (sample app lint)
+- `npm run lint` (library typecheck and sample app lint)
 - `npm run gallery:check` (verify the published evaluation gallery is internally consistent and the main repo has not reintroduced duplicate evaluation docs)
 
 ## Library testing
@@ -37,8 +38,8 @@ The door library uses layered tests to keep the package framework-free:
 - `npm run test:lib:package` checks public package exports and verifies the
   default `retro-horror-door` entry and `retro-horror-door/vanilla` output graphs are React-free.
 - `npm run test:lib:browser` runs browser coverage for the plain HTML mount and
-  the preset catalog: canvas rendering, playback, sound, modal lifecycle,
-  timeline seeking, and the mobile close control.
+  the preset catalog: canvas rendering, detail navigation, playback, sound,
+  timeline seeking, full-screen preview, and mobile layout.
 - `npm run verify:lib` / `npm run verify:lib:core` run the current green core
   verification path: library typecheck, build, and core tests.
 - `npm run verify:lib:boundary` runs the package-boundary layer.
