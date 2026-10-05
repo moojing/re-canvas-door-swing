@@ -22,9 +22,18 @@ and preview-only settings. **Full-screen preview** plays over the catalog.
 The retired technical PoC routes are no longer available; the standalone HTML
 example is at `/samples/vanilla.html`.
 
+Stage seconds and timeline seeking are available in the normal detail page.
+Timing sliders are hidden by default. For local animation calibration, run
+`npm run dev:calibration` instead of `npm run dev`; this opts into
+`VITE_DOOR_TIMING_EDITOR=true` in Vite's calibration mode. Timing edits apply
+only to the current preview. Production builds always hide timing sliders,
+even when this flag is enabled. Stop the normal server before switching modes,
+or run the sample workspace command with a different port.
+
 Useful scripts:
 - `npm run dev:lib` (watch build for the library)
 - `npm run dev:sample` (Vite dev server for the sample app)
+- `npm run dev:calibration` (local stage timing editor)
 - `npm run build` (build lib then sample)
 - `npm run lint` (library typecheck and sample app lint)
 - `npm run gallery:check` (verify the published evaluation gallery is internally consistent and the main repo has not reintroduced duplicate evaluation docs)

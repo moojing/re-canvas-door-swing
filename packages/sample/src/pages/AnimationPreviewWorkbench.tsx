@@ -12,6 +12,9 @@ const formatTime = (milliseconds: number) => {
   return `${(milliseconds / 1000).toFixed(2)} s`;
 };
 
+const timingEditorEnabled = import.meta.env.DEV &&
+  import.meta.env.VITE_DOOR_TIMING_EDITOR === "true";
+
 const swingDirectionOptions: Array<{ value: DoorSwingDirection; label: string }> = [
   { value: "toward-viewer", label: "Toward viewer" },
   { value: "away-from-viewer", label: "Away from viewer" },
@@ -132,7 +135,9 @@ const AnimationPreviewWorkbench = ({
           Preview settings
         </p>
         <p className="mt-3 text-sm leading-6 text-[#aa9f90]">
-          Adjust this preview at the current point in the animation. Timing edits pause playback; Play resumes from this point.
+          {timingEditorEnabled
+            ? "Adjust this preview at the current point in the animation. Timing edits pause playback; Play resumes from this point."
+            : "Inspect the published preset at the current point in the animation."}
         </p>
 
         {preset.type === "single" && (
@@ -167,7 +172,7 @@ const AnimationPreviewWorkbench = ({
           </div>
         )}
 
-        {events.length > 2 && (
+        {timingEditorEnabled && events.length > 2 && (
           <div className="mt-6 space-y-4 border-t border-[#4b3928] pt-6">
             <p className="text-sm font-semibold text-[#e9dfcd]">Stage timing</p>
             <p className="text-xs leading-5 text-[#aa9f90]">Adjust when a stage ends. Changes apply only to this preview.</p>

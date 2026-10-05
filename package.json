@@ -5,6 +5,7 @@
   "workspaces": ["packages/*"],
   "scripts": {
     "dev": "npm run dev --workspace retro-horror-door-sample",
+    "dev:calibration": "npm run dev:calibration --workspace retro-horror-door-sample",
     "dev:sample": "npm run dev --workspace retro-horror-door-sample",
     "dev:lib": "npm run dev --workspace retro-horror-door",
     "build": "npm run build --workspace retro-horror-door && npm run build --workspace retro-horror-door-sample",

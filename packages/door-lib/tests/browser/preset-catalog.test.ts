@@ -1,5 +1,26 @@
 import { expect, test } from "@playwright/test";
 
+const calibrationUrl = process.env.DOOR_CALIBRATION_TEST_URL || "http://127.0.0.1:5177";
+
+test("ordinary detail keeps playback and stage seconds without timing editors", async ({ page }, testInfo) => {
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door&calibration=true");
+  await expect(page.getByRole("heading", { name: "Direct Entry" })).toBeVisible();
+  await expect(page.getByRole("slider", { name: / timing$/ })).toHaveCount(0);
+  await expect(page.getByText("Stage timing", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Timing edits pause", { exact: false })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Play", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Seek to Pause ends" }).click();
+  const progress = page.getByRole("slider", { name: "Animation progress" });
+  expect(Number(await progress.inputValue())).toBeGreaterThan(60);
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(progress).toHaveValue("0");
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await progress.fill("1");
+  await progress.fill("0");
+  await page.evaluate(() => window.scrollTo(0, 150));
+  await page.screenshot({ path: testInfo.outputPath("normal-detail-viewport.png") });
+});
+
 test("unified animation navigation keeps the selected catalog preset and returns home", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "View details for 1-2 A-1 No-Handle Door" }).click();
@@ -292,7 +313,7 @@ test("parking door shares Direct Entry and supports playback, seek, and reset", 
 });
 
 test("animation detail shows era markers and retimes a preview locally", async ({ page }, testInfo) => {
-  await page.goto("/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door");
+  await page.goto(`${calibrationUrl}/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door`);
   await expect(page.getByText("biohazard-1998", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Seek to Pause ends" })).toBeVisible();
   await page.getByRole("button", { name: "Seek to Pause ends" }).click();
@@ -319,7 +340,7 @@ test("animation detail shows era markers and retimes a preview locally", async (
 });
 
 test("a timing edit pauses playback at the current time and Play resumes", async ({ page }) => {
-  await page.goto("/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door");
+  await page.goto(`${calibrationUrl}/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door`);
   const progress = page.getByRole("slider", { name: "Animation progress" });
   await progress.fill("65");
   await page.getByRole("button", { name: "Play", exact: true }).click();
@@ -370,7 +391,7 @@ test("styled sound stays aligned after Play and timeline seeking", async ({ page
 test("unsupported preview sound rates keep parking controls usable and recover on Restore", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/dev/animations/direct-entry?preset=biohazard-1999-a01-parking-door");
+  await page.goto(`${calibrationUrl}/dev/animations/direct-entry?preset=biohazard-1999-a01-parking-door`);
   await page.waitForFunction(() => {
     const audio = document.querySelector("audio");
     return audio && Number.isFinite(audio.duration) && audio.duration > 0;

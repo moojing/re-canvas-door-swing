@@ -17,10 +17,17 @@ npm run dev              # 啟動 sample（使用已建置的 library）
 
 開啟 `http://127.0.0.1:5173/` 可瀏覽所有已發布的 preset。每張卡會顯示 renderer 的初始畫面；按下 **View details** 會進入所選 preset 的動畫詳細頁，提供播放控制、音效、可拖曳的時間軸及預覽設定。**Full-screen preview** 會在 catalog 上方播放動畫。舊的技術 PoC 路由已退役；獨立的 HTML 範例位於 `/samples/vanilla.html`。
 
+一般詳細頁保留階段秒數與時間軸 seek，預設隱藏時間調整滑桿。
+開發新動畫時，改用 `npm run dev:calibration` 啟動；Vite 的 calibration
+模式會明確開啟 `VITE_DOOR_TIMING_EDITOR=true`，時間調整只影響目前預覽。
+正式 build 即使開啟這個旗標，也不會顯示時間滑桿。切換模式前請先停止
+原本的 server，或透過 sample workspace 指令指定另一個 port。
+
 常用指令：
 
 - `npm run dev:lib`：監看並重建 library
 - `npm run dev:sample`：啟動 sample 的 Vite 開發伺服器
+- `npm run dev:calibration`：啟動本機階段時間校準工具
 - `npm run build`：依序建置 library 與 sample
 - `npm run lint`：執行 library typecheck 與 sample lint
 - `npm run gallery:check`：檢查已發布的評估 gallery 是否一致，並確認主 repo 未重新加入重複的評估文件
