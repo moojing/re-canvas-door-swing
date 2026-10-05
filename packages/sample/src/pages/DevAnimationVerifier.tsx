@@ -57,7 +57,7 @@ const DevAnimationVerifier = () => {
         </p>
       ) : (
         <div className="mt-8 space-y-8">
-          <AnimationPreviewWorkbench key={preset.id} animation={animation} preset={preset} />
+          <AnimationPreviewWorkbench key={preset.id} preset={preset} />
           <section className="border-t border-[#4b3928] pt-6" aria-label="Published presets">
             <h2 className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#827665]">
               Published presets

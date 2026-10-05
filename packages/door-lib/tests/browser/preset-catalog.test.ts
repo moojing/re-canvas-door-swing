@@ -26,29 +26,32 @@ test("unified animation navigation returns to the animation list and handles dir
   await expect(page).toHaveURL(/\/dev\/animations$/);
 });
 
-test("animation detail controls redraw the held frame and restore authored values", async ({ page }) => {
+test("animation detail controls redraw an open frame and restore authored values", async ({ page }, testInfo) => {
   await page.goto("/dev/animations/direct-entry?preset=biohazard-1996-a01-iron-door");
   const canvas = page.locator("canvas");
   const timeline = page.getByRole("slider", { name: "Animation progress" });
   const direction = page.getByRole("group", { name: "Swing direction" });
   const toward = direction.getByRole("button", { name: "Toward viewer" });
   const away = direction.getByRole("button", { name: "Away from viewer" });
-  await timeline.fill("45");
-  const authored = await canvas.screenshot();
+  await timeline.fill("85");
+  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
+  const authored = await canvas.screenshot({ path: testInfo.outputPath("direction-authored.png") });
   await expect(page.getByRole("slider", { name: "Maximum opening angle" })).toHaveCount(0);
   await expect(away).toHaveAttribute("aria-pressed", "true");
 
   await toward.click();
   await expect(toward).toHaveAttribute("aria-pressed", "true");
   await expect(away).toHaveAttribute("aria-pressed", "false");
-  await expect(timeline).toHaveValue("45");
+  await expect(timeline).toHaveValue("85");
+  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
   const reversed = await canvas.screenshot();
   expect(Buffer.compare(reversed, authored)).not.toBe(0);
 
   await page.getByRole("button", { name: "Restore preset values" }).click();
   await expect(away).toHaveAttribute("aria-pressed", "true");
-  await expect(timeline).toHaveValue("45");
-  expect(Buffer.compare(await canvas.screenshot(), authored)).toBe(0);
+  await expect(timeline).toHaveValue("85");
+  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
+  expect(Buffer.compare(await canvas.screenshot({ path: testInfo.outputPath("direction-restored.png") }), authored)).toBe(0);
 
   await toward.click();
   await page.reload();
@@ -286,4 +289,80 @@ test("parking door shares Direct Entry and supports playback, seek, and reset", 
   await expect(timeline).toHaveValue("100", { timeout: 10000 });
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(timeline).toHaveValue("0");
+});
+
+test("animation detail shows era markers and retimes a preview locally", async ({ page }, testInfo) => {
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door");
+  await expect(page.getByText("biohazard-1998", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Seek to Pause ends" })).toBeVisible();
+  await page.getByRole("button", { name: "Seek to Pause ends" }).click();
+  const progress = page.getByRole("slider", { name: "Animation progress" });
+  expect(Number(await progress.inputValue())).toBeGreaterThan(60);
+
+  await progress.fill("70");
+  const canvas = page.locator("canvas");
+  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
+  const authored = await canvas.screenshot({ path: testInfo.outputPath("timing-authored.png") });
+  await page.getByRole("slider", { name: "Pause ends timing" }).fill("3150");
+  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
+  const edited = await canvas.screenshot();
+  expect(Buffer.compare(authored, edited)).not.toBe(0);
+  await page.getByRole("button", { name: "Restore preset values" }).click();
+  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
+  const restored = await canvas.screenshot({ path: testInfo.outputPath("timing-restored.png") });
+  expect(Buffer.compare(restored, authored)).toBe(0);
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await progress.fill("69");
+  await progress.fill("70");
+  await page.evaluate(() => window.scrollTo(0, 150));
+  await page.screenshot({ path: testInfo.outputPath("era-detail-viewport.png") });
+});
+
+test("a timing edit pauses playback at the current time and Play resumes", async ({ page }) => {
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door");
+  const progress = page.getByRole("slider", { name: "Animation progress" });
+  await progress.fill("65");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect.poll(async () => Number(await progress.inputValue())).toBeGreaterThan(65);
+
+  await page.getByRole("slider", { name: "Pause ends timing" }).fill("3150");
+  const pausedAt = Number(await progress.inputValue());
+  await page.waitForTimeout(200);
+  expect(Number(await progress.inputValue())).toBe(pausedAt);
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect.poll(async () => Number(await progress.inputValue())).toBeGreaterThan(pausedAt);
+});
+
+test("styled sound stays aligned after Play and timeline seeking", async ({ page }) => {
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1996-a01-iron-door");
+  const timeline = page.getByRole("slider", { name: "Animation progress" });
+  await timeline.fill("70");
+  await page.waitForFunction(() => {
+    const audio = document.querySelector("audio");
+    return audio && Number.isFinite(audio.duration) && audio.duration > 0;
+  });
+
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect.poll(() => page.locator("audio").evaluate((audio) => !audio.paused && !audio.muted)).toBe(true);
+  const rate = await page.locator("audio").evaluate((audio) => audio.playbackRate);
+  const sourceDuration = await page.locator("audio").evaluate((audio) => audio.duration);
+  expect(rate).toBeCloseTo(sourceDuration * 0.30 / 1.38, 1);
+
+  await timeline.fill("75");
+  await expect(timeline).toHaveValue("75");
+  const soundState = await page.locator("audio").evaluate((audio) => ({ paused: audio.paused, at: audio.currentTime, duration: audio.duration }));
+  const expectedAt = soundState.duration * (0.06 + ((0.75 * 4.8 - 3.12) / 1.38) * 0.30);
+  expect(soundState.paused).toBe(true);
+  expect(soundState.at).toBeCloseTo(expectedAt, 1);
+
+  await timeline.fill("95");
+  await page.locator("audio").evaluate((audio) => {
+    (audio as HTMLAudioElement & { audibleStarts?: number }).audibleStarts = 0;
+    audio.addEventListener("play", () => {
+      if (!audio.muted) (audio as HTMLAudioElement & { audibleStarts?: number }).audibleStarts! += 1;
+    });
+  });
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await page.waitForTimeout(100);
+  expect(await page.locator("audio").evaluate((audio) => (audio as HTMLAudioElement & { audibleStarts?: number }).audibleStarts)).toBe(0);
 });

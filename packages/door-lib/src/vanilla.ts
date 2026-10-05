@@ -2,7 +2,8 @@ import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
 import { getDrawingBufferSize, usesAgedWoodLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
-import { getDoorAnimationConfig } from "./core/animationState.ts";
+import { getDoorEntranceAnimationConfig, type DoorTimingEvents } from "./core/presetAnimation.ts";
+import { getSoundPlaybackRate } from "./core/soundWindow.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
 import {
   resolveDoorSurfaceTextureUrls,
@@ -51,6 +52,7 @@ interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
 
 interface DoorPreviewOverrides {
   swingDirection?: DoorSwingDirection;
+  timingEvents?: DoorTimingEvents;
 }
 
 interface MountedDoorEntrance {
@@ -789,7 +791,7 @@ export const mountDoorEntrance = (
   });
   let activeDoorPreset = presetAssets(resolveDoorEntrancePresetSelection(options));
   let previewOverrides: DoorPreviewOverrides = {};
-  let activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
+  let activeConfig = getDoorEntranceAnimationConfig(activeDoorPreset);
   let progress = 0;
   let isAnimating = false;
   let didComplete = false;
@@ -797,6 +799,7 @@ export const mountDoorEntrance = (
   let soundFrame: number | null = null;
   let audioDelayTimer: number | null = null;
   let soundStarted = false;
+  let soundPlayGeneration = 0;
   let soundUnlocked = false;
   let soundUnlocking: Promise<boolean> | null = null;
   let disposed = false;
@@ -898,6 +901,18 @@ export const mountDoorEntrance = (
     };
   };
 
+  const updateSoundPlaybackRate = (config = activeConfig) => {
+    if (!activeDoorPreset.animationStyle) {
+      audio.playbackRate = 1;
+      return true;
+    }
+    const rate = getSoundPlaybackRate(audio.duration * 1000, config.duration, config);
+    if (rate === null) return false;
+    audio.playbackRate = rate;
+    audio.preservesPitch = true;
+    return true;
+  };
+
   const syncSoundToTimelineProgress = (
     timelineProgress: number,
     config = activeConfig
@@ -936,6 +951,7 @@ export const mountDoorEntrance = (
   };
 
   const pauseSound = () => {
+    soundPlayGeneration += 1;
     stopSoundLoop();
     audio.pause();
     soundStarted = false;
@@ -971,6 +987,7 @@ export const mountDoorEntrance = (
   };
 
   const resetSound = () => {
+    soundPlayGeneration += 1;
     audio.pause();
     if (Number.isFinite(audio.duration) && audio.duration > 0) {
       audio.currentTime = 0;
@@ -1029,10 +1046,14 @@ export const mountDoorEntrance = (
   };
 
   const resolvePreset = (nextPreset?: DoorEntrancePresetId) => {
+    if (nextPreset && nextPreset !== activeDoorPreset.id) {
+      previewOverrides = {};
+    }
     activeDoorPreset = nextPreset
       ? presetAssets(resolveDoorEntrancePresetSelection({ preset: nextPreset }))
       : activeDoorPreset;
-    activeConfig = getDoorAnimationConfig(activeDoorPreset.animation);
+    activeConfig = getDoorEntranceAnimationConfig(activeDoorPreset, previewOverrides.timingEvents);
+    updateSoundPlaybackRate(activeConfig);
     resolvedSurfaceTextureUrls = options.textureUrl
       ? {
           frontTextureUrl: options.textureUrl,
@@ -1043,7 +1064,7 @@ export const mountDoorEntrance = (
     resolvedSoundUrl = toPublicAssetUrl(
       options.soundUrl ?? activeDoorPreset.soundUrl ?? assetUrl(DEFAULT_SOUND_URL)
     );
-    if (resolvedSoundUrl && audio.src !== resolvedSoundUrl) {
+    if (resolvedSoundUrl && audio.getAttribute("src") !== resolvedSoundUrl) {
       audio.src = resolvedSoundUrl;
       audio.preload = "auto";
       soundUnlocked = false;
@@ -1052,6 +1073,7 @@ export const mountDoorEntrance = (
   };
 
   const playSoundForTimeline = (startProgress: number, config = activeConfig) => {
+    const generation = ++soundPlayGeneration;
     clearAudioDelayTimer();
     soundStarted = false;
 
@@ -1060,9 +1082,15 @@ export const mountDoorEntrance = (
       return;
     }
 
-    const { startProgress: soundStartProgress } = getSoundWindow(config);
+    const { startProgress: soundStartProgress, endProgress: soundEndProgress } = getSoundWindow(config);
+    if (startProgress >= soundEndProgress) {
+      syncSoundToTimelineProgress(startProgress, config);
+      return;
+    }
     const playNow = () => {
       const startPlayback = () => {
+        if (generation !== soundPlayGeneration || disposed) return;
+        if (!updateSoundPlaybackRate(config)) return;
         syncSoundToTimelineProgress(
           Math.max(startProgress, soundStartProgress),
           config
@@ -1070,6 +1098,10 @@ export const mountDoorEntrance = (
         void audio
           .play()
           .then(() => {
+            if (generation !== soundPlayGeneration || disposed || !isAnimating) {
+              if (!isAnimating) audio.pause();
+              return;
+            }
             syncSoundToTimelineProgress(progress, config);
             soundStarted = true;
             startSoundLoop();
@@ -1081,7 +1113,7 @@ export const mountDoorEntrance = (
 
       if (!soundUnlocked) {
         void unlockSound().then((unlocked) => {
-          if (unlocked && !disposed && isAnimating) startPlayback();
+          if (unlocked && !disposed && isAnimating && generation === soundPlayGeneration) startPlayback();
         });
         return;
       }
@@ -1129,6 +1161,9 @@ export const mountDoorEntrance = (
           1
         );
         renderProgress(linearProgress, config);
+        if (linearProgress >= getSoundWindow(config).endProgress && !audio.paused) {
+          pauseSound();
+        }
         if (!soundStarted) {
           syncSoundToTimelineProgress(linearProgress, config);
         }
@@ -1184,12 +1219,30 @@ export const mountDoorEntrance = (
     },
     setPreviewOverrides: (overrides) => {
       if (disposed) return;
+      const timingChanged = JSON.stringify(previewOverrides.timingEvents ?? {}) !==
+        JSON.stringify(overrides.timingEvents ?? {});
+      if (timingChanged) {
+        const nextConfig = getDoorEntranceAnimationConfig(activeDoorPreset, overrides.timingEvents);
+        const elapsedMs = progress * activeConfig.duration;
+        cancelAnimationLoop();
+        isAnimating = false;
+        clearAudioDelayTimer();
+        pauseSound();
+        previewOverrides = { ...overrides };
+        activeConfig = nextConfig;
+        updateSoundPlaybackRate(nextConfig);
+        const nextProgress = clampProgress(elapsedMs / nextConfig.duration);
+        renderProgress(nextProgress, nextConfig);
+        syncSoundToTimelineProgress(nextProgress, nextConfig);
+        return;
+      }
       previewOverrides = { ...overrides };
       renderProgress(progress);
     },
     unmount: () => {
       if (disposed) return;
       disposed = true;
+      soundPlayGeneration += 1;
       cancelAnimationLoop();
       clearAudioDelayTimer();
       stopSoundLoop();
@@ -1199,7 +1252,10 @@ export const mountDoorEntrance = (
     },
   };
 
-  audio.addEventListener("loadedmetadata", emitSoundProgress);
+  audio.addEventListener("loadedmetadata", () => {
+    updateSoundPlaybackRate();
+    emitSoundProgress();
+  });
   audio.addEventListener("canplay", emitSoundProgress);
   audio.addEventListener("timeupdate", emitSoundProgress);
   audio.addEventListener("ended", () => {

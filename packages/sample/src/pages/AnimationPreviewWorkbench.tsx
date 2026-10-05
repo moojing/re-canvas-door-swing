@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import {
   mountDoorEntrance,
-  type DoorAnimationConfig,
+  getDoorEntranceAnimationConfig,
   type DoorEntranceHandle,
   type DoorEntrancePreset,
   type DoorSwingDirection,
+  type DoorTimingEvents,
 } from "retro-horror-door";
 
 const formatTime = (milliseconds: number) => {
-  const totalSeconds = Math.floor(milliseconds / 1000);
-  return `${String(Math.floor(totalSeconds / 60)).padStart(2, "0")}:${String(totalSeconds % 60).padStart(2, "0")}`;
+  return `${(milliseconds / 1000).toFixed(2)} s`;
 };
 
 const swingDirectionOptions: Array<{ value: DoorSwingDirection; label: string }> = [
@@ -18,18 +18,19 @@ const swingDirectionOptions: Array<{ value: DoorSwingDirection; label: string }>
 ];
 
 const AnimationPreviewWorkbench = ({
-  animation,
   preset,
 }: {
-  animation: DoorAnimationConfig;
   preset: DoorEntrancePreset;
 }) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<DoorEntranceHandle | null>(null);
   const authoredDirection = preset.swingDirection ?? "toward-viewer";
   const [swingDirection, setSwingDirection] = useState<DoorSwingDirection>(authoredDirection);
+  const [timingEvents, setTimingEvents] = useState<DoorTimingEvents>({});
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
+  const animation = getDoorEntranceAnimationConfig(preset, timingEvents);
+  const events = animation.timelineEvents ?? [];
 
   useEffect(() => {
     const target = targetRef.current;
@@ -104,6 +105,25 @@ const AnimationPreviewWorkbench = ({
             }}
             className="mt-2 h-2 w-full accent-[#c98d48]"
           />
+          {events.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2" aria-label="Animation stages">
+              {events.slice(1, -1).map(({ id, label, atMs }) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-label={`Seek to ${label}`}
+                  onClick={() => {
+                    const next = atMs / animation.duration;
+                    setProgress(next);
+                    doorRef.current?.seek(next, preset.id);
+                  }}
+                  className="border border-[#5f4933] px-2 py-1 text-xs text-[#d8c9b5] hover:border-[#d39952]"
+                >
+                  {label} · {formatTime(atMs)}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
@@ -112,9 +132,7 @@ const AnimationPreviewWorkbench = ({
           Preview settings
         </p>
         <p className="mt-3 text-sm leading-6 text-[#aa9f90]">
-          {preset.type === "single"
-            ? "Adjust this preview at the current point in the animation."
-            : "This animation has no editable preview settings yet."}
+          Adjust this preview at the current point in the animation. Timing edits pause playback; Play resumes from this point.
         </p>
 
         {preset.type === "single" && (
@@ -131,7 +149,7 @@ const AnimationPreviewWorkbench = ({
                     aria-pressed={swingDirection === value}
                     onClick={() => {
                       setSwingDirection(value);
-                      doorRef.current?.setPreviewOverrides({ swingDirection: value });
+                      doorRef.current?.setPreviewOverrides({ swingDirection: value, timingEvents });
                     }}
                     className={`min-h-11 px-2 py-2 text-center text-xs font-semibold focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] sm:text-sm ${
                       index === 0 ? "border-r border-[#765939]" : ""
@@ -146,18 +164,56 @@ const AnimationPreviewWorkbench = ({
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {events.length > 2 && (
+          <div className="mt-6 space-y-4 border-t border-[#4b3928] pt-6">
+            <p className="text-sm font-semibold text-[#e9dfcd]">Stage timing</p>
+            <p className="text-xs leading-5 text-[#aa9f90]">Adjust when a stage ends. Changes apply only to this preview.</p>
+            {events.slice(1, -1).map((stage, index) => {
+              const minimum = events[index].atMs + 10;
+              const maximum = events[index + 2].atMs - 10;
+              return (
+                <label key={stage.id} className="block text-xs text-[#d8c9b5]">
+                  <span className="flex justify-between gap-2">
+                    <span>{stage.label}</span>
+                    <span className="font-mono">{formatTime(stage.atMs)}</span>
+                  </span>
+                  <input
+                    aria-label={`${stage.label} timing`}
+                    type="range"
+                    min={minimum}
+                    max={maximum}
+                    step="10"
+                    value={stage.atMs}
+                    onChange={(event) => {
+                      const nextTiming = { ...timingEvents, [stage.id]: Number(event.target.value) };
+                      getDoorEntranceAnimationConfig(preset, nextTiming);
+                      setTimingEvents(nextTiming);
+                      doorRef.current?.setPreviewOverrides({ swingDirection, timingEvents: nextTiming });
+                    }}
+                    className="mt-2 w-full accent-[#c98d48]"
+                  />
+                </label>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-6 border-t border-[#4b3928] pt-6">
             <button
               type="button"
               onClick={() => {
                 setSwingDirection(authoredDirection);
+                setTimingEvents({});
                 doorRef.current?.setPreviewOverrides({});
               }}
               className="border border-[#8d683e] px-3 py-2 text-sm font-semibold text-[#ddc6a8] hover:border-[#d39952] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
             >
               Restore preset values
             </button>
-          </div>
-        )}
+        </div>
 
         <div className="mt-7 border-t border-[#4b3928] pt-5">
           <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[#c58a45]">
@@ -165,6 +221,7 @@ const AnimationPreviewWorkbench = ({
           </h2>
           <dl className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-xs leading-5">
             <dt className="text-[#827665]">Animation</dt><dd className="text-right text-[#d8c9b5]">{animation.label}</dd>
+            <dt className="text-[#827665]">Animation style</dt><dd className="text-right text-[#d8c9b5]">{preset.animationStyle ?? "legacy"}</dd>
             <dt className="text-[#827665]">Motion</dt><dd className="break-words text-right text-[#d8c9b5]">{preset.motion}</dd>
             <dt className="text-[#827665]">Hinge side</dt><dd className="text-right text-[#d8c9b5]">{preset.hingeSide ?? "—"}</dd>
             <dt className="text-[#827665]">Material</dt><dd className="break-words text-right text-[#d8c9b5]">{preset.material}</dd>
