@@ -1,4 +1,4 @@
-import { getDoorAnimationConfig } from "./animationState.ts";
+import { getDoorEntranceAnimationConfig } from "./presetAnimation.ts";
 import { resolveDoorEntrancePresetSelection } from "./presets.ts";
 import type {
   DoorAnimationConfig,
@@ -46,7 +46,7 @@ export const createDoorEntranceController = (
   options: DoorEntranceControllerOptions = {}
 ): DoorEntranceController => {
   let preset = resolveDoorEntrancePresetSelection(options);
-  let animation = getDoorAnimationConfig(preset.animation);
+  let animation = getDoorEntranceAnimationConfig(preset);
   let progress = clampProgress(options.progress ?? 0);
   let isPlaying = false;
   let didComplete = progress >= 1;
@@ -55,7 +55,7 @@ export const createDoorEntranceController = (
     preset = nextPresetId
       ? resolveDoorEntrancePresetSelection({ preset: nextPresetId })
       : preset;
-    animation = getDoorAnimationConfig(preset.animation);
+    animation = getDoorEntranceAnimationConfig(preset);
   };
 
   const getSnapshot = (): DoorEntranceControllerSnapshot => {

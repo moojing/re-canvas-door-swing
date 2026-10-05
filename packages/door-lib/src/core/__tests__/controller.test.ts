@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createDoorEntranceController } from "../controller.ts";
+import { getDoorEntranceAnimationConfig } from "../presetAnimation.ts";
+import { getDoorEntrancePreset } from "../presets.ts";
 
 describe("door entrance controller", () => {
   it("calls progress and complete callbacks during playback", () => {
@@ -57,6 +59,18 @@ describe("door entrance controller", () => {
     assert.equal(snapshot.preset.id, "biohazard-1998-a01-no-handle-door");
     assert.equal(snapshot.animation.id, "direct-entry");
     assert.equal(snapshot.isPlaying, false);
+  });
+
+  it("uses the selected preset's timeline before and after a preset switch", () => {
+    const first = getDoorEntrancePreset("biohazard-1996-a01-iron-door");
+    const next = getDoorEntrancePreset("biohazard-1999-a01-parking-door");
+    const controller = createDoorEntranceController({ preset: first.id });
+    assert.equal(controller.getSnapshot().animation.duration, getDoorEntranceAnimationConfig(first).duration);
+
+    controller.reset({ preset: next.id, progress: 0.5 });
+    const snapshot = controller.getSnapshot();
+    assert.equal(snapshot.animation.duration, getDoorEntranceAnimationConfig(next).duration);
+    assert.deepEqual(snapshot.state, snapshot.animation.getState(0.5));
   });
 
   it("stop cancels playback state", () => {

@@ -18,6 +18,11 @@ export type DoorHingeSide = "left" | "right";
 
 export type DoorSwingDirection = "toward-viewer" | "away-from-viewer";
 
+export type DoorAnimationStyleId =
+  | "biohazard-1996"
+  | "biohazard-1998"
+  | "biohazard-1999";
+
 export type DoorMaterialId =
   | "wood-panel-aged"
   | "aged-wood-panel"
@@ -52,6 +57,7 @@ export interface DoorEntrancePreset extends DoorSurfaceTextureUrls {
   motion: DoorEntranceMotion;
   material: DoorMaterialId;
   animation: DoorAnimationId;
+  animationStyle?: DoorAnimationStyleId;
   hingeSide?: DoorHingeSide;
   swingDirection?: DoorSwingDirection;
   mirrorTextureX?: boolean;
@@ -85,6 +91,7 @@ export interface DoorAnimationConfig {
   description?: string;
   duration: number;
   progressMarkers: number[];
+  timelineEvents?: Array<{ id: string; label: string; atMs: number }>;
   soundStartProgress?: number;
   soundEndProgress?: number;
   soundSourceStartProgress?: number;
