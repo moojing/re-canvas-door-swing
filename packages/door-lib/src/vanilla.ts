@@ -908,7 +908,14 @@ export const mountDoorEntrance = (
     }
     const rate = getSoundPlaybackRate(audio.duration * 1000, config.duration, config);
     if (rate === null) return false;
-    audio.playbackRate = rate;
+    try {
+      audio.playbackRate = rate;
+    } catch {
+      // Native media rate limits vary by browser. Keep the exact mapping when
+      // supported, and skip this sound window when the browser rejects it.
+      audio.pause();
+      return false;
+    }
     audio.preservesPitch = true;
     return true;
   };
@@ -964,13 +971,16 @@ export const mountDoorEntrance = (
 
     if (soundUnlocking) return soundUnlocking;
 
+    const generation = soundPlayGeneration;
     const wasMuted = audio.muted;
     audio.muted = true;
     soundUnlocking = audio
       .play()
       .then(() => {
         audio.pause();
-        audio.currentTime = 0;
+        if (!disposed && generation === soundPlayGeneration) {
+          audio.currentTime = 0;
+        }
         audio.muted = wasMuted;
         soundUnlocked = true;
         return true;

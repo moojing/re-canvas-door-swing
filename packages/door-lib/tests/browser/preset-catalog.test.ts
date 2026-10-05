@@ -366,3 +366,41 @@ test("styled sound stays aligned after Play and timeline seeking", async ({ page
   await page.waitForTimeout(100);
   expect(await page.locator("audio").evaluate((audio) => (audio as HTMLAudioElement & { audibleStarts?: number }).audibleStarts)).toBe(0);
 });
+
+test("unsupported preview sound rates keep parking controls usable and recover on Restore", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1999-a01-parking-door");
+  await page.waitForFunction(() => {
+    const audio = document.querySelector("audio");
+    return audio && Number.isFinite(audio.duration) && audio.duration > 0;
+  });
+
+  await page.getByRole("slider", { name: "Door opens timing" }).fill("3110");
+  await page.getByRole("slider", { name: "Passage timing" }).fill("3120");
+  expect(errors).toEqual([]);
+
+  const timeline = page.getByRole("slider", { name: "Animation progress" });
+  await timeline.fill("64");
+  await expect(timeline).toHaveValue("64");
+  await page.locator("audio").evaluate((audio) => {
+    audio.dataset.audibleStarts = "0";
+    audio.addEventListener("play", () => {
+      if (!audio.muted) audio.dataset.audibleStarts = String(Number(audio.dataset.audibleStarts) + 1);
+    });
+  });
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(timeline).toHaveValue("100", { timeout: 10000 });
+  await expect(page.locator("audio")).toHaveAttribute("data-audible-starts", "0");
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(timeline).toHaveValue("0");
+  expect(errors).toEqual([]);
+
+  await page.getByRole("button", { name: "Restore preset values" }).click();
+  const sound = await page.locator("audio").evaluate((audio) => ({ rate: audio.playbackRate, duration: audio.duration }));
+  expect(sound.rate).toBeCloseTo(sound.duration * 0.30 / 1.20, 1);
+  await timeline.fill("70");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect.poll(() => page.locator("audio").evaluate((audio) => !audio.paused && !audio.muted)).toBe(true);
+  expect(errors).toEqual([]);
+});

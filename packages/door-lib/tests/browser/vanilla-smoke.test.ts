@@ -157,10 +157,51 @@ test("switching presets updates the sound mapping on the same mounted door", asy
   });
   const before = await page.locator("audio").evaluate((audio) => audio.playbackRate);
 
+  await page.evaluate(() => {
+    window.__doorEntranceTestApi__?.reset("biohazard-1999-a01-parking-door");
+    window.__doorEntranceTestApi__?.preview({ timingEvents: { "open-end": 3110, passage: 3120 } });
+  });
+  expect(await page.locator("audio").evaluate((audio) => audio.paused)).toBe(true);
+
   await page.evaluate(() => window.__doorEntranceTestApi__?.reset("biohazard-1998-a01-no-handle-door"));
   const after = await page.locator("audio").evaluate((audio) => audio.playbackRate);
   const duration = await page.locator("audio").evaluate((audio) => audio.duration);
   expect(before).toBeCloseTo(duration * 0.30 / 1.38, 1);
   expect(after).toBeCloseTo(duration * 0.30 / 2.18, 1);
   expect(after).toBeLessThan(before);
+});
+
+test("a pending first sound unlock preserves a newly sought and retimed frame", async ({ page }) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  await page.waitForFunction(() => {
+    const audio = document.querySelector("audio");
+    return audio && Number.isFinite(audio.duration) && audio.duration > 0;
+  });
+  await page.locator("audio").evaluate((audio) => {
+    const nativePlay = audio.play.bind(audio);
+    audio.play = () => {
+      audio.dataset.unlockPending = "true";
+      return new Promise<void>((resolve) => window.setTimeout(() => {
+        audio.play = nativePlay;
+        resolve();
+      }, 300));
+    };
+  });
+  await page.locator("#door-play").click();
+  await expect(page.locator("audio")).toHaveAttribute("data-unlock-pending", "true");
+  await page.evaluate(() => {
+    window.__doorEntranceTestApi__?.seek(0.75);
+    window.__doorEntranceTestApi__?.preview({ timingEvents: { "slight-open": 3500 } });
+  });
+  const expectedTime = await page.locator("audio").evaluate((audio) => audio.currentTime);
+  expect(expectedTime).toBeGreaterThan(0);
+  await page.waitForTimeout(500);
+  const result = await page.locator("audio").evaluate((audio) => ({ paused: audio.paused, time: audio.currentTime, muted: audio.muted }));
+  expect(result.paused).toBe(true);
+  expect(result.muted).toBe(false);
+  expect(result.time).toBeCloseTo(expectedTime, 2);
+  expect(await page.evaluate(() => window.__doorEntranceTestApi__?.progress())).toBe(0.75);
+  await page.evaluate(() => window.__doorEntranceTestApi__?.resume());
+  await expect.poll(() => page.locator("audio").evaluate((audio) => !audio.paused && !audio.muted)).toBe(true);
 });
