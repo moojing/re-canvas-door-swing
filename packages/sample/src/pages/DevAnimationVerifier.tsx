@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+import FullScreenDoorTransition, { type FullScreenDoorTransitionHandle } from "@/components/FullScreenDoorTransition";
 import { ArrowLeft } from "lucide-react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -6,6 +8,8 @@ import {
   getDoorAnimationConfig,
 } from "retro-horror-door";
 import {
+  catalogPresets,
+  variantsForPreset,
   isKnownAnimation,
   presetsForAnimation,
   resolveVerifierPreset,
@@ -15,6 +19,8 @@ import AnimationPreviewWorkbench from "./AnimationPreviewWorkbench";
 import NotFound from "./NotFound";
 
 const DevAnimationVerifier = () => {
+  const transitionRef = useRef<FullScreenDoorTransitionHandle>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const { animationId = "" } = useParams();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,55 +41,64 @@ const DevAnimationVerifier = () => {
   }
 
   return (
-    <main className="min-h-screen bg-[#070504] px-5 py-8 text-[#e9dfcd] sm:px-8 lg:px-10">
-      <SampleHeader />
-      <Link
-        to={returnTo}
-        className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#c98d48] hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
-      >
-        <ArrowLeft aria-hidden="true" size={16} />
-        {returnTo === "/" ? "Back to catalog" : "Back to Animations"}
-      </Link>
-      <p className="mt-10 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
-        Animation detail
-      </p>
-      <h1 className="mt-3 font-[Georgia,serif] text-4xl text-[#f1e7d6]">
-        {animation.label}
-      </h1>
-
-      {!preset ? (
-        <p className="mt-10 text-[#aa9f90]">
-          No published presets for this animation.
+    <>
+      <main inert={isPreviewing ? "" : undefined} className="min-h-screen bg-[#070504] px-5 py-8 text-[#e9dfcd] sm:px-8 lg:px-10">
+        <SampleHeader />
+        <Link
+          to={returnTo}
+          className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#c98d48] hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
+        >
+          <ArrowLeft aria-hidden="true" size={16} />
+          {returnTo === "/" ? "Back to catalog" : "Back to Animations"}
+        </Link>
+        <p className="mt-10 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
+          Animation detail
         </p>
-      ) : (
-        <div className="mt-8 space-y-8">
-          <AnimationPreviewWorkbench key={preset.id} preset={preset} />
-          <section className="border-t border-[#4b3928] pt-6" aria-label="Published presets">
-            <h2 className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#827665]">
-              Published presets
-            </h2>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {presets.map((option) => (
-                <li key={option.id}>
-                  <button
-                    type="button"
-                    aria-pressed={option.id === preset.id}
-                    onClick={() => setSearchParams({ preset: option.id }, { state: { from: returnTo } })}
-                    className={`border px-3 py-2 text-sm ${
-                      option.id === preset.id
-                        ? "border-[#c98d48] text-[#f1e7d6]"
-                        : "border-[#5f4933] text-[#d8c9b5]"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-      )}
-    </main>
+        <h1 className="mt-3 font-[Georgia,serif] text-4xl text-[#f1e7d6]">
+          {animation.label}
+        </h1>
+
+        {!preset ? (
+          <p className="mt-10 text-[#aa9f90]">
+            No published presets for this animation.
+          </p>
+        ) : (
+          <div className="mt-8 space-y-8">
+            <AnimationPreviewWorkbench
+              key={preset.id}
+              preset={preset}
+              variants={variantsForPreset(preset, presets)}
+              onVariantChange={(id) => setSearchParams({ preset: id }, { state: { from: returnTo } })}
+              onFullScreenPreview={(request) => transitionRef.current?.play(request)}
+            />
+            <section className="border-t border-[#4b3928] pt-6" aria-label="Published presets">
+              <h2 className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#827665]">
+                Published presets
+              </h2>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {catalogPresets(presets).map((option) => (
+                  <li key={option.id}>
+                    <button
+                      type="button"
+                      aria-pressed={option.id === (preset.variantOf ?? preset.id)}
+                      onClick={() => setSearchParams({ preset: option.id }, { state: { from: returnTo } })}
+                      className={`border px-3 py-2 text-sm ${
+                        option.id === (preset.variantOf ?? preset.id)
+                          ? "border-[#c98d48] text-[#f1e7d6]"
+                          : "border-[#5f4933] text-[#d8c9b5]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        )}
+      </main>
+      <FullScreenDoorTransition ref={transitionRef} onActiveChange={setIsPreviewing} />
+    </>
   );
 };
 

@@ -2,7 +2,8 @@ import type { DoorEntrancePresetId } from "./types.ts";
 
 /** Presentation belongs to a released preset, not to public mix-and-match options. */
 export const usesAgedWoodLook = (preset: DoorEntrancePresetId) =>
-  preset === "biohazard-1996-a02-yellow-panel-knob-door";
+  preset === "biohazard-1996-a02-yellow-panel-knob-door" ||
+  preset === "biohazard-1996-a02-yellow-panel-knob-door-leave";
 
 export const getDrawingBufferSize = (
   width: number,

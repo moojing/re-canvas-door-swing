@@ -18,9 +18,25 @@ npm run dev              # runs the sample app (uses the built lib)
 Open `http://127.0.0.1:5173/` to browse every published preset. Each card
 shows the renderer's initial frame; **View details** opens the selected preset
 on its animation detail page, with playback controls, sound, a seekable timeline,
-and preview-only settings. **Full-screen preview** plays over the catalog.
+and preview-only settings. **Full-screen preview** plays over the catalog or detail page.
 The retired technical PoC routes are no longer available; the standalone HTML
 example is at `/samples/vanilla.html`.
+
+The Iron Door and Yellow Panel Knob Door each have one catalog card with
+**Enter / Leave** variants in detail.
+Enter keeps `biohazard-1996-a01-iron-door`; Leave uses
+`biohazard-1996-a01-iron-door-leave`. Both are complete presets sharing runtime
+assets, with separate viewed faces and hinge direction. Presets explicitly select
+an animation set compatible with their motion and era. Members of the same set
+share their timeline, camera path, angle curve and fade configuration.
+Yellow Enter keeps `biohazard-1996-a02-yellow-panel-knob-door`; Yellow Leave
+uses `biohazard-1996-a02-yellow-panel-knob-door-leave`, preserving the same
+wood rendering and knob model. Iron Enter and both Yellow variants use
+`1996-single-micro-open-advance`; Iron Leave uses
+`1996-single-wide-swing-advance`. Handle presence enables the optional set action.
+Detail displays the resolved set ID. Era alone does not select the path.
+Switching variants updates the preset URL and usage example and resets temporary
+preview edits. Mount either ID through the existing `{ target, preset }` API.
 
 Stage seconds and timeline seeking are available in the normal detail page.
 Timing sliders are hidden by default. For local animation calibration, run

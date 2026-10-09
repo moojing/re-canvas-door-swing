@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import type { FullScreenDoorTransitionRequest } from "@/components/FullScreenDoorTransition";
 import {
   mountDoorEntrance,
   getDoorEntranceAnimationConfig,
+  getDoorEntranceAnimationSet,
   type DoorEntranceHandle,
   type DoorEntrancePreset,
+  type DoorEntrancePresetId,
   type DoorSwingDirection,
   type DoorTimingEvents,
 } from "retro-horror-door";
@@ -22,8 +25,14 @@ const swingDirectionOptions: Array<{ value: DoorSwingDirection; label: string }>
 
 const AnimationPreviewWorkbench = ({
   preset,
+  onFullScreenPreview,
+  variants,
+  onVariantChange,
 }: {
   preset: DoorEntrancePreset;
+  variants: readonly DoorEntrancePreset[];
+  onVariantChange: (id: DoorEntrancePresetId) => void;
+  onFullScreenPreview: (request: FullScreenDoorTransitionRequest) => void;
 }) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<DoorEntranceHandle | null>(null);
@@ -34,6 +43,7 @@ const AnimationPreviewWorkbench = ({
   const [progress, setProgress] = useState(0);
   const animation = getDoorEntranceAnimationConfig(preset, timingEvents);
   const events = animation.timelineEvents ?? [];
+  const animationSet = getDoorEntranceAnimationSet(preset);
 
   useEffect(() => {
     const target = targetRef.current;
@@ -62,11 +72,15 @@ const AnimationPreviewWorkbench = ({
           <div ref={targetRef} className="absolute inset-0" />
         </div>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="font-[Georgia,serif] text-xl text-[#f1e7d6]">{preset.label}</p>
-            <p className="mt-1 font-mono text-xs text-[#aa9f90]">{preset.id}</p>
+            <p className="mt-1 break-words font-mono text-xs text-[#aa9f90]">{preset.id}</p>
+            <p className="mt-3 text-sm text-[#d8c9b5]">
+              <span className="text-[#c58a45]">套用動畫組</span>
+              <span className="ml-2 break-words font-mono text-xs">{animationSet?.id ?? "legacy"}</span>
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => doorRef.current?.play(preset.id)}
@@ -74,6 +88,20 @@ const AnimationPreviewWorkbench = ({
               className="border border-[#c98d48] bg-[#c98d48] px-4 py-2 text-sm font-bold text-[#100c08] disabled:opacity-50"
             >
               Play
+            </button>
+            <button
+              type="button"
+              disabled={!ready}
+              onClick={() => {
+                doorRef.current?.stop();
+                onFullScreenPreview({
+                  preset: preset.id,
+                  previewOverrides: { swingDirection, timingEvents },
+                });
+              }}
+              className="border border-[#8d683e] px-4 py-2 text-sm font-semibold text-[#ddc6a8] disabled:opacity-50"
+            >
+              Full-screen preview
             </button>
             <button
               type="button"
@@ -140,7 +168,28 @@ const AnimationPreviewWorkbench = ({
             : "Inspect the published preset at the current point in the animation."}
         </p>
 
-        {preset.type === "single" && (
+        {variants.length > 1 && (
+          <div className="mt-6 border-t border-[#4b3928] pt-6" role="group" aria-label="Traversal variant">
+            <p className="text-sm font-semibold text-[#e9dfcd]">Traversal variant</p>
+            <div className="mt-2 grid grid-cols-2 overflow-hidden border border-[#765939]">
+              {variants.map((variant) => (
+                <button
+                  key={variant.id}
+                  type="button"
+                  aria-pressed={variant.id === preset.id}
+                  onClick={() => onVariantChange(variant.id)}
+                  className={`min-h-11 px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] ${
+                    variant.id === preset.id ? "bg-[#c98d48] text-[#100c08]" : "bg-[#1d1610] text-[#d8c9b5] hover:bg-[#322518]"
+                  }`}
+                >
+                  {variant.traversal === "leave" ? "Leave" : "Enter"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {preset.type === "single" && variants.length === 1 && (
           <div className="mt-6 space-y-6 border-t border-[#4b3928] pt-6">
             <div role="group" aria-labelledby="preview-swing-direction-label">
               <p id="preview-swing-direction-label" className="text-sm font-semibold text-[#e9dfcd]">
@@ -225,13 +274,14 @@ const AnimationPreviewWorkbench = ({
             Published preset
           </h2>
           <dl className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-xs leading-5">
+            {preset.traversal && <><dt className="text-[#827665]">Variant</dt><dd className="text-right text-[#d8c9b5]">{preset.traversal === "leave" ? "Leave" : "Enter"}</dd></>}
             <dt className="text-[#827665]">Animation</dt><dd className="text-right text-[#d8c9b5]">{animation.label}</dd>
             <dt className="text-[#827665]">Animation style</dt><dd className="text-right text-[#d8c9b5]">{preset.animationStyle ?? "legacy"}</dd>
             <dt className="text-[#827665]">Motion</dt><dd className="break-words text-right text-[#d8c9b5]">{preset.motion}</dd>
             <dt className="text-[#827665]">Hinge side</dt><dd className="text-right text-[#d8c9b5]">{preset.hingeSide ?? "—"}</dd>
             <dt className="text-[#827665]">Material</dt><dd className="break-words text-right text-[#d8c9b5]">{preset.material}</dd>
             <dt className="text-[#827665]">Handle</dt><dd className="text-right text-[#d8c9b5]">{preset.handleProfileId ?? "none"}</dd>
-            <dt className="text-[#827665]">Swing direction</dt><dd className="text-right text-[#d8c9b5]">{preset.type === "single" ? authoredDirection : "—"}</dd>
+            {!preset.traversal && <><dt className="text-[#827665]">Swing direction</dt><dd className="text-right text-[#d8c9b5]">{preset.type === "single" ? authoredDirection : "—"}</dd></>}
           </dl>
           <p className="mt-6 text-xs font-semibold text-[#aa9f90]">Published preset usage</p>
           <code className="mt-2 block overflow-x-auto border border-[#4b3928] bg-[#070504] p-3 font-mono text-[0.68rem] leading-5 text-[#d8c9b5]">

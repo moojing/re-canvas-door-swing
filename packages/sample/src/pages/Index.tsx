@@ -11,7 +11,7 @@ import FullScreenDoorTransition, {
   type FullScreenDoorTransitionHandle,
 } from "@/components/FullScreenDoorTransition";
 import SampleHeader from "@/components/SampleHeader";
-import { presetsForAnimation } from "@/dev/animationPresets";
+import { catalogPresets, presetsForAnimation } from "@/dev/animationPresets";
 import PresetAnimationPreview from "./PresetAnimationPreview";
 
 const formatValue = (value: string) =>
@@ -143,18 +143,18 @@ const Index = () => {
 
           <header className="mt-10 max-w-3xl border-l border-[#b77a38]/70 pl-5 sm:mt-14 sm:pl-7">
             <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#c58a45]">
-              Retro Horror Door / {String(doorEntrancePresets.length).padStart(2, "0")} presets
+              Retro Horror Door / {String(catalogPresets(doorEntrancePresets).length).padStart(2, "0")} doors
             </p>
             <h1 className="font-[Georgia,serif] text-4xl leading-[1.04] text-[#f1e7d6] sm:text-5xl lg:text-6xl">
-              Playable door presets
+              Playable doors
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-[#aa9f90] sm:text-base">
-              每張卡代表一組已定義、可發布的門組合。查看動畫細節與設定，或全螢幕預覽動畫。
+              每張卡代表一扇門。查看動畫細節與通行版本，或全螢幕預覽動畫。
             </p>
           </header>
 
           {doorAnimationConfigs.map((animation) => {
-            const presets = presetsForAnimation(animation.id, doorEntrancePresets);
+            const presets = presetsForAnimation(animation.id, catalogPresets(doorEntrancePresets));
             if (presets.length === 0) return null;
 
             return (

@@ -13,6 +13,8 @@ export {
   getDoorAnimationConfig,
 } from "./core/animationState.ts";
 export { getDoorEntranceAnimationConfig } from "./core/presetAnimation.ts";
+export { getDoorEntranceAnimationSet } from "./core/animationSets.ts";
+export type { DoorAnimationSetMetadata } from "./core/animationSets.ts";
 export type { DoorTimingEvents } from "./core/presetAnimation.ts";
 export {
   doorEntrancePresets,
@@ -26,6 +28,7 @@ export type {
   DoorAnimationState,
   DoorAnimationId,
   DoorAnimationStyleId,
+  DoorAnimationSetId,
   DoorEntranceMotion,
   DoorEntrancePreset,
   DoorEntrancePresetId,

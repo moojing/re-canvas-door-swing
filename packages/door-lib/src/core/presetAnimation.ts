@@ -1,5 +1,6 @@
 import { getDoorAnimationConfig } from "./animationState.ts";
-import { getEraProfile, type EraAnimationProfile } from "./animationStyles.ts";
+import type { EraAnimationProfile } from "./animationStyles.ts";
+import { getAnimationSetProfile } from "./animationSets.ts";
 import { sampleTrack, validateTrack, warpTime, type TimelineKeyframe, type TimelineValue } from "./animationTimeline.ts";
 import type { DoorAnimationConfig, DoorEntrancePreset } from "./types.ts";
 
@@ -88,14 +89,14 @@ export const getDoorEntranceAnimationConfig = (
   timingEvents: DoorTimingEvents = {}
 ): DoorAnimationConfig => {
   const legacy = getDoorAnimationConfig(preset.animation);
-  if (!preset.animationStyle) {
+  if (!preset.animationStyle && !preset.animationSet) {
     if (Object.keys(timingEvents).length) {
       throw new Error("Legacy animation does not support timing edits");
     }
     return legacy;
   }
 
-  const profile = retimeProfile(getEraProfile(preset), timingEvents);
+  const profile = retimeProfile(getAnimationSetProfile(preset), timingEvents);
   validateProfile(profile);
   const duration = profile.durationMs;
   return {

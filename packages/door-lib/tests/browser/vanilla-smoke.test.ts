@@ -98,7 +98,7 @@ test("preview overrides redraw the current frame without replacing the canvas", 
   expect(Buffer.compare(restored, authored)).toBe(0);
 });
 
-test("vanilla playback uses the 1996 preset's slight-open hold", async ({ page }) => {
+test("vanilla playback keeps advancing during the iron-door micro-opening", async ({ page }) => {
   await page.goto("/samples/vanilla.html?testMode");
   await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
   const canvas = page.locator("canvas");
@@ -106,9 +106,9 @@ test("vanilla playback uses the 1996 preset's slight-open hold", async ({ page }
   await page.evaluate(() => window.__doorEntranceTestApi__?.seek(0.70));
   const first = await canvas.screenshot();
   await page.evaluate(() => window.__doorEntranceTestApi__?.seek(0.75));
-  const held = await canvas.screenshot();
+  const advancing = await canvas.screenshot();
 
-  expect(Buffer.compare(first, held)).toBe(0);
+  expect(Buffer.compare(first, advancing)).not.toBe(0);
 });
 
 test("timing preview retimes the held frame and restores the authored state", async ({ page }) => {
@@ -166,7 +166,7 @@ test("switching presets updates the sound mapping on the same mounted door", asy
   await page.evaluate(() => window.__doorEntranceTestApi__?.reset("biohazard-1998-a01-no-handle-door"));
   const after = await page.locator("audio").evaluate((audio) => audio.playbackRate);
   const duration = await page.locator("audio").evaluate((audio) => audio.duration);
-  expect(before).toBeCloseTo(duration * 0.30 / 1.38, 1);
+  expect(before).toBeCloseTo(duration * 0.30 / 1.9, 1);
   expect(after).toBeCloseTo(duration * 0.30 / 2.18, 1);
   expect(after).toBeLessThan(before);
 });

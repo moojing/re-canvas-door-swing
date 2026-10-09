@@ -23,6 +23,14 @@ export type DoorAnimationStyleId =
   | "biohazard-1998"
   | "biohazard-1999";
 
+export type DoorAnimationSetId =
+  | "1996-single-micro-open-advance"
+  | "1996-single-micro-open-close-pass-advance"
+  | "1996-single-wide-swing-advance"
+  | "1996-double-micro-open-hold-advance"
+  | "1998-single-micro-open-hold-advance"
+  | "1999-single-closed-wait-advance";
+
 export type DoorMaterialId =
   | "wood-panel-aged"
   | "aged-wood-panel"
@@ -31,9 +39,11 @@ export type DoorMaterialId =
 
 export type DoorEntrancePresetId =
   | "biohazard-1996-a01-iron-door"
+  | "biohazard-1996-a01-iron-door-leave"
   | "biohazard-1998-a01-no-handle-door"
   | "biohazard-1999-a01-parking-door"
   | "biohazard-1996-a02-yellow-panel-knob-door"
+  | "biohazard-1996-a02-yellow-panel-knob-door-leave"
   | "biohazard-1996-b02-blue-panel-double-door";
 
 export interface DoorSurfaceTextureUrls {
@@ -53,11 +63,15 @@ export interface ResolvedDoorSurfaceTextureUrls {
 export interface DoorEntrancePreset extends DoorSurfaceTextureUrls {
   id: DoorEntrancePresetId;
   label: string;
+  /** Traversal variants remain complete presets with their own IDs and selected animation sets. */
+  variantOf?: DoorEntrancePresetId;
+  traversal?: "enter" | "leave";
   type: DoorEntranceType;
   motion: DoorEntranceMotion;
   material: DoorMaterialId;
   animation: DoorAnimationId;
   animationStyle?: DoorAnimationStyleId;
+  animationSet?: DoorAnimationSetId;
   hingeSide?: DoorHingeSide;
   swingDirection?: DoorSwingDirection;
   mirrorTextureX?: boolean;

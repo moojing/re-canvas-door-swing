@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { getDoorAnimationConfig } from "../animationState.ts";
-import { getDoorEntrancePreset } from "../presets.ts";
+import { doorEntrancePresets, getDoorEntrancePreset } from "../presets.ts";
 import { getDoorEntranceAnimationConfig } from "../presetAnimation.ts";
 
 const stateAt = (presetId: Parameters<typeof getDoorEntrancePreset>[0], eventId: string) => {
@@ -14,6 +14,7 @@ const stateAt = (presetId: Parameters<typeof getDoorEntrancePreset>[0], eventId:
 describe("released preset animation styles", () => {
   it("assigns every released door to an explicit 1996, 1998, or 1999 style", () => {
     assert.equal(getDoorEntrancePreset("biohazard-1996-a01-iron-door").animationStyle, "biohazard-1996");
+    assert.equal(getDoorEntrancePreset("biohazard-1996-a01-iron-door-leave").animationStyle, "biohazard-1996");
     assert.equal(getDoorEntrancePreset("biohazard-1996-a02-yellow-panel-knob-door").animationStyle, "biohazard-1996");
     assert.equal(getDoorEntrancePreset("biohazard-1996-b02-blue-panel-double-door").animationStyle, "biohazard-1996");
     assert.equal(getDoorEntrancePreset("biohazard-1998-a01-no-handle-door").animationStyle, "biohazard-1998");
@@ -28,6 +29,91 @@ describe("released preset animation styles", () => {
       const middle = config.getState((start.atMs + end.atMs) / 2 / config.duration);
       assert.ok(middle.doorAngle > 0 && middle.doorAngle < 0.3, id);
       assert.equal(middle.doorAngle, config.getState(end.atMs / config.duration).doorAngle, id);
+    }
+  });
+
+  it("pauses once at micro-open then advances without a late slowdown", () => {
+    for (const preset of doorEntrancePresets.filter(({ animationSet }) =>
+      animationSet === "1996-single-micro-open-advance")) {
+      const config = getDoorEntranceAnimationConfig(preset);
+      const atMs = (ms: number) => config.getState(ms / config.duration);
+      assert.equal(atMs(3300).doorAngle, atMs(3700).doorAngle);
+      assert.deepEqual(atMs(3300).cameraPosition, atMs(3700).cameraPosition);
+      let previousDoorStep = 0;
+      let previousCameraStep = 0;
+      for (let ms = 3700; ms < config.duration; ms += 100) {
+        const start = atMs(ms);
+        const end = atMs(ms + 100);
+        const doorStep = end.doorAngle - start.doorAngle;
+        const cameraStep = start.cameraPosition[2] - end.cameraPosition[2];
+        assert.ok(doorStep > 0, `${preset.id}: leaf stopped at ${ms}`);
+        assert.ok(cameraStep > 0, `${preset.id}: camera stopped at ${ms}`);
+        assert.ok(doorStep + 1e-10 >= previousDoorStep, `${preset.id}: leaf slowed at ${ms}`);
+        assert.ok(cameraStep + 1e-10 >= previousCameraStep, `${preset.id}: camera slowed at ${ms}`);
+        previousDoorStep = doorStep;
+        previousCameraStep = cameraStep;
+      }
+    }
+  });
+
+  it("fades the iron door with a broad face still visible rather than swinging fully open", () => {
+    const id = "biohazard-1996-a01-iron-door";
+    const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset(id));
+    assert.ok(Math.abs(stateAt(id, "slight-open").doorAngle * 90 - 10) < 0.01);
+    const fading = stateAt(id, "fade-start");
+    assert.ok(fading.doorAngle * 90 >= 26 && fading.doorAngle * 90 <= 30);
+    assert.ok(Math.abs(config.getState(1).doorAngle * 90 - 30) < 0.01);
+    assert.ok(fading.cameraPosition[2] > 4, "camera must not race through the door");
+    assert.equal(config.getState(1).fadeOut, 1);
+  });
+
+  it("uses identical motion and camera settings for members of the 1996 micro-open single-door set", () => {
+    const presets = doorEntrancePresets.filter((preset) =>
+      preset.animationSet === "1996-single-micro-open-advance");
+    assert.equal(presets.length, 2);
+    const baseline = getDoorEntranceAnimationConfig(presets[0]);
+    for (const preset of presets) {
+      const config = getDoorEntranceAnimationConfig(preset);
+      assert.equal(config.duration, baseline.duration, preset.id);
+      assert.equal(config.soundStartProgress, baseline.soundStartProgress, preset.id);
+      assert.equal(config.soundEndProgress, baseline.soundEndProgress, preset.id);
+      assert.deepEqual(config.timelineEvents?.filter(({ id }) => id !== "handle-start"),
+        baseline.timelineEvents?.filter(({ id }) => id !== "handle-start"), preset.id);
+      for (let ms = 0; ms <= baseline.duration; ms += 40) {
+        const actual = config.getState(ms / config.duration);
+        const expected = baseline.getState(ms / baseline.duration);
+        assert.equal(actual.doorAngle, expected.doorAngle, preset.id);
+        assert.deepEqual(actual.cameraPosition, expected.cameraPosition, preset.id);
+        assert.deepEqual(actual.cameraTarget, expected.cameraTarget, preset.id);
+        assert.equal(actual.fadeOut, expected.fadeOut, preset.id);
+      }
+    }
+    // Selection follows motion and explicit style even when the ID changes.
+    const renamed = getDoorEntranceAnimationConfig({ ...presets[1], id: presets[0].id });
+    assert.equal(renamed.duration, baseline.duration);
+    assert.deepEqual(renamed.getState(0.75), getDoorEntranceAnimationConfig(presets[1]).getState(0.75));
+  });
+
+  it("preserves variant geometry while sharing the optional knob action", () => {
+    for (const baseId of ["biohazard-1996-a01-iron-door", "biohazard-1996-a02-yellow-panel-knob-door"] as const) {
+      const enter = getDoorEntrancePreset(baseId);
+      const leave = doorEntrancePresets.find((preset) => preset.variantOf === baseId)!;
+      assert.equal(enter.traversal, "enter");
+      assert.equal(leave.traversal, "leave");
+      assert.equal(leave.hingeSide, "right");
+      assert.equal(leave.frontTextureUrl, enter.backTextureUrl);
+      assert.equal(leave.backTextureUrl, enter.frontTextureUrl);
+      assert.notEqual(leave.swingDirection, enter.swingDirection);
+      const config = getDoorEntranceAnimationConfig(leave);
+      const state = config.getState(2850 / config.duration);
+      assert.equal(state.doorAngle, 0);
+      if (leave.handleProfileId) {
+        assert.ok(state.handleAngle! > 0);
+        assert.deepEqual(config.getState(0.7), getDoorEntranceAnimationConfig(enter).getState(0.7));
+      } else {
+        assert.equal(state.handleAngle, 0);
+        assert.equal(config.timelineEvents?.some(({ id }) => id === "handle-start"), false);
+      }
     }
   });
 
@@ -52,7 +138,7 @@ describe("released preset animation styles", () => {
 
   it("preserves legacy animation behavior for a preset without a style", () => {
     const styled = getDoorEntrancePreset("biohazard-1996-a01-iron-door");
-    const legacy = getDoorEntranceAnimationConfig({ ...styled, animationStyle: undefined });
+    const legacy = getDoorEntranceAnimationConfig({ ...styled, animationStyle: undefined, animationSet: undefined });
     assert.equal(legacy, getDoorAnimationConfig(styled.animation));
   });
 

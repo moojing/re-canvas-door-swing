@@ -1,7 +1,6 @@
 import type {
   DoorAnimationStyleId,
-  DoorEntrancePreset,
-  DoorEntrancePresetId,
+  DoorEntranceMotion,
   Vector3Tuple,
 } from "./types.ts";
 import type { TimelineKeyframe } from "./animationTimeline.ts";
@@ -171,19 +170,73 @@ const parkingDoor = (): EraAnimationProfile => {
   };
 };
 
+// Construct the shared single-door continuous approach, opening and fade tracks.
+const continuousApproachSingleDoor = (
+  timing: Omit<HeldDoorTiming, "double">,
+  initialZ = 9,
+  initialTargetY = 0.2,
+  driftMidMs = (timing.approachEndMs + timing.slightOpenMs) / 2
+): EraAnimationProfile => {
+  const { durationMs, approachEndMs, slightOpenMs, holdEndMs } = timing;
+  const profile = heldDoor(timing);
+  return {
+    ...profile,
+    events: profile.events.map((marker) => ({
+      ...marker,
+      label: marker.id === "approach-end" ? "Initial approach ends"
+        : marker.id === "hold-end" ? "Opening resumes"
+        : marker.id === "open-end" ? "Late opening"
+        : marker.id === "passage" ? "Close approach" : marker.label,
+    })),
+    doorAngle: [
+      at(0, 0), at(slightOpenMs - 180, 0), at(slightOpenMs, 10 / 90),
+      at(holdEndMs, 10 / 90), at(durationMs, 30 / 90),
+    ],
+    cameraPosition: [
+      { ...camera(0, initialZ), easing: "ease-out" },
+      camera(approachEndMs, 6.1), camera(driftMidMs, 6.05), camera(slightOpenMs, 6.02),
+      { ...camera(holdEndMs, 6.02), easing: "ease-in" }, camera(durationMs, 3.95),
+    ],
+    cameraTarget: [
+      { atMs: 0, value: [0, initialTargetY, 0] },
+      { atMs: approachEndMs, value: [0, 0.4, 0] },
+      { atMs: durationMs, value: [0, 0.4, 0] },
+    ],
+  };
+};
+
+const singleDoor1996 = (): EraAnimationProfile => continuousApproachSingleDoor({
+  durationMs: 5000,
+  approachEndMs: 1200,
+  knobStartMs: 2600,
+  knobEndMs: 3100,
+  slightOpenMs: 3300,
+  holdEndMs: 3700,
+  openEndMs: 4300,
+  passageMs: 4500,
+  fadeStartMs: 4800,
+  slightAngle: 10 / 90,
+  approachZ: 6.1,
+  openZ: 4.98,
+}, 9, 0.2, 2100);
+
+// Reusable close passage: retain the micro hold, then fit the narrow front / visible edge.
+const microOpenClosePassBase = singleDoor1996();
+export const microOpenClosePassSingleDoor1996Profile: EraAnimationProfile = {
+  ...microOpenClosePassBase,
+  doorAngle: [
+    ...microOpenClosePassBase.doorAngle.slice(0, -1),
+    at(4800, 64 / 90), at(microOpenClosePassBase.durationMs, 64 / 90),
+  ],
+  cameraPosition: [
+    ...microOpenClosePassBase.cameraPosition.slice(0, -1),
+    camera(4800, 3.95), camera(microOpenClosePassBase.durationMs, 3.95),
+  ],
+
+};
+
 export const eraStyleDefaults: Record<DoorAnimationStyleId, EraAnimationProfile> = {
-  "biohazard-1996": heldDoor({
-    durationMs: 4800,
-    approachEndMs: 2100,
-    slightOpenMs: 3300,
-    holdEndMs: 3700,
-    openEndMs: 4300,
-    passageMs: 4500,
-    fadeStartMs: 4600,
-    slightAngle: 0.08,
-    approachZ: 6.9,
-    openZ: 6.2,
-  }),
+  "biohazard-1996": singleDoor1996(),
   "biohazard-1998": heldDoor({
     durationMs: 4400,
     approachEndMs: 1000,
@@ -199,48 +252,64 @@ export const eraStyleDefaults: Record<DoorAnimationStyleId, EraAnimationProfile>
   "biohazard-1999": parkingDoor(),
 };
 
-const presetOverrides: Partial<Record<DoorEntrancePresetId, EraAnimationProfile>> = {
-  "biohazard-1996-a02-yellow-panel-knob-door": heldDoor({
-    durationMs: 5200,
-    approachEndMs: 2750,
-    knobStartMs: 3000,
-    knobEndMs: 3550,
-    slightOpenMs: 3700,
-    holdEndMs: 4100,
-    openEndMs: 4700,
-    passageMs: 4900,
-    fadeStartMs: 5000,
-    slightAngle: 0.08,
-    approachZ: 6.9,
-    openZ: 6.2,
-  }),
-  "biohazard-1996-b02-blue-panel-double-door": heldDoor({
-    durationMs: 4900,
-    approachEndMs: 2500,
-    knobStartMs: 2750,
-    knobEndMs: 3350,
-    slightOpenMs: 3500,
-    holdEndMs: 4000,
-    openEndMs: 4550,
-    passageMs: 4700,
-    fadeStartMs: 4780,
-    slightAngle: 0.07,
-    approachZ: 6.9,
-    openZ: 6.2,
-    double: true,
-  }),
+// Profiles are selected by motion and explicit era, never by door or traversal ID.
+export const motionStyleProfiles: Record<DoorAnimationStyleId,
+  Partial<Record<DoorEntranceMotion, EraAnimationProfile>>> = {
+  "biohazard-1996": {
+    "hinge-single": eraStyleDefaults["biohazard-1996"],
+    "hinge-double": heldDoor({
+      durationMs: 4900,
+      approachEndMs: 2500,
+      knobStartMs: 2750,
+      knobEndMs: 3350,
+      slightOpenMs: 3500,
+      holdEndMs: 4000,
+      openEndMs: 4550,
+      passageMs: 4700,
+      fadeStartMs: 4780,
+      slightAngle: 0.07,
+      approachZ: 6.9,
+      openZ: 6.2,
+      double: true,
+    }),
+  },
+  "biohazard-1998": { "hinge-single": eraStyleDefaults["biohazard-1998"] },
+  "biohazard-1999": { "hinge-single": eraStyleDefaults["biohazard-1999"] },
 };
 
-export const getEraProfile = (preset: DoorEntrancePreset): EraAnimationProfile => {
-  if (!preset.animationStyle) {
-    throw new Error(`Preset ${preset.id} has no animation style`);
-  }
-  const profile = presetOverrides[preset.id] ?? eraStyleDefaults[preset.animationStyle];
-  if (preset.motion === "hinge-double" && !profile.rightDoorAngle) {
-    throw new Error(`Preset ${preset.id} needs two door-angle tracks`);
-  }
-  if (preset.motion !== "hinge-double" && profile.rightDoorAngle) {
-    throw new Error(`Preset ${preset.id} cannot use a double-door profile`);
-  }
-  return profile;
+
+export const wideSwingSingleDoor1996Profile: EraAnimationProfile = {
+  durationMs: 4700,
+  events: [
+    event("start", "Start", 0),
+    event("approach-end", "Initial approach ends", 1350),
+    event("opening-start", "Opening starts", 3350),
+    event("slight-open", "Slight opening", 3550),
+    event("opening-resumes", "Opening accelerates", 3650),
+    event("open-end", "Late opening", 4500),
+    event("passage", "Close approach", 4560),
+    event("fade-start", "Fade starts", 4580),
+    event("end", "End", 4700),
+  ],
+  doorAngle: [
+    at(0, 0), at(3350, 0), at(3550, 3 / 90), at(3650, 6 / 90),
+    at(3950, 17 / 90), at(4150, 30 / 90), at(4550, 65 / 90), at(4700, 72 / 90),
+  ],
+  handleAngle: [at(0, 0), at(4700, 0)],
+  cameraPosition: [
+    { ...camera(0, 5.8), easing: "ease-out" },
+    camera(1350, 4.5), camera(3350, 4.48), camera(3550, 4.46),
+    camera(3650, 4.4), camera(3950, 4.25), camera(4150, 4.1),
+    camera(4350, 4), camera(4450, 3.93), camera(4550, 3.85), camera(4700, 3.8),
+  ],
+  cameraTarget: [
+    { atMs: 0, value: [0, 0, 0] },
+    { atMs: 1350, value: [0, 0, 0] },
+    { atMs: 4700, value: [0, 0, 0] },
+  ],
+  fadeOut: [at(0, 0), at(4580, 0), at(4700, 1)],
+  soundStartMs: 3350,
+  soundEndMs: 4560,
+  soundSourceStartProgress: 0.06,
+  soundSourceEndProgress: 0.36,
 };
