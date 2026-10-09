@@ -65,7 +65,7 @@ export const sampleTrack = <T extends TimelineValue>(
 ): T => {
   validateTrack(track, durationMs);
   const time = Math.min(Math.max(Number.isFinite(timeMs) ? timeMs : 0, 0), durationMs);
-  if (time === 0) return track[0].value;
+  if (time === 0) return interpolate(track[0].value, track[0].value, 0);
   for (let index = 1; index < track.length; index += 1) {
     const end = track[index];
     if (time <= end.atMs) {
@@ -74,7 +74,7 @@ export const sampleTrack = <T extends TimelineValue>(
       return interpolate(start.value, end.value, ease(progress, start.easing));
     }
   }
-  return track.at(-1)!.value;
+  return interpolate(track.at(-1)!.value, track.at(-1)!.value, 0);
 };
 
 export const warpTime = (

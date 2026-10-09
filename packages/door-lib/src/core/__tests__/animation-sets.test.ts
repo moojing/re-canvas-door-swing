@@ -224,3 +224,17 @@ test("parking advances smoothly after the wait and keeps the hinge edge visible 
   assert.equal(state.fadeOut, 0);
   assert.equal(config.getState(1).fadeOut, 1);
 });
+
+test("public configs cannot mutate shared set events or initial camera vectors", () => {
+  const preset = getDoorEntrancePreset("biohazard-1996-a02-yellow-panel-knob-door-leave");
+  const config = getDoorEntranceAnimationConfig(preset);
+  const before = getDoorEntranceAnimationConfig(iron);
+  const events = structuredClone(before.timelineEvents);
+  const initial = before.getState(0);
+  config.timelineEvents![1].atMs += 1;
+  config.getState(0).cameraPosition[2] = 123;
+  config.getState(0).cameraTarget[1] = 123;
+  const after = getDoorEntranceAnimationConfig(iron);
+  assert.deepEqual(after.timelineEvents, events);
+  assert.deepEqual(after.getState(0), initial);
+});

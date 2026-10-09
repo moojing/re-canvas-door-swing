@@ -31,8 +31,9 @@ an animation set compatible with their motion and era. Members of the same set
 share their timeline, camera path, angle curve and fade configuration.
 Yellow Enter keeps `biohazard-1996-a02-yellow-panel-knob-door`; Yellow Leave
 uses `biohazard-1996-a02-yellow-panel-knob-door-leave`, preserving the same
-wood rendering and knob model. Iron Enter and both Yellow variants use
-`1996-single-micro-open-advance`; Iron Leave uses
+wood rendering and knob model. Iron Enter and Yellow Leave use
+`1996-single-micro-open-advance`; Yellow Enter uses
+`1996-single-micro-open-close-pass-advance`; Iron Leave uses
 `1996-single-wide-swing-advance`. Handle presence enables the optional set action.
 Detail displays the resolved set ID. Era alone does not select the path.
 Switching variants updates the preset URL and usage example and resets temporary

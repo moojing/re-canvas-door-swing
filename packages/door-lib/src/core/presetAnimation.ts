@@ -104,7 +104,7 @@ export const getDoorEntranceAnimationConfig = (
     label: legacy.label,
     description: legacy.description,
     duration,
-    timelineEvents: profile.events,
+    timelineEvents: profile.events.map((event) => ({ ...event })),
     progressMarkers: profile.events.map(({ atMs }) => atMs / duration),
     soundStartProgress: profile.soundStartMs / duration,
     soundEndProgress: profile.soundEndMs / duration,

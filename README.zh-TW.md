@@ -26,8 +26,9 @@ Enter 保留 `biohazard-1996-a01-iron-door`，Leave 使用
 範例，並清除暫時的預覽調整。黃色門 Enter 保留
 `biohazard-1996-a02-yellow-panel-knob-door`，Leave 使用
 `biohazard-1996-a02-yellow-panel-knob-door-leave`；兩者保留相同木門材質與
-門把模型，有門把時啟用 set 的門把動作。鐵門 Enter 與黃色門兩個版本
-使用 `1996-single-micro-open-advance`，鐵門 Leave 使用
+門把模型，有門把時啟用 set 的門把動作。鐵門 Enter 與黃色門 Leave
+使用 `1996-single-micro-open-advance`，黃色門 Enter 使用
+`1996-single-micro-open-close-pass-advance`，鐵門 Leave 使用
 `1996-single-wide-swing-advance`。詳細頁顯示實際 set ID，年代本身不決定行徑。
 使用時仍透過 `{ target, preset }` API 指定 ID。
 
