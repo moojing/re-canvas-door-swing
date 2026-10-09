@@ -10,10 +10,12 @@ import {
   mountDoorEntrance,
   type DoorEntranceHandle,
   type DoorEntrancePresetId,
+  type DoorPreviewOverrides,
 } from "retro-horror-door";
 
 export type FullScreenDoorTransitionRequest = {
   preset: DoorEntrancePresetId;
+  previewOverrides?: DoorPreviewOverrides;
 };
 
 export type FullScreenDoorTransitionHandle = {
@@ -89,6 +91,7 @@ const FullScreenDoorTransition = forwardRef<
         onActiveChangeRef.current(true);
         setActive(true);
         door.reset(request.preset);
+        door.setPreviewOverrides(request.previewOverrides ?? {});
         door.play(request.preset);
       },
     }),

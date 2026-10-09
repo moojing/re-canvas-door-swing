@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:calibration": "vite --mode calibration",
     "build": "vite build && cp dist/index.html dist/404.html",
     "build:dev": "vite build --mode development && cp dist/index.html dist/404.html",
     "lint": "eslint .",

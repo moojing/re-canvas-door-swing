@@ -12,6 +12,10 @@ export {
   easeInOutCubic,
   getDoorAnimationConfig,
 } from "./core/animationState.ts";
+export { getDoorEntranceAnimationConfig } from "./core/presetAnimation.ts";
+export { getDoorEntranceAnimationSet } from "./core/animationSets.ts";
+export type { DoorAnimationSetMetadata } from "./core/animationSets.ts";
+export type { DoorTimingEvents } from "./core/presetAnimation.ts";
 export {
   doorEntrancePresets,
   doorEntrancePresetMap,
@@ -23,6 +27,8 @@ export type {
   DoorAnimationConfig,
   DoorAnimationState,
   DoorAnimationId,
+  DoorAnimationStyleId,
+  DoorAnimationSetId,
   DoorEntranceMotion,
   DoorEntrancePreset,
   DoorEntrancePresetId,

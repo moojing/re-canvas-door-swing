@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { getDrawingBufferSize, usesAgedWoodLook } from "../renderLook.ts";
 
-test("wood lighting and tint are limited to the yellow panel preset", () => {
+test("wood lighting and tint are limited to the yellow panel preset family", () => {
   assert.equal(usesAgedWoodLook("biohazard-1996-a02-yellow-panel-knob-door"), true);
+  assert.equal(usesAgedWoodLook("biohazard-1996-a02-yellow-panel-knob-door-leave"), true);
   assert.equal(usesAgedWoodLook("biohazard-1996-a01-iron-door"), false);
   assert.equal(usesAgedWoodLook("biohazard-1998-a01-no-handle-door"), false);
 });

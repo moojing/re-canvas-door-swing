@@ -46,6 +46,28 @@ Run commands from the repository root:
 - The vanilla scene contains only door leaves and handles. Do not reintroduce a
   frame, floor, sill, or unrelated scene geometry.
 
+## Era Animation Calibration
+
+For reference-driven motion/framing adjustments, use
+[calibrate-door-animation](.codex/skills/calibrate-door-animation/SKILL.md).
+Gallery `docs/door-animation-reference.md` and tracked selection GIFs support
+work without local MP4s; distinguish source observations from renderer fit values.
+
+Before creating or adjusting an era profile, read
+[`docs/animation-style-1996.md`](docs/animation-style-1996.md) for the meaning of
+“1996 style”, explicit animation sets, compatibility and traversal metadata.
+Read the latest dated sections in
+[`docs/era-animation-calibration-2026-10-05.md`](docs/era-animation-calibration-2026-10-05.md)
+for reference observations and current fitted values. Earlier sections are history,
+not instructions to restore the old camera freeze/full swing.
+Released presets explicitly select an animationSet. Same set means identical
+tracks, with optional handle presence; motion and era must be compatible. Different
+sets may coexist within one era and motion. Style-only callers retain a default
+for compatibility. Do not add per-preset timing overrides; add a reusable set
+only when the observed path requires it. Do not infer style from an ID or equate
+Enter/Leave with toward/away rotation. Changes need behavior tests and
+local visual comparison; tests alone do not establish source-video fidelity.
+
 ## Catalog Conventions
 
 - The sample home page lists `doorEntrancePresets`; do not duplicate registry

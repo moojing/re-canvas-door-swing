@@ -4,7 +4,7 @@ import {
   doorEntrancePresets,
 } from "retro-horror-door";
 import SampleHeader from "@/components/SampleHeader";
-import { presetsForAnimation } from "@/dev/animationPresets";
+import { catalogPresets, presetsForAnimation } from "@/dev/animationPresets";
 import PresetAnimationPreview from "./PresetAnimationPreview";
 
 const DevAnimationList = () => (
@@ -18,7 +18,7 @@ const DevAnimationList = () => (
     </h1>
     <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {doorAnimationConfigs.map((animation) => {
-        const presets = presetsForAnimation(animation.id, doorEntrancePresets);
+        const presets = presetsForAnimation(animation.id, catalogPresets(doorEntrancePresets));
         const preview = presets[0];
         return (
           <li key={animation.id}>
@@ -46,7 +46,7 @@ const DevAnimationList = () => (
                   </span>
                 </span>
                 <span className="shrink-0 text-xs uppercase tracking-[0.14em] text-[#c98d48]">
-                  {presets.length} {presets.length === 1 ? "preset" : "presets"}
+                  {presets.length} {presets.length === 1 ? "door" : "doors"}
                 </span>
               </span>
             </Link>

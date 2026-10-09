@@ -4,7 +4,8 @@ import { mountDoorEntrance, type DoorEntrancePresetId, type DoorPreviewOverrides
 type MountedDoorEntrance = ReturnType<typeof mountDoorEntrance>;
 type DoorEntranceTestApi = {
   play: () => void;
-  reset: () => void;
+  resume: () => void;
+  reset: (preset?: DoorEntrancePresetId) => void;
   seek: (progress: number) => void;
   preview: (overrides: DoorPreviewOverrides) => void;
   unmount: () => void;
@@ -90,7 +91,8 @@ const boot = () => {
   if (testMode) {
     window.__doorEntranceTestApi__ = {
       play,
-      reset: () => app?.reset(getSelectedPreset()),
+      resume: () => app?.play(getSelectedPreset()),
+      reset: (preset) => app?.reset(preset ?? getSelectedPreset()),
       seek: (progress) => app?.seek(progress, getSelectedPreset()),
       preview: (overrides) => app?.setPreviewOverrides(overrides),
       unmount: () => {

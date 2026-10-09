@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as grouping from "./animationPresets.ts";
 import {
   isKnownAnimation,
   presetsForAnimation,
@@ -51,4 +52,16 @@ test("falls back to the first preset for a missing or mismatched id", () => {
 test("returns null when an animation has no published presets", () => {
   assert.equal(resolveVerifierPreset("direct-entry", []), null);
   assert.deepEqual(presetsForAnimation("direct-entry", []), []);
+});
+
+
+test("groups a door's traversal variants without duplicating catalog entries", () => {
+  const enter = { id: "iron", animation: "direct-entry", traversal: "enter" };
+  const other = { id: "other", animation: "direct-entry" };
+  const leave = { id: "iron-leave", animation: "direct-entry", variantOf: "iron", traversal: "leave" };
+  const registered = [enter, leave, other];
+  assert.deepEqual(grouping.catalogPresets(registered), [enter, other]);
+  assert.deepEqual(grouping.variantsForPreset(leave, registered), [enter, leave]);
+  assert.deepEqual(grouping.variantsForPreset(other, registered), [other]);
+  assert.equal(resolveVerifierPreset("direct-entry", registered, "iron-leave"), leave);
 });

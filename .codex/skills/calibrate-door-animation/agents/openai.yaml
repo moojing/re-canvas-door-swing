@@ -1,0 +1,4 @@
+interface:
+  display_name: "Calibrate Door Animation"
+  short_description: "Tune door motion against portable gallery evidence"
+  default_prompt: "Use $calibrate-door-animation to compare the selected door preset with gallery references and calibrate its animation set, even without local MP4 files."

@@ -9,7 +9,7 @@ import {
   resolve,
   sep,
 } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, it } from "node:test";
 
 type PackageJson = {
@@ -206,6 +206,19 @@ describe("package boundary", () => {
     assert.equal(manifest.exports?.["./react"], undefined);
     assert.equal(existsSync(dist("react.js")), false);
     assert.equal(existsSync(dist("react.cjs")), false);
+  });
+
+  it("exports read-only resolved set metadata without exposing profile selection", async () => {
+    const library = await import(pathToFileURL(dist("index.js")).href);
+    const preset = library.getDoorEntrancePreset("biohazard-1996-a01-iron-door-leave");
+    const metadata = library.getDoorEntranceAnimationSet(preset);
+    assert.equal(metadata.id, "1996-single-wide-swing-advance");
+    assert.ok(Object.isFrozen(metadata));
+    assert.equal("profile" in metadata, false);
+    assert.equal("getAnimationSetProfile" in library, false);
+    const declarations = readFileSync(dist("index.d.ts"), "utf8");
+    assert.match(declarations, /animationSet\?: DoorAnimationSetId/);
+    assert.match(declarations, /getDoorEntranceAnimationSet/);
   });
 
   it("keeps the root package entry React-free by default", () => {

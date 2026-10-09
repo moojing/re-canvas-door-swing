@@ -15,12 +15,34 @@ npm run build:lib        # 建置一次 library（tsup）
 npm run dev              # 啟動 sample（使用已建置的 library）
 ```
 
-開啟 `http://127.0.0.1:5173/` 可瀏覽所有已發布的 preset。每張卡會顯示 renderer 的初始畫面；按下 **View details** 會進入所選 preset 的動畫詳細頁，提供播放控制、音效、可拖曳的時間軸及預覽設定。**Full-screen preview** 會在 catalog 上方播放動畫。舊的技術 PoC 路由已退役；獨立的 HTML 範例位於 `/samples/vanilla.html`。
+開啟 `http://127.0.0.1:5173/` 可瀏覽所有已發布的 preset。每張卡會顯示 renderer 的初始畫面；按下 **View details** 會進入所選 preset 的動畫詳細頁，提供播放控制、音效、可拖曳的時間軸及預覽設定。**Full-screen preview** 可在 catalog 或詳細頁上方播放動畫。舊的技術 PoC 路由已退役；獨立的 HTML 範例位於 `/samples/vanilla.html`。
+
+鐵門與黃色面板門各自在總覽只顯示一張卡片，詳細頁提供 **Enter／Leave** 切換。
+Enter 保留 `biohazard-1996-a01-iron-door`，Leave 使用
+`biohazard-1996-a01-iron-door-leave`。兩者共用 runtime 資產，但各自保存
+觀看面與鉸鏈方向；preset 明確選用相容的 animation set，
+同一 set 共用時間、鏡頭、角度曲線與淡出。
+切換時會更新 preset URL 和使用
+範例，並清除暫時的預覽調整。黃色門 Enter 保留
+`biohazard-1996-a02-yellow-panel-knob-door`，Leave 使用
+`biohazard-1996-a02-yellow-panel-knob-door-leave`；兩者保留相同木門材質與
+門把模型，有門把時啟用 set 的門把動作。鐵門 Enter 與黃色門 Leave
+使用 `1996-single-micro-open-advance`，黃色門 Enter 使用
+`1996-single-micro-open-close-pass-advance`，鐵門 Leave 使用
+`1996-single-wide-swing-advance`。詳細頁顯示實際 set ID，年代本身不決定行徑。
+使用時仍透過 `{ target, preset }` API 指定 ID。
+
+一般詳細頁保留階段秒數與時間軸 seek，預設隱藏時間調整滑桿。
+開發新動畫時，改用 `npm run dev:calibration` 啟動；Vite 的 calibration
+模式會明確開啟 `VITE_DOOR_TIMING_EDITOR=true`，時間調整只影響目前預覽。
+正式 build 即使開啟這個旗標，也不會顯示時間滑桿。切換模式前請先停止
+原本的 server，或透過 sample workspace 指令指定另一個 port。
 
 常用指令：
 
 - `npm run dev:lib`：監看並重建 library
 - `npm run dev:sample`：啟動 sample 的 Vite 開發伺服器
+- `npm run dev:calibration`：啟動本機階段時間校準工具
 - `npm run build`：依序建置 library 與 sample
 - `npm run lint`：執行 library typecheck 與 sample lint
 - `npm run gallery:check`：檢查已發布的評估 gallery 是否一致，並確認主 repo 未重新加入重複的評估文件

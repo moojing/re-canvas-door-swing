@@ -18,6 +18,10 @@ Before changing a preset, verify both repos exist locally. Use the gallery repo 
 
 ## Workflow
 
+When tuning an existing preset against its reference (angle, pauses, framing,
+passage or fade), use [calibrate-door-animation](../calibrate-door-animation/SKILL.md)
+for evidence, set scope and the no-MP4 path before proceeding.
+
 1. Inspect the requested door in the gallery first. Identify its category, stakeholder id/label, reference animation, front/back views, hinge side, handle side, accessories, and whether it belongs to an existing Phase plan.
 2. Inspect `re-canvas-door-swing` next. Check existing animation configs, preset registry, texture conventions, asset folders, docs/plans, and the sample page. Determine whether the animation behavior is already implemented.
 3. If the animation already exists, do not reimplement it. Generate or prepare only the missing runtime assets, then wire them into a new preset or update the existing preset.

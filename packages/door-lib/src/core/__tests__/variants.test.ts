@@ -125,9 +125,11 @@ describe("core door entrance presets", () => {
       doorEntrancePresets.map((preset) => preset.id),
       [
         "biohazard-1996-a01-iron-door",
+        "biohazard-1996-a01-iron-door-leave",
         "biohazard-1998-a01-no-handle-door",
         "biohazard-1999-a01-parking-door",
         "biohazard-1996-a02-yellow-panel-knob-door",
+        "biohazard-1996-a02-yellow-panel-knob-door-leave",
         "biohazard-1996-b02-blue-panel-double-door",
       ]
     );
@@ -244,6 +246,20 @@ describe("core door entrance presets", () => {
 
     assert.equal(preset.id, "biohazard-1996-a01-iron-door");
     assert.equal(preset.type, "single");
+  });
+
+  it("keeps traversal variants valid and selectable as complete random presets", () => {
+    for (const preset of doorEntrancePresets.filter((candidate) => candidate.variantOf)) {
+      const primary = getDoorEntrancePreset(preset.variantOf);
+      assert.equal(primary.variantOf, undefined);
+      assert.equal(primary.animation, preset.animation);
+      assert.equal(primary.label, preset.label);
+      assert.notEqual(primary.traversal, preset.traversal);
+    }
+    const selected = resolveDoorEntrancePresetSelection(
+      { random: true, material: "rusted-iron-riveted-panel" }, () => 0.5
+    );
+    assert.equal(selected.id, "biohazard-1996-a01-iron-door-leave");
   });
 
   it("resolves random selection from round-knob presets", () => {
