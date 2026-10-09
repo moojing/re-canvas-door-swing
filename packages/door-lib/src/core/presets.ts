@@ -58,6 +58,7 @@ export const doorEntrancePresetMap: Record<
   "biohazard-1998-a01-no-handle-door": {
     id: "biohazard-1998-a01-no-handle-door",
     label: "1-2 A-1 No-Handle Door",
+    traversal: "enter",
     type: "single",
     motion: "hinge-single",
     material: "rusted-iron-riveted-panel",
@@ -74,6 +75,7 @@ export const doorEntrancePresetMap: Record<
   "biohazard-1999-a01-parking-door": {
     id: "biohazard-1999-a01-parking-door",
     label: "1-3 A-1 Parking Door",
+    traversal: "enter",
     type: "single",
     motion: "hinge-single",
     material: "aged-painted-steel",

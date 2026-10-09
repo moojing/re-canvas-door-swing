@@ -7,7 +7,6 @@ import {
   type DoorEntranceHandle,
   type DoorEntrancePreset,
   type DoorEntrancePresetId,
-  type DoorSwingDirection,
   type DoorTimingEvents,
 } from "retro-horror-door";
 
@@ -17,11 +16,6 @@ const formatTime = (milliseconds: number) => {
 
 const timingEditorEnabled = import.meta.env.DEV &&
   import.meta.env.VITE_DOOR_TIMING_EDITOR === "true";
-
-const swingDirectionOptions: Array<{ value: DoorSwingDirection; label: string }> = [
-  { value: "toward-viewer", label: "Toward viewer" },
-  { value: "away-from-viewer", label: "Away from viewer" },
-];
 
 const AnimationPreviewWorkbench = ({
   preset,
@@ -36,8 +30,7 @@ const AnimationPreviewWorkbench = ({
 }) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<DoorEntranceHandle | null>(null);
-  const authoredDirection = preset.swingDirection ?? "toward-viewer";
-  const [swingDirection, setSwingDirection] = useState<DoorSwingDirection>(authoredDirection);
+  const swingDirection = preset.swingDirection ?? "toward-viewer";
   const [timingEvents, setTimingEvents] = useState<DoorTimingEvents>({});
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -168,10 +161,10 @@ const AnimationPreviewWorkbench = ({
             : "Inspect the published preset at the current point in the animation."}
         </p>
 
-        {variants.length > 1 && (
+        {(variants.length > 1 || preset.traversal) && (
           <div className="mt-6 border-t border-[#4b3928] pt-6" role="group" aria-label="Traversal variant">
             <p className="text-sm font-semibold text-[#e9dfcd]">Traversal variant</p>
-            <div className="mt-2 grid grid-cols-2 overflow-hidden border border-[#765939]">
+            <div className={`mt-2 grid ${variants.length > 1 ? "grid-cols-2" : "grid-cols-1"} overflow-hidden border border-[#765939]`}>
               {variants.map((variant) => (
                 <button
                   key={variant.id}
@@ -185,38 +178,6 @@ const AnimationPreviewWorkbench = ({
                   {variant.traversal === "leave" ? "Leave" : "Enter"}
                 </button>
               ))}
-            </div>
-          </div>
-        )}
-
-        {preset.type === "single" && variants.length === 1 && (
-          <div className="mt-6 space-y-6 border-t border-[#4b3928] pt-6">
-            <div role="group" aria-labelledby="preview-swing-direction-label">
-              <p id="preview-swing-direction-label" className="text-sm font-semibold text-[#e9dfcd]">
-                Swing direction
-              </p>
-              <div className="mt-2 grid grid-cols-2 overflow-hidden border border-[#765939]">
-                {swingDirectionOptions.map(({ value, label }, index) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={swingDirection === value}
-                    onClick={() => {
-                      setSwingDirection(value);
-                      doorRef.current?.setPreviewOverrides({ swingDirection: value, timingEvents });
-                    }}
-                    className={`min-h-11 px-2 py-2 text-center text-xs font-semibold focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] sm:text-sm ${
-                      index === 0 ? "border-r border-[#765939]" : ""
-                    } ${
-                      swingDirection === value
-                        ? "bg-[#c98d48] text-[#100c08]"
-                        : "bg-[#1d1610] text-[#d8c9b5] hover:bg-[#322518]"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -259,7 +220,6 @@ const AnimationPreviewWorkbench = ({
             <button
               type="button"
               onClick={() => {
-                setSwingDirection(authoredDirection);
                 setTimingEvents({});
                 doorRef.current?.setPreviewOverrides({});
               }}
@@ -281,7 +241,7 @@ const AnimationPreviewWorkbench = ({
             <dt className="text-[#827665]">Hinge side</dt><dd className="text-right text-[#d8c9b5]">{preset.hingeSide ?? "—"}</dd>
             <dt className="text-[#827665]">Material</dt><dd className="break-words text-right text-[#d8c9b5]">{preset.material}</dd>
             <dt className="text-[#827665]">Handle</dt><dd className="text-right text-[#d8c9b5]">{preset.handleProfileId ?? "none"}</dd>
-            {!preset.traversal && <><dt className="text-[#827665]">Swing direction</dt><dd className="text-right text-[#d8c9b5]">{preset.type === "single" ? authoredDirection : "—"}</dd></>}
+            {!preset.traversal && <><dt className="text-[#827665]">Swing direction</dt><dd className="text-right text-[#d8c9b5]">{preset.type === "single" ? swingDirection : "—"}</dd></>}
           </dl>
           <p className="mt-6 text-xs font-semibold text-[#aa9f90]">Published preset usage</p>
           <code className="mt-2 block overflow-x-auto border border-[#4b3928] bg-[#070504] p-3 font-mono text-[0.68rem] leading-5 text-[#d8c9b5]">

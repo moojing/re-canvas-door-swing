@@ -48,6 +48,11 @@ Run commands from the repository root:
 
 ## Era Animation Calibration
 
+For reference-driven motion/framing adjustments, use
+[calibrate-door-animation](.codex/skills/calibrate-door-animation/SKILL.md).
+Gallery `docs/door-animation-reference.md` and tracked selection GIFs support
+work without local MP4s; distinguish source observations from renderer fit values.
+
 Before creating or adjusting an era profile, read
 [`docs/animation-style-1996.md`](docs/animation-style-1996.md) for the meaning of
 “1996 style”, explicit animation sets, compatibility and traversal metadata.

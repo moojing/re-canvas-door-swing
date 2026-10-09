@@ -47,45 +47,22 @@ test("unified animation navigation returns to the animation list and handles dir
   await expect(page).toHaveURL(/\/dev\/animations$/);
 });
 
-test("animation detail controls redraw an open frame and restore authored values", async ({ page }, testInfo) => {
-  await page.goto("/dev/animations/direct-entry?preset=biohazard-1998-a01-no-handle-door");
-  const canvas = page.locator("main canvas");
-  const timeline = page.getByRole("slider", { name: "Animation progress" });
-  const direction = page.getByRole("group", { name: "Swing direction" });
-  const toward = direction.getByRole("button", { name: "Toward viewer" });
-  const away = direction.getByRole("button", { name: "Away from viewer" });
-  await timeline.fill("85");
-  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
-  const authored = await canvas.screenshot({ path: testInfo.outputPath("direction-authored.png") });
-  await expect(page.getByRole("slider", { name: "Maximum opening angle" })).toHaveCount(0);
-  await expect(away).toHaveAttribute("aria-pressed", "true");
-
-  await toward.click();
-  await expect(toward).toHaveAttribute("aria-pressed", "true");
-  await expect(away).toHaveAttribute("aria-pressed", "false");
-  await expect(timeline).toHaveValue("85");
-  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
-  const reversed = await canvas.screenshot();
-  expect(Buffer.compare(reversed, authored)).not.toBe(0);
-
-  await page.getByRole("button", { name: "Restore preset values" }).click();
-  await expect(away).toHaveAttribute("aria-pressed", "true");
-  await expect(timeline).toHaveValue("85");
-  await canvas.evaluate((element) => element.scrollIntoView({ block: "start" }));
-  expect(Buffer.compare(await canvas.screenshot({ path: testInfo.outputPath("direction-restored.png") }), authored)).toBe(0);
-
-  await toward.click();
-  await page.reload();
-  await expect(away).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "1-3 A-1 Parking Door" }).click();
-  await expect(toward).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("0");
-  await page.getByRole("button", { name: "1-2 A-1 No-Handle Door" }).click();
-  await expect(away).toHaveAttribute("aria-pressed", "true");
-
-  await page.goto("/dev/animations/double-swing?preset=biohazard-1996-b02-blue-panel-double-door");
-  await expect(direction).toHaveCount(0);
-  await expect(page.getByRole("slider", { name: "Maximum opening angle" })).toHaveCount(0);
+test("single-entry doors show authored traversal without raw swing controls", async ({ page }) => {
+  for (const id of ["biohazard-1998-a01-no-handle-door", "biohazard-1999-a01-parking-door"]) {
+    await page.goto(`/dev/animations/direct-entry?preset=${id}`);
+    const variants = page.getByRole("group", { name: "Traversal variant" });
+    await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(variants.getByRole("button", { name: "Leave", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Toward viewer" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Away from viewer" })).toHaveCount(0);
+    await expect(page.getByText("Swing direction", { exact: true })).toHaveCount(0);
+    const timeline = page.getByRole("slider", { name: "Animation progress" });
+    await timeline.fill("85");
+    await page.getByRole("button", { name: "Restore preset values" }).click();
+    await expect(timeline).toHaveValue("85");
+    await page.getByRole("button", { name: "Reset", exact: true }).click();
+    await expect(timeline).toHaveValue("0");
+  }
 });
 
 test("preset catalog opens the shared animation detail page", async ({

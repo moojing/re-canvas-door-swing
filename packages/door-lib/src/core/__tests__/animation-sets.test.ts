@@ -183,3 +183,44 @@ test("yellow Enter late silhouette has the source-like side edge / front ratio",
   assert.ok(edgeWidth / frontWidth > 0.6 && edgeWidth / frontWidth < 1);
   assert.ok((frontWidth + edgeWidth) / 2 > 0.12 && (frontWidth + edgeWidth) / 2 < 0.20);
 });
+
+
+test("parking starts close and crops both vertical edges during its closed wait", () => {
+  const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset("biohazard-1999-a01-parking-door"));
+  const camera = new PerspectiveCamera(60, 1.6, 0.1, 100);
+  const project = (ms: number) => {
+    const state = config.getState(ms / config.duration);
+    camera.position.set(...state.cameraPosition);
+    camera.lookAt(...state.cameraTarget);
+    camera.updateMatrixWorld();
+    return [new Vector3(0, 3, 0.16).project(camera).y, new Vector3(0, -3, 0.16).project(camera).y];
+  };
+  const [top, bottom] = project(0);
+  assert.ok((top - bottom) / 2 > 0.9 && (top - bottom) / 2 < 1.05);
+  for (const ms of [2300, 2700, 3100]) {
+    const [top, bottom] = project(ms);
+    assert.ok(top > 1.1 && bottom < -1.1);
+    assert.ok(Math.abs(top + bottom) < 1e-8);
+    assert.equal(config.getState(ms / config.duration).doorAngle, 0);
+  }
+});
+
+test("parking advances smoothly after the wait and keeps the hinge edge visible at fade start", () => {
+  const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset("biohazard-1999-a01-parking-door"));
+  const z = (ms: number) => config.getState(ms / config.duration).cameraPosition[2];
+  let previousStep = 0;
+  for (let ms = 3100; ms < 4800; ms += 50) {
+    const step = z(ms) - z(ms + 50);
+    assert.ok(step > 0 && step < 0.16, `camera jumps at ${ms} ms`);
+    assert.ok(Math.abs(step - previousStep) < 0.012, `camera changes speed abruptly at ${ms} ms`);
+    previousStep = step;
+  }
+  const state = config.getState(4600 / config.duration);
+  const camera = new PerspectiveCamera(60, 1.6, 0.1, 100);
+  camera.position.set(...state.cameraPosition);
+  camera.lookAt(...state.cameraTarget);
+  camera.updateMatrixWorld();
+  assert.ok(new Vector3(-1.5, 0, 0).project(camera).x > -0.9);
+  assert.equal(state.fadeOut, 0);
+  assert.equal(config.getState(1).fadeOut, 1);
+});

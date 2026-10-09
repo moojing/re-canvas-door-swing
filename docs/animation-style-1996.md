@@ -42,8 +42,8 @@ Initial approach reaches z4.5 at1.35 s,
 visibly cropping both top and bottom before opening, then advances to z3.8. These angles and camera
 values are renderer fits, not recovered original 3D coordinates.
 
-Blue/1998/1999 retain the preceding numeric profiles. Their hold/wait naming
-reflects existing behavior; they have not been newly source-calibrated here.
+Blue/1998 retain the preceding numeric profiles. Parking camera framing and
+late acceleration were refitted on 2026-10-09; see the latest calibration section.
 
 ## Implementation and compatibility
 
@@ -64,6 +64,10 @@ Calibration mode can temporarily retime the selected set's markers; accepted
 changes belong in its shared library profile. Normal/production editors stay hidden.
 
 ## Future changes and verification
+
+Use [calibrate-door-animation](../.codex/skills/calibrate-door-animation/SKILL.md).
+Gallery `docs/door-animation-reference.md` maps portable tracked GIFs to source
+passages and records observations separately from runtime fitting parameters.
 
 First classify the reference motion and camera path, then reuse a compatible
 set if it matches. A different material, knob presence or small source-timing

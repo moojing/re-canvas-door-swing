@@ -290,3 +290,27 @@ projected-width ratio about 0.89 at aspect 1.6, close to the source ratio about
 full camera/geometry calibration. These are visual fitting values, not recovered
 source geometry. The micro hold, target, handle and sound remain unchanged;
 Iron and Yellow Leave keep their previous sets.
+
+
+## 2026-10-09 Parking camera follow-up
+
+The existing `1999-single-closed-wait-advance` set retains the 4800 ms duration,
+closed wait until 3100 ms, full opening at 4050 ms and fade at 4600–4800 ms.
+Only camera distance/approach is refitted: Z starts at 5.5 (previously 8), eases
+out to 4.5 at 2300 ms (previously 6.6), holds until 3100 ms, then eases in along
+one segment to Z 2.3 at 4800 ms. This removes the 4050–4300 ms jump from Z 5.7 to
+1.5. The door begins near full height, both vertical edges crop during the wait,
+and a leaf remains visible when fade starts. Existing angle, direction, surface,
+sound and event contracts are unchanged. This corrects the framing and camera
+speed; late face/edge silhouette remains a visual approximation of the source.
+
+Visual checks: [closed wait](images/parking-closed-wait-2026-10-09.png),
+[fade start](images/parking-fade-start-2026-10-09.png).
+
+### 2026-10-09 — Traversal controls and portable calibration workflow
+
+Removed the remaining Toward/Away preview buttons. The parking and 1998 no-handle presets explicitly declare Enter, so their workbench shows the authored Enter variant; Iron and Yellow retain their registered Enter/Leave pairs. No reverse variant is synthesized by flipping rotation. A browser regression checks both single-entry presets, Restore and Reset; existing traversal and parking playback tests remain covered.
+
+The shared `calibrate-door-animation` skill links to gallery `docs/door-animation-reference.md`, which maps the tracked reference GIFs to full source IDs and passage segments. GIF observations are separated from fitted renderer angles/camera values, and audio/sub-frame limitations remain explicit. Local gallery validation is blocked by 96 extra ignored frame extracts (12,428 local versus 12,332 manifest entries); these files were preserved.
+
+Verification: 73 core tests, 2 local-asset tests, 16 package tests and 5 focused browser tests passed. Lint passed with the three existing Fast Refresh warnings; library and browser sample builds succeeded. Skill validation passed. A temporary gallery checkout containing versioned assets/docs and no `materials/` passed `gallery:check` (113 doors/stills/GIFs; MP4/frame checks explicitly skipped), demonstrating the no-video handoff path.
