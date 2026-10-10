@@ -106,7 +106,7 @@ async function writeValidBetaOutput(directory, moduleIds = []) {
   await writeFile(join(directory, "index.html"), "<div id=\"root\"></div>");
   await writeFile(
     join(directory, "assets/index.js"),
-    "https://cdn.jsdelivr.net/npm/retro-horror-door-assets@0.1.0-beta.0"
+    "https://cdn.jsdelivr.net/npm/retro-horror-door-assets@0.1.0-beta.1"
   );
   const moduleIdsPath = join(directory, "module-ids.json");
   await writeFile(moduleIdsPath, JSON.stringify(moduleIds));
@@ -181,7 +181,7 @@ test("GitHub Pages builds the published beta sample without building the workspa
 
   assert.match(
     workflow,
-    /npm run build:beta --workspace retro-horror-door-sample -- 0\.2\.0-beta\.0/
+    /npm run build:beta --workspace retro-horror-door-sample -- 0\.2\.0-beta\.2/
   );
   assert.doesNotMatch(workflow, /npm run build:lib/);
   assert.match(workflow, /folder: packages\/sample\/dist/);

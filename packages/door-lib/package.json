@@ -1,6 +1,6 @@
 {
   "name": "retro-horror-door",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "private": false,
   "type": "module",
   "main": "./dist/index.cjs",
@@ -41,7 +41,7 @@
     "@types/three": "^0.160.0",
     "tsup": "^8.3.5",
     "typescript": "^5.8.3",
-    "retro-horror-door-assets": "0.1.0-beta.0"
+    "retro-horror-door-assets": "0.1.0-beta.1"
   },
   "imports": {
     "#door-assets": {
