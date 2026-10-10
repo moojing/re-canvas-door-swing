@@ -11,7 +11,7 @@ const forbiddenOutputReferences = [
   "DevHandleMaterialVerifier",
   "door-lib/src/handleModel",
 ];
-const publishedAssetPrefix = "https://cdn.jsdelivr.net/npm/retro-horror-door-assets@0.1.0-beta.0";
+const publishedAssetPrefix = "https://cdn.jsdelivr.net/npm/retro-horror-door-assets@0.1.0-beta.1";
 const workspaceSourceSegments = ["/packages/door-lib/src/", "/packages/door-assets/"];
 
 function commandExitCode(result) {
