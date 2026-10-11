@@ -13,3 +13,4 @@ export const doorOpenClose = `${DEFAULT_ASSET_BASE_URL}/sounds/freesound_communi
 export const biohazard1998A03GridKnobDoorFront = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1998-a03-grid-knob-door-front.webp`;
 export const biohazard1998A03GridKnobDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1998-a03-grid-knob-door-front.webp`;
 export const biohazard1996B07AutomaticDoorLeaf = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-b07-automatic-door-leaf.webp`;
+export const automaticDoorSlide = `${DEFAULT_ASSET_BASE_URL}/sounds/freesound_kyodon-automatic-door-153423-hq.mp3`;

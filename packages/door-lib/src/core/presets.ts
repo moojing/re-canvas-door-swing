@@ -15,6 +15,7 @@ import {
   biohazard1996A02YellowPanelKnobDoorBack,
   biohazard1996A02YellowPanelKnobDoorFront,
 } from "../assets/textures/index.ts";
+import { automaticDoorSlide } from "../assets/sounds/index.ts";
 import { doorKnob } from "../assets/models/index.ts";
 
 const DEFAULT_PRESET_ID: DoorEntrancePresetId = "biohazard-1996-a01-iron-door";
@@ -175,6 +176,7 @@ export const doorEntrancePresetMap: Record<
     traversal: "enter",
     type: "double",
     motion: "slide-double",
+    soundUrl: automaticDoorSlide,
     material: "aged-painted-steel",
     animation: "center-split-slide",
     animationStyle: "biohazard-1996",
@@ -192,6 +194,7 @@ export const doorEntrancePresetMap: Record<
     variantOf: "biohazard-1996-b07-automatic-sliding-door",
     type: "double",
     motion: "slide-double",
+    soundUrl: automaticDoorSlide,
     material: "aged-painted-steel",
     animation: "center-split-slide",
     animationStyle: "biohazard-1996",

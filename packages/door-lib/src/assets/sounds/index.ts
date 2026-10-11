@@ -1,1 +1,1 @@
-export { doorOpenClose } from "#door-assets";
+export { doorOpenClose, automaticDoorSlide } from "#door-assets";

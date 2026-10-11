@@ -44,3 +44,13 @@ test("preview timing edits retime translation and sound together without changin
   assert.equal(edited.soundStartProgress, 0.6);
   assert.equal(getDoorEntranceAnimationConfig(preset).soundStartProgress, authored.soundStartProgress);
 });
+
+test("sliding traversals use the Kyodon automatic-door sound and its opening crop", () => {
+  for (const suffix of ["", "-leave"] as const) {
+    const preset = getDoorEntrancePreset(`${id}${suffix}`);
+    assert.match(preset.soundUrl ?? "", /freesound_kyodon-automatic-door-153423-hq\.mp3$/);
+    const config = getDoorEntranceAnimationConfig(preset);
+    assert.equal(config.soundSourceStartProgress, 2.05 / 3.940227);
+    assert.equal(config.soundSourceEndProgress, 3.3 / 3.940227);
+  }
+});

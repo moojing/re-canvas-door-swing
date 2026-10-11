@@ -402,6 +402,6 @@ export const centerSplitSlide1996Profile: EraAnimationProfile = {
   fadeOut: [at(0, 0), at(4600, 0), at(5000, 1)],
   soundStartMs: 3350,
   soundEndMs: 4600,
-  soundSourceStartProgress: 0.06,
-  soundSourceEndProgress: 0.36,
+  soundSourceStartProgress: 2.05 / 3.940227,
+  soundSourceEndProgress: 3.3 / 3.940227,
 };

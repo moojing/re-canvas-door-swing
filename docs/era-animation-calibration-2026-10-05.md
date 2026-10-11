@@ -438,3 +438,10 @@ New translation fields participate in timeline sampling/retiming alongside camer
 Validation: 84 core +2 assets tests,16 package tests, lint and production build passed;41 full browser tests and2 final focused sliding tests passed (including upper-window orientation and symmetric gap/reset). Local source contact sheets and closed/open preview were compared; independent review found no blockers. Screenshots: `docs/images/automatic-sliding-closed-2026-10-11.png` and `automatic-sliding-fade-2026-10-11.png`. These checks establish local behavior, not exact source fidelity. Gallery check remains blocked by a preexisting frame inventory mismatch (manifest12332/destination12428); unrelated gallery data was preserved.
 
 Assets/library are not published: release the new texture and update the CDN-pinned asset version before library publication. Original35 progress is5 merged +1 local, not6 merged.
+
+
+### 2026-10-11：B07 滑門音效替換
+
+User selected Kyodon's CC0 `automatic door.wav` (Freesound153423). Public HQ MP3 is stored unmodified in the assets workspace; original WAV requires login. B07 Enter/Leave select `automaticDoorSlide` through preset `soundUrl`. Source2.05–3.30s maps to timeline3350–4600ms at approximately1x playback, replacing the previous hinge effect crop without changing motion/camera/fade. This selection is an authored sound fit, not the source video's audio. Reset/seek and user-gesture unlock remain on the common sound runtime. Publication still requires updated assets/library releases.
+
+Sound replacement verification:85 core +2 assets tests,16 package tests,2 focused browser tests, lint and production build passed. Browser confirmed Kyodon URL, approximately1x rate, paused during approach, playback after sliding begins and silence after Reset in both traversals. Existing lint warnings remain unchanged.
