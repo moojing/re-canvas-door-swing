@@ -18,3 +18,14 @@ renderer geometry. Fine grain, bevel shading and back detail are approximations.
 The existing licensed round knob model is reused with a gray steel finish.
 The new asset is local only until the assets package and library are released;
 do not publish the library with the old pinned assets version.
+
+## 1996 B07 S1 automatic sliding door
+
+`textures/biohazard-1996-b07-automatic-door-leaf.webp` is an original ImageGen
+albedo (2026-10-11), a gray worn steel leaf with a dark pentagonal pane and inner
+trapezoid push plate. It contains no captured source pixels. The same authored
+surface is used front/back; the right leaf is UV-mirrored to form the pair.
+`textureFlipY: true` records its upright upload orientation; legacy assets retain
+false. Edge faces use the metal surface texture; window/push-plate detail is
+baked albedo rather than extra scene geometry. Fine appearance is approximate.
+New files need an assets release and updated pinned version before library release.

@@ -104,6 +104,6 @@ it("matches single and double knob angles at the same elapsed turn time", () => 
 
 it("lists the shared entry animations without a separate parking-door animation", () => {
   assert.deepEqual(doorAnimationConfigs.map(({ id }) => id), [
-    "direct-entry", "single-top-down-entry", "double-swing",
+    "direct-entry", "single-top-down-entry", "double-swing", "center-split-slide",
   ]);
 });

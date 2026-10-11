@@ -297,3 +297,80 @@ test("a pending first sound unlock preserves a newly sought and retimed frame", 
   await page.evaluate(() => window.__doorEntranceTestApi__?.resume());
   await expect.poll(() => page.locator("audio").evaluate((audio) => !audio.paused && !audio.muted)).toBe(true);
 });
+
+test("automatic sliding opens a symmetric visible gap and reset closes it in both traversals", async ({ page }, testInfo) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  const capture = (progress: number) => page.evaluate((progress) => {
+    window.__doorEntranceTestApi__?.seek(progress);
+    const canvas = document.querySelector("canvas")!;
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    if (!gl) throw new Error("WebGL unavailable");
+    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    let left = 0, right = 0, middle = 0;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const i = (y * canvas.width + x) * 4;
+        if (pixels[i] + pixels[i + 1] + pixels[i + 2] <= 24) continue;
+        if (x < canvas.width / 2) left++; else right++;
+        if (x > canvas.width * 0.4 && x < canvas.width * 0.6) middle++;
+      }
+    }
+    const area = canvas.width * canvas.height;
+    // At the held closed framing the authored window is above the push plate.
+    const scale = canvas.height / (2 * (5.6 - 0.221) * Math.tan(Math.PI / 6));
+    const x = Math.round(canvas.width / 2 - 1.5 * scale);
+    const patchLuma = (y: number) => {
+      let sum = 0;
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+        const i = ((Math.round(y) + dy) * canvas.width + x + dx) * 4;
+        sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+      }
+      return sum / 49;
+    };
+    const upper = patchLuma(canvas.height / 2 + 1.68 * scale);
+    const lower = patchLuma(canvas.height / 2 - 1.68 * scale);
+    return { left: left / area, right: right / area, middle: middle / area, windowRatio: upper / Math.max(lower, 1) };
+  }, progress);
+  for (const suffix of ["", "-leave"]) {
+    await page.evaluate((suffix) => {
+      const select = document.querySelector<HTMLSelectElement>("#door-preset")!;
+      const id = `biohazard-1996-b07-automatic-sliding-door${suffix}`;
+      select.add(new Option(id, id)); select.value = id;
+      select.dispatchEvent(new Event("change"));
+    }, suffix);
+    await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+    await expect(page.locator("audio")).toHaveAttribute("src", /freesound_kyodon-automatic-door-153423-hq\.mp3/);
+    await expect.poll(async () => (await capture(3250 / 5650)).windowRatio).toBeLessThan(0.6);
+    expect((await capture(3250 / 5650)).middle).toBeGreaterThan(0.1);
+    const open = await capture(4600 / 5650);
+    expect(open.middle).toBeLessThan(0.01);
+    expect(open.left).toBeGreaterThan(0.04);
+    expect(open.right).toBeGreaterThan(0.04);
+    expect(Math.abs(open.left - open.right)).toBeLessThan(0.04);
+    await page.locator("canvas").screenshot({ path: testInfo.outputPath(`sliding${suffix}-fade-start.png`) });
+    await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
+    expect((await capture(0)).middle).toBeGreaterThan(0.08);
+    await page.evaluate(() => window.__doorEntranceTestApi__?.play());
+    await expect(page.locator("audio")).toHaveJSProperty("paused", true);
+    await expect.poll(() => page.locator("audio").evaluate((element) => (element as HTMLAudioElement).duration)).toBeGreaterThan(3.9);
+    expect(await page.locator("audio").evaluate((element) => (element as HTMLAudioElement).playbackRate)).toBeCloseTo(1, 2);
+    await expect(page.locator("audio")).toHaveJSProperty("paused", false, { timeout: 5000 });
+    await page.evaluate(() => window.__doorEntranceTestApi__?.seek(5100 / 5650));
+    const overlay = page.locator('div[style*="pointer-events: none"][style*="background: rgb(0, 0, 0)"]');
+    await expect(overlay).toHaveCSS("opacity", "1");
+    await expect(overlay).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 1);
+    await page.evaluate(() => window.__doorEntranceTestApi__?.play());
+    await expect(page.locator("audio")).toHaveJSProperty("paused", false);
+    await expect.poll(() => page.locator("audio").evaluate((a) => (a as HTMLAudioElement).volume)).toBeLessThan(0.9);
+    await expect(page.locator("audio")).toHaveJSProperty("paused", true, { timeout: 3000 });
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 0);
+    await page.evaluate(() => window.__doorEntranceTestApi__?.play());
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 1);
+    await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
+    await expect(page.locator("audio")).toHaveJSProperty("paused", true);
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 1);
+  }
+});

@@ -11,3 +11,5 @@ export declare const doorKnob: string;
 export declare const doorOpenClose: string;
 export const biohazard1998A03GridKnobDoorFront: string;
 export const biohazard1998A03GridKnobDoorBack: string;
+export declare const biohazard1996B07AutomaticDoorLeaf: string;
+export declare const automaticDoorSlide: string;

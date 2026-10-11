@@ -4,6 +4,7 @@ import type {
   DoorEntrancePresetSelection,
 } from "./types.ts";
 import {
+  biohazard1996B07AutomaticDoorLeaf,
   biohazard1998A03GridKnobDoorFront,
   biohazard1998A03GridKnobDoorBack,
   biohazard1996B02BluePanel,
@@ -14,6 +15,7 @@ import {
   biohazard1996A02YellowPanelKnobDoorBack,
   biohazard1996A02YellowPanelKnobDoorFront,
 } from "../assets/textures/index.ts";
+import { automaticDoorSlide } from "../assets/sounds/index.ts";
 import { doorKnob } from "../assets/models/index.ts";
 
 const DEFAULT_PRESET_ID: DoorEntrancePresetId = "biohazard-1996-a01-iron-door";
@@ -167,6 +169,41 @@ export const doorEntrancePresetMap: Record<
     mirrorTextureX: false,
     handleProfileId: "knob-round",
     handleModelUrl: doorKnob,
+  },
+  "biohazard-1996-b07-automatic-sliding-door": {
+    id: "biohazard-1996-b07-automatic-sliding-door",
+    label: "1-1 B-7 Automatic Sliding Door",
+    traversal: "enter",
+    type: "double",
+    motion: "slide-double",
+    soundUrl: automaticDoorSlide,
+    material: "aged-painted-steel",
+    animation: "center-split-slide",
+    animationStyle: "biohazard-1996",
+    animationSet: "1996-double-slide-approach-hold-pass",
+    textureFlipY: true,
+    frontTextureUrl: biohazard1996B07AutomaticDoorLeaf,
+    edgeTextureUrl: biohazard1996B07AutomaticDoorLeaf,
+    backTextureUrl: biohazard1996B07AutomaticDoorLeaf,
+    mirrorTextureX: false,
+  },
+  "biohazard-1996-b07-automatic-sliding-door-leave": {
+    id: "biohazard-1996-b07-automatic-sliding-door-leave",
+    label: "1-1 B-7 Automatic Sliding Door",
+    traversal: "leave",
+    variantOf: "biohazard-1996-b07-automatic-sliding-door",
+    type: "double",
+    motion: "slide-double",
+    soundUrl: automaticDoorSlide,
+    material: "aged-painted-steel",
+    animation: "center-split-slide",
+    animationStyle: "biohazard-1996",
+    animationSet: "1996-double-slide-approach-hold-pass",
+    textureFlipY: true,
+    frontTextureUrl: biohazard1996B07AutomaticDoorLeaf,
+    edgeTextureUrl: biohazard1996B07AutomaticDoorLeaf,
+    backTextureUrl: biohazard1996B07AutomaticDoorLeaf,
+    mirrorTextureX: false,
   },
   "biohazard-1996-b02-blue-panel-double-door": {
     id: "biohazard-1996-b02-blue-panel-double-door",

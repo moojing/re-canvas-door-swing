@@ -10,12 +10,13 @@
 | 範圍 | 數量 | 說明 |
 | --- | ---: | --- |
 | 原選單已有 runtime 實作 | 5 / 35 | 三支無配件單門、藍色 B02 S3 雙門及1998 A03 S2目字門。目字門交付見 [PR #65](https://github.com/moojing/re-canvas-door-swing/pull/65)，合併狀態以 PR 為準。 |
-| 尚待實作 | 30 | 尚無對應的 runtime preset。 |
+| 本機完成／待合併 | 1 / 35 | B07 S1 中分自動滑門，含 Enter／Leave；尚未合併或發布。 |
+| 尚待實作 | 29 | 尚無對應的 runtime preset。 |
 | 選單外相容性 preset | 1 支門 | 黃色 A02 S5 已退出 catalog／random，舊 ID 保留；不取代 S9。 |
 
 「已合併」表示 main 已有該影片對應的完整 preset、runtime 素材與 renderer 支援，
 不代表所有正反向穿越均已精確校準，或現有音效是原片音軌。
-本機 catalog 的7個 presets 包含5支基礎門與2個 Leave 變體，不能當成7 / 35完成。
+本機 catalog 的9個 presets 包含6支基礎門與3個 Leave 變體；原選單仍為5支已合併、1支本機完成。
 第05支由 [PR #65](https://github.com/moojing/re-canvas-door-swing/pull/65) 交付；合併前為待合併，合併後為 main 已實作。尚未發布新 package。
 本表不將分類 ticket 的 Done／In Progress 直接套到分類內所有影片。
 
@@ -46,7 +47,7 @@
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 22 | `1-1/b04/b04-s2 田字門.mp4` | [#39](https://github.com/moojing/re-canvas-door-swing/issues/39) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 23 | `1-1/b01/b01-s1鐵門.mp4` | [#40](https://github.com/moojing/re-canvas-door-swing/issues/40) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
-| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 建議下一支：新增中分水平滑動，再校準鏡頭、聲音與淡出。 |
+| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 本機完成／待合併 | `biohazard-1996-b07-automatic-sliding-door`（另有 Leave） | [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 待確認後合併及素材／library 發布；已套用 Kyodon CC0 自動門音效及黑畫面尾聲淡出；原音軌及去回精細 QA 仍為近似。 |
 | 25 | `1-2/b07/b07-s1大電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 26 | `1-3/b06/b06-s1處理廠電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 27 | `1-2/b05/b05-s1纜車門1.mp4` | [#42](https://github.com/moojing/re-canvas-door-swing/issues/42) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
@@ -68,9 +69,8 @@
 
 ## 建議下一步
 
-先做第 24 支 `1-1/b07/b07-s1雙門自動門.mp4`（[#41](https://github.com/moojing/re-canvas-door-swing/issues/41)）。
-新增雙扇向左右平移的機制，沒有把手動畫，完成後能沿用到同分類電梯門。
-鏡頭、門板、聲音及淡出需使用同一時間軸，依該片校準可重用 animation set。
+第24支 B07 S1 已在本機完成中分滑動與音效收尾；[PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 審查後等待使用者確認合併。
+下一個尚未實作的種類可選第30支單扇水平滑動（#44）、第33支垂直位移（#47）或第35支折疊雙門（#49）。同分類電梯門可沿用滑動機制，但需各自素材與來源校準。
 
 ## 更新規則
 
@@ -86,3 +86,21 @@
 20 張分類票 #30–#49 及共用工程票 #24–#29、#58 均有回連到 #63。
 `AGENTS.md` 已要求實作、校準、合併或發布時同步總覽、此文件、分類票及看板。
 目前是雙向參照與更新規則，沒有自動同步機制；結案前必須核對相應影片列。
+
+
+## B07 sound-tail update — 2026-10-11
+B07 S1 Enter/Leave now hold black with continuing Kyodon sound after picture fade: picture black5.00s, full-volume sound to5.25s, linear400ms audio fade ending5.65s. Source1.64s–end maps to timeline3.35–5.65s at approximately1x. Shared set and preview timing edits carry the audio fade; Reset/replay restore volume. This is an authored sound arrangement, not original source audio.
+
+Fresh verification:88 core +2 local asset tests,16 package tests,2 focused browser tests covering both traversals and catalog/full-screen controls; lint/build pass (3 existing Fast Refresh warnings). Local/pending merge and publication; counts remain5 merged +1 local. #41 remains In Progress with the two elevator sources pending.
+
+
+## B07 delivery review — 2026-10-11
+
+[PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) delivers B07 S1 Enter/Leave, reusable
+center-split leaf displacement, generated material and Kyodon sound with the
+5.00–5.65s black/audio tail. PR state is authoritative for merge status; this
+record does not claim pending work is merged or published. Delivery branch is
+`feat/ticket-41-b07-delivery`; the original implementation branch is preserved.
+Category #41 has two elevator sources pending; #28 retains single-slide,
+vertical and folding scope. Original35 counts remain5 merged +1 local until
+merge is verified. Assets and library publication are separate follow-up work.

@@ -425,3 +425,48 @@ IDs remain compatible. Gallery check retains the pre-existing frame manifest
 mismatch (12,332 expected vs12,428 local ignored extracts); existing data preserved.
 #31, #63, this repo progress table and Project In Progress were synchronized;
 Category #31 remains open with two sources pending; publication remains pending.
+
+
+## 2026-10-11：1996 B07 S1 中分自動滑门（本機完成／待合併）
+
+Source observations are recorded in sibling gallery `docs/door-animation-reference.md`. The local MP4 has door segments approximately 1.333–6.299s and 10.366–15.333s: closed approach, wait, both leaves slide outward without hinge rotation, continued camera approach and fade. Small upper pentagonal windows and mirrored inner push plates inform the generated material; this is not an extracted source texture.
+
+Renderer fit: `1996-double-slide-approach-hold-pass`, duration 5000ms. Approach ends at1500ms, sliding starts3350ms, advance resumes3600ms, sliding ends4350ms, fade4600–5000ms. Leaves translate x=0→±2.25 scene units; angles and handle rotation remain zero. Camera z=10→5.6, holds until3600ms, then reaches4 at4700ms; target remains origin. Sound window3350–4600ms crops the existing licensed effect at0.06–0.36; source audio is not reproduced. Enter/Leave currently share the observed path; fine directional timing and opposite-face detail remain approximate.
+
+New translation fields participate in timeline sampling/retiming alongside camera/fade/sound. Texture upload orientation is explicit preset metadata, with mirrored right-leaf UVs. No accessory/frame/floor geometry is introduced.
+
+Validation: 84 core +2 assets tests,16 package tests, lint and production build passed;41 full browser tests and2 final focused sliding tests passed (including upper-window orientation and symmetric gap/reset). Local source contact sheets and closed/open preview were compared; independent review found no blockers. Screenshots: `docs/images/automatic-sliding-closed-2026-10-11.png` and `automatic-sliding-fade-2026-10-11.png`. These checks establish local behavior, not exact source fidelity. Gallery check remains blocked by a preexisting frame inventory mismatch (manifest12332/destination12428); unrelated gallery data was preserved.
+
+Assets/library are not published: release the new texture and update the CDN-pinned asset version before library publication. Original35 progress is5 merged +1 local, not6 merged.
+
+
+### 2026-10-11：B07 滑門音效替換
+
+User selected Kyodon's CC0 `automatic door.wav` (Freesound153423). Public HQ MP3 is stored unmodified in the assets workspace; original WAV requires login. B07 Enter/Leave select `automaticDoorSlide` through preset `soundUrl`. Source2.05–3.30s maps to timeline3350–4600ms at approximately1x playback, replacing the previous hinge effect crop without changing motion/camera/fade. This selection is an authored sound fit, not the source video's audio. Reset/seek and user-gesture unlock remain on the common sound runtime. Publication still requires updated assets/library releases.
+
+Sound replacement verification:85 core +2 assets tests,16 package tests,2 focused browser tests, lint and production build passed. Browser confirmed Kyodon URL, approximately1x rate, paused during approach, playback after sliding begins and silence after Reset in both traversals. Existing lint warnings remain unchanged.
+
+
+### 2026-10-11 — B07 sound tail after picture fade
+
+User requested a short black hold with continuing sound followed by an audio
+fade, to avoid the effect ending abruptly. The existing shared
+`1996-double-slide-approach-hold-pass` set now ends at5650ms: picture fades
+4600–5000ms as before, holds black with full-volume sound until5250ms, then
+sound volume fades linearly to zero over400ms. Leaf/camera movement timings
+remain unchanged; their final values hold through the black tail.
+
+B07 Enter/Leave,1996 slide-double style-only callers and the legacy
+center-split-slide config share the tail. A reusable optional sound-fade marker
+participates in preview retiming; other profiles retain their previous volume.
+Kyodon's unchanged3.940227s MP3 now uses source1.64s–end, mapped onto
+3350–5650ms at approximately1x. The slightly earlier crop supplies enough
+recorded tail for the extended window. This is the user's authored sound
+arrangement, not an observation of the original video's audio.
+
+Reset/replay restore full volume; timeline seeking samples the fade consistently.
+Implementation remains local/pending merge and publication; source counts do
+not change. Verification evidence is recorded in the Phase1 progress note.
+
+
+B07 delivery is reviewed in [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66); merge status is authoritative there.

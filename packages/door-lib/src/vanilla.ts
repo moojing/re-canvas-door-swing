@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { getDoorEntranceAnimationConfig, type DoorTimingEvents } from "./core/presetAnimation.ts";
-import { getSoundPlaybackRate } from "./core/soundWindow.ts";
+import { getSoundPlaybackRate, getSoundVolume } from "./core/soundWindow.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
 import {
   resolveDoorSurfaceTextureUrls,
@@ -181,6 +181,7 @@ class VanillaDoorScene {
   private agedWood = false;
   private knobBackplate = false;
   private steelKnob = false;
+  private activeTextureFlipY = false;
   private readonly retroRasterSize = new THREE.Vector2(360, 360);
   private readonly ambientLight = new THREE.AmbientLight("#ffffff", 0.25);
   private readonly keyLight = new THREE.DirectionalLight("#fff7ee", 0.75);
@@ -237,6 +238,7 @@ class VanillaDoorScene {
     state,
     config,
     surfaceTextureUrls,
+    textureFlipY,
     handleModelUrl,
     handleProfileId,
     hasHandle,
@@ -251,6 +253,7 @@ class VanillaDoorScene {
     state: DoorAnimationState;
     config: DoorAnimationConfig;
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls;
+    textureFlipY: boolean;
     handleModelUrl?: string;
     handleProfileId?: HandleProfileId;
     hasHandle: boolean;
@@ -282,6 +285,7 @@ class VanillaDoorScene {
       lookChanged ||
       this.activeAnimation !== config.id ||
       this.activeSurfaceTextureKey !== surfaceKey ||
+      this.activeTextureFlipY !== textureFlipY ||
       this.activeHandleModelUrl !== handleModelUrl ||
       this.activeHandleProfileId !== handleProfileId ||
       this.activeHasHandle !== hasHandle ||
@@ -292,6 +296,7 @@ class VanillaDoorScene {
       this.rebuildDoor(
         config.id,
         surfaceTextureUrls,
+        textureFlipY,
         handleModelUrl,
         handleProfileId,
         hasHandle,
@@ -301,6 +306,7 @@ class VanillaDoorScene {
       );
       this.activeAnimation = config.id;
       this.activeSurfaceTextureKey = surfaceKey;
+      this.activeTextureFlipY = textureFlipY;
       this.activeHandleModelUrl = handleModelUrl;
       this.activeHandleProfileId = handleProfileId;
       this.activeHasHandle = hasHandle;
@@ -356,6 +362,7 @@ class VanillaDoorScene {
   private rebuildDoor(
     animation: DoorAnimationId,
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls,
+    textureFlipY: boolean,
     handleModelUrl: string | undefined,
     handleProfileId: HandleProfileId | undefined,
     hasHandle: boolean,
@@ -399,11 +406,11 @@ class VanillaDoorScene {
     });
     applyRetroMaterial(this.handleMaterial, false, this.knobBackplate ? this.retroRasterSize : undefined);
     const doorMaterials = this.doorMaterials;
-    this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4));
-    this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial]);
-    this.loadTexture(surfaceTextureUrls.backTextureUrl, [this.backDoorMaterial]);
+    this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4), textureFlipY);
+    this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial], textureFlipY);
+    this.loadTexture(surfaceTextureUrls.backTextureUrl, [this.backDoorMaterial], textureFlipY);
 
-    if (animation === "double-swing") {
+    if (animation === "double-swing" || animation === "center-split-slide") {
       const left = this.createDoorLeaf({
         width: 3,
         height: 6,
@@ -430,8 +437,8 @@ class VanillaDoorScene {
         handleModelUrl,
         handleProfileId,
         hasHandle,
-        mirrorBackTextureX,
-        mirrorTextureX,
+        mirrorBackTextureX: animation === "center-split-slide" ? !mirrorBackTextureX : mirrorBackTextureX,
+        mirrorTextureX: animation === "center-split-slide" ? !mirrorTextureX : mirrorTextureX,
       });
       right.name = "right-door";
       this.doorRoot.add(right);
@@ -472,7 +479,8 @@ class VanillaDoorScene {
 
   private loadTexture(
     url: string,
-    materials: THREE.MeshStandardMaterial[]
+    materials: THREE.MeshStandardMaterial[],
+    flipY = false
   ) {
     this.textureLoader.load(url, (texture) => {
       if (this.disposed) {
@@ -482,7 +490,7 @@ class VanillaDoorScene {
 
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
-      texture.flipY = false;
+      texture.flipY = flipY;
       texture.minFilter = THREE.NearestFilter;
       texture.magFilter = THREE.NearestFilter;
       texture.generateMipmaps = false;
@@ -688,7 +696,18 @@ class VanillaDoorScene {
     const single = this.doorRoot.getObjectByName("single-door");
     const swingDirection = this.activeSwingDirection === "away-from-viewer" ? -1 : 1;
 
-    if (animation === "double-swing") {
+    if (animation === "center-split-slide") {
+      if (left) {
+        const [x, y, z] = state.leftDoorOffset ?? [0, 0, 0];
+        left.position.set(-3 + x, y, z);
+        left.rotation.set(0, 0, 0);
+      }
+      if (right) {
+        const [x, y, z] = state.rightDoorOffset ?? [0, 0, 0];
+        right.position.set(3 + x, y, z);
+        right.rotation.set(0, 0, 0);
+      }
+    } else if (animation === "double-swing") {
       if (left) left.rotation.y = -swingDirection * state.doorAngle * maxAngle;
       if (right) right.rotation.y = swingDirection * (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
     } else if (single) {
@@ -1023,6 +1042,7 @@ export const mountDoorEntrance = (
 
   const renderProgress = (nextProgress: number, config = activeConfig) => {
     progress = clampProgress(nextProgress);
+    audio.volume = getSoundVolume(progress, config);
     const easedProgress = clampProgress(config.easing?.(progress) ?? progress);
     const state = config.getState(easedProgress, {
       linearProgress: progress,
@@ -1033,6 +1053,7 @@ export const mountDoorEntrance = (
       state,
       config,
       surfaceTextureUrls: resolvedSurfaceTextureUrls,
+      textureFlipY: activeDoorPreset.textureFlipY ?? false,
       handleModelUrl: toPublicAssetUrl(
         options.handleModelUrl ?? activeDoorPreset.handleModelUrl
       ),

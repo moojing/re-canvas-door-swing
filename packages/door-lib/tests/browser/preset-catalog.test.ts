@@ -456,7 +456,7 @@ test("detail full-screen preview applies calibration timing and clears restored 
 test("iron door uses one catalog card and switches actual Enter/Leave preset IDs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true })).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(5);
+  await expect(page.locator("main article")).toHaveCount(6);
   await page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true }).click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -498,7 +498,7 @@ test("1998 grid door groups Enter/Leave and switches preset-backed camera and kn
   await page.goto("/");
   const detail = page.getByRole("link", { name: "View details for 1-2 A-3 Grid Knob Door", exact: true });
   await expect(detail).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(5);
+  await expect(page.locator("main article")).toHaveCount(6);
   await detail.click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -536,4 +536,31 @@ test("detail resolves animation sets and traversal switching selects the actual 
   await variants.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(page).toHaveURL(/preset=biohazard-1998-a03-grid-knob-door-leave$/);
   await expect(page.getByText("1998-single-fixed-wait-micro-open-pass", { exact: true })).toBeVisible();
+});
+
+test("automatic sliding door groups source traversals and preserves playback controls", async ({ page }) => {
+  await page.goto("/");
+  const detail = page.getByRole("link", { name: "View details for 1-1 B-7 Automatic Sliding Door", exact: true });
+  await expect(detail).toHaveCount(1);
+  await detail.click();
+  await expect(page).toHaveURL(/center-split-slide\?preset=biohazard-1996-b07-automatic-sliding-door$/);
+  await expect(page.getByRole("heading", { name: "Center-split Slide", exact: true })).toBeVisible();
+  await expect(page.getByText("1996-double-slide-approach-hold-pass", { exact: true })).toBeVisible();
+  await expect(page.getByText("slide-double", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Seek to Sliding starts" }).click();
+  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("59.3");
+  const variants = page.getByRole("group", { name: "Traversal variant" });
+  await variants.getByRole("button", { name: "Leave", exact: true }).click();
+  await expect(page).toHaveURL(/preset=biohazard-1996-b07-automatic-sliding-door-leave$/);
+  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("0");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(page.getByRole("slider", { name: "Animation progress" })).not.toHaveValue("0");
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("0");
+  await page.getByRole("button", { name: "Full-screen preview", exact: true }).click();
+  const overlay = page.getByRole("status", { name: "Full-screen preview in progress" });
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toBeHidden({ timeout: 10_000 });
+  await page.getByRole("link", { name: "Back to catalog" }).click();
+  await expect(page).toHaveURL(/\/$/);
 });
