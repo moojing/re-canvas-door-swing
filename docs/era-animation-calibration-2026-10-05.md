@@ -411,8 +411,10 @@ hardware; existing knob model has gray steel finish and a rectangular lock plate
 Fine material detail, handle rotation and reverse timing remain approximations.
 Closed, micro hold, opening, passage and fade were inspected in the sample;
 [fade-start runtime capture](images/grid-door-fade-start-2026-10-11.png).
-This branch is local work, not merged or published; new assets need publication
-and an updated pinned asset version before library release.
+Delivered by [PR #65](https://github.com/moojing/re-canvas-door-swing/pull/65);
+merge state is authoritative there. Previously implementing yellow A02 S5 was
+a source-selection mistake; it was outside the requested35-video list. New
+assets need publication and an updated pinned asset version before library release.
 
 Verification:81 core tests plus2 local asset checks,16 package checks,38 browser
 checks plus1 added real-leaf fade visibility check for both Grid traversals pass.
@@ -422,4 +424,4 @@ sample detail URLs now fall back to a catalog preset; explicit library mount/get
 IDs remain compatible. Gallery check retains the pre-existing frame manifest
 mismatch (12,332 expected vs12,428 local ignored extracts); existing data preserved.
 #31, #63, this repo progress table and Project In Progress were synchronized;
-no ticket was closed and no merge or publication was performed.
+Category #31 remains open with two sources pending; publication remains pending.
