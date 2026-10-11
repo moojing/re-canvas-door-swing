@@ -470,3 +470,15 @@ not change. Verification evidence is recorded in the Phase1 progress note.
 
 
 B07 delivery is reviewed in [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66); merge status is authoritative there.
+
+
+### 2026-10-11 — B07 verified delivery merge
+
+[PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) merged as
+`2fd3959ab544d234740871825e6f3eec8a6aceb1`, after confirmation of reviewed head
+`74ebad7680d0aa8e8328d2b73a8b9c2d06fefb13`. The implementation and sound-tail
+fits above are now on main; preceding local/pending status notes are history.
+88 core +2 local assets,16 package,41 browser tests and lint/build passed;
+independent review found no actionable findings. Assets/library are not published.
+#41 retains two elevator sources pending; detailed reverse/source-audio QA remains
+approximate. See the synchronized Phase1 progress table for original35 counts.
