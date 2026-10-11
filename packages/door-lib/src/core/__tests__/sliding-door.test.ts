@@ -84,3 +84,10 @@ test("preview edits retime sound fade and picture black independently", () => {
   assert.ok(Math.abs(getSoundVolume(5500 / config.duration, config) - 0.5) < 1e-9);
   assert.equal(getDoorEntranceAnimationConfig(getDoorEntrancePreset(id)).soundFadeOutStartProgress, 5250 / config.duration);
 });
+
+test("closed sliding approach leaves approximately twenty percent vertical margin", () => {
+  const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset(id));
+  const state = config.getState(3300 / config.duration);
+  const heightFraction = 6 / (2 * (state.cameraPosition[2] - 0.221) * Math.tan(Math.PI / 6));
+  assert.ok(heightFraction >= 0.78 && heightFraction <= 0.82, `height fraction ${heightFraction}`);
+});
