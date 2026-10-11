@@ -5,6 +5,10 @@ export const usesAgedWoodLook = (preset: DoorEntrancePresetId) =>
   preset === "biohazard-1996-a02-yellow-panel-knob-door" ||
   preset === "biohazard-1996-a02-yellow-panel-knob-door-leave";
 
+export const usesSteelKnobLook = (preset: DoorEntrancePresetId) =>
+  preset === "biohazard-1998-a03-grid-knob-door" ||
+  preset === "biohazard-1998-a03-grid-knob-door-leave";
+
 export const getDrawingBufferSize = (
   width: number,
   height: number,

@@ -68,8 +68,8 @@ describe("released preset animation styles", () => {
   });
 
   it("uses identical motion and camera settings for members of the 1996 micro-open single-door set", () => {
-    const presets = doorEntrancePresets.filter((preset) =>
-      preset.animationSet === "1996-single-micro-open-advance");
+    const presets = [getDoorEntrancePreset("biohazard-1996-a01-iron-door"),
+      getDoorEntrancePreset("biohazard-1996-a02-yellow-panel-knob-door-leave")];
     assert.equal(presets.length, 2);
     const baseline = getDoorEntranceAnimationConfig(presets[0]);
     for (const preset of presets) {
@@ -97,7 +97,7 @@ describe("released preset animation styles", () => {
   it("preserves variant geometry while sharing the optional knob action", () => {
     for (const baseId of ["biohazard-1996-a01-iron-door", "biohazard-1996-a02-yellow-panel-knob-door"] as const) {
       const enter = getDoorEntrancePreset(baseId);
-      const leave = doorEntrancePresets.find((preset) => preset.variantOf === baseId)!;
+      const leave = getDoorEntrancePreset(`${baseId}-leave`);
       assert.equal(enter.traversal, "enter");
       assert.equal(leave.traversal, "leave");
       assert.equal(leave.hingeSide, "right");

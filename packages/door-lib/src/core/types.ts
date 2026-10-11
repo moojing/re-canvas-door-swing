@@ -24,6 +24,7 @@ export type DoorAnimationStyleId =
   | "biohazard-1999";
 
 export type DoorAnimationSetId =
+  | "1998-single-fixed-wait-micro-open-pass"
   | "1996-single-micro-open-advance"
   | "1996-single-micro-open-close-pass-advance"
   | "1996-single-wide-swing-advance"
@@ -38,6 +39,8 @@ export type DoorMaterialId =
   | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
+  | "biohazard-1998-a03-grid-knob-door"
+  | "biohazard-1998-a03-grid-knob-door-leave"
   | "biohazard-1996-a01-iron-door"
   | "biohazard-1996-a01-iron-door-leave"
   | "biohazard-1998-a01-no-handle-door"

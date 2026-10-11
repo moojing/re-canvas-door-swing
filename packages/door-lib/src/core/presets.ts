@@ -4,6 +4,8 @@ import type {
   DoorEntrancePresetSelection,
 } from "./types.ts";
 import {
+  biohazard1998A03GridKnobDoorFront,
+  biohazard1998A03GridKnobDoorBack,
   biohazard1996B02BluePanel,
   biohazard1996A01IronDoorBack,
   biohazard1996A01IronDoorFront,
@@ -127,6 +129,45 @@ export const doorEntrancePresetMap: Record<
     handleProfileId: "knob-round",
     handleModelUrl: doorKnob,
   },
+  "biohazard-1998-a03-grid-knob-door": {
+    id: "biohazard-1998-a03-grid-knob-door",
+    label: "1-2 A-3 Grid Knob Door",
+    traversal: "enter",
+    type: "single",
+    motion: "hinge-single",
+    material: "aged-wood-panel",
+    frontTextureUrl: biohazard1998A03GridKnobDoorFront,
+    edgeTextureUrl: biohazard1998A03GridKnobDoorFront,
+    backTextureUrl: biohazard1998A03GridKnobDoorBack,
+    animation: "direct-entry",
+    animationStyle: "biohazard-1998",
+    animationSet: "1998-single-fixed-wait-micro-open-pass",
+    hingeSide: "left",
+    swingDirection: "toward-viewer",
+    mirrorTextureX: false,
+    handleProfileId: "knob-round",
+    handleModelUrl: doorKnob,
+  },
+  "biohazard-1998-a03-grid-knob-door-leave": {
+    id: "biohazard-1998-a03-grid-knob-door-leave",
+    label: "1-2 A-3 Grid Knob Door",
+    traversal: "leave",
+    variantOf: "biohazard-1998-a03-grid-knob-door",
+    type: "single",
+    motion: "hinge-single",
+    material: "aged-wood-panel",
+    frontTextureUrl: biohazard1998A03GridKnobDoorBack,
+    edgeTextureUrl: biohazard1998A03GridKnobDoorFront,
+    backTextureUrl: biohazard1998A03GridKnobDoorFront,
+    animation: "direct-entry",
+    animationStyle: "biohazard-1998",
+    animationSet: "1998-single-fixed-wait-micro-open-pass",
+    hingeSide: "right",
+    swingDirection: "toward-viewer",
+    mirrorTextureX: false,
+    handleProfileId: "knob-round",
+    handleModelUrl: doorKnob,
+  },
   "biohazard-1996-b02-blue-panel-double-door": {
     id: "biohazard-1996-b02-blue-panel-double-door",
     label: "1-1 B-2 Blue Panel Double Door",
@@ -149,7 +190,7 @@ export const doorEntrancePresetMap: Record<
 
 export const doorEntrancePresets: DoorEntrancePreset[] = Object.values(
   doorEntrancePresetMap
-);
+).filter((preset) => !preset.id.startsWith("biohazard-1996-a02-yellow-panel-knob-door"));
 
 export const resolveDoorEntrancePresetId = (
   preset?: DoorEntrancePresetId
