@@ -59,6 +59,36 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
   expect((await capture()).fraction).toBeCloseTo(authored.fraction, 2);
 });
 
+test("1998 grid keeps the real leaf visible through fade start in both traversals", async ({ page }, testInfo) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  for (const suffix of ["", "-leave"]) {
+    await page.evaluate((suffix) => {
+      const select = document.querySelector<HTMLSelectElement>("#door-preset")!;
+      const id = `biohazard-1998-a03-grid-knob-door${suffix}`;
+      select.add(new Option(id, id));
+      select.value = id;
+      select.dispatchEvent(new Event("change"));
+    }, suffix);
+    await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+    const fraction = await page.evaluate(() => {
+      window.__doorEntranceTestApi__?.seek(4550 / 4800);
+      const canvas = document.querySelector("canvas")!;
+      const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+      if (!gl) throw new Error("WebGL context unavailable");
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      let visible = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) visible++;
+      }
+      return visible / (canvas.width * canvas.height);
+    });
+    expect(fraction).toBeGreaterThan(0.015);
+    await page.locator("canvas").screenshot({ path: testInfo.outputPath(`grid${suffix}-fade-start.png`) });
+  }
+});
+
 test("blue sound stays silent during the closed wait and starts with opening", async ({ page }) => {
   await page.goto("/samples/vanilla.html?testMode");
   await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());

@@ -83,7 +83,7 @@ test("preset catalog opens the shared animation detail page", async ({
   ).toHaveCount(1);
   await expect(
     page.getByRole("img", {
-      name: "1-1 A-2 Yellow Panel Knob Door animation preview",
+      name: "1-2 A-3 Grid Knob Door animation preview",
     })
   ).toHaveCount(1);
   await expect(page.getByText("Single Lever Wood")).toHaveCount(0);
@@ -206,14 +206,14 @@ test("transition destination has a direct-visit fallback", async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 });
 
-test("yellow panel uses a coarse drawing buffer and survives timeline seeking", async ({ page }) => {
+test("1998 grid door uses a coarse drawing buffer and survives timeline seeking", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
   await page.goto("/");
-  await page.getByRole("link", { name: "View details for 1-1 A-2 Yellow Panel Knob Door" }).click();
+  await page.getByRole("link", { name: "View details for 1-2 A-3 Grid Knob Door" }).click();
   const canvas = page.locator("main canvas");
   await expect(canvas).toHaveCSS("image-rendering", "auto");
   await expect(canvas).toHaveAttribute("height", "360");
@@ -494,9 +494,9 @@ test("changing traversal variants clears temporary calibration timing", async ({
 });
 
 
-test("yellow door groups Enter/Leave and switches preset-backed camera and knob timelines", async ({ page }) => {
+test("1998 grid door groups Enter/Leave and switches preset-backed camera and knob timelines", async ({ page }) => {
   await page.goto("/");
-  const detail = page.getByRole("link", { name: "View details for 1-1 A-2 Yellow Panel Knob Door", exact: true });
+  const detail = page.getByRole("link", { name: "View details for 1-2 A-3 Grid Knob Door", exact: true });
   await expect(detail).toHaveCount(1);
   await expect(page.locator("main article")).toHaveCount(5);
   await detail.click();
@@ -505,18 +505,18 @@ test("yellow door groups Enter/Leave and switches preset-backed camera and knob 
   await expect(page.getByRole("group", { name: "Swing direction" })).toHaveCount(0);
   await expect(page.getByText("Swing direction", { exact: true })).toHaveCount(0);
   await variants.getByRole("button", { name: "Leave", exact: true }).click();
-  await expect(page).toHaveURL(/preset=biohazard-1996-a02-yellow-panel-knob-door-leave$/);
-  await expect(page.locator("main code")).toContainText('preset: "biohazard-1996-a02-yellow-panel-knob-door-leave"');
+  await expect(page).toHaveURL(/preset=biohazard-1998-a03-grid-knob-door-leave$/);
+  await expect(page.locator("main code")).toContainText('preset: "biohazard-1998-a03-grid-knob-door-leave"');
   await page.reload();
   await expect(variants.getByRole("button", { name: "Leave", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Seek to Handle starts" }).click();
-  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("52");
+  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("34.4");
   await page.getByRole("button", { name: "Full-screen preview", exact: true }).click();
   const overlay = page.getByRole("status", { name: "Full-screen preview in progress" });
   await expect(overlay).toBeVisible();
   await expect(overlay).toBeHidden({ timeout: 10_000 });
   await variants.getByRole("button", { name: "Enter", exact: true }).click();
-  await expect(page).toHaveURL(/preset=biohazard-1996-a02-yellow-panel-knob-door$/);
+  await expect(page).toHaveURL(/preset=biohazard-1998-a03-grid-knob-door$/);
   await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("0");
 });
 
@@ -531,9 +531,9 @@ test("detail resolves animation sets and traversal switching selects the actual 
   await expect(page.getByText("1996-single-micro-open-advance", { exact: true })).toHaveCount(0);
   await page.reload();
   await expect(page.getByText("1996-single-wide-swing-advance", { exact: true })).toBeVisible();
-  await page.goto("/dev/animations/direct-entry?preset=biohazard-1996-a02-yellow-panel-knob-door");
-  await expect(page.getByText("1996-single-micro-open-close-pass-advance", { exact: true })).toBeVisible();
+  await page.goto("/dev/animations/direct-entry?preset=biohazard-1998-a03-grid-knob-door");
+  await expect(page.getByText("1998-single-fixed-wait-micro-open-pass", { exact: true })).toBeVisible();
   await variants.getByRole("button", { name: "Leave", exact: true }).click();
-  await expect(page).toHaveURL(/preset=biohazard-1996-a02-yellow-panel-knob-door-leave$/);
-  await expect(page.getByText("1996-single-micro-open-advance", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/preset=biohazard-1998-a03-grid-knob-door-leave$/);
+  await expect(page.getByText("1998-single-fixed-wait-micro-open-pass", { exact: true })).toBeVisible();
 });

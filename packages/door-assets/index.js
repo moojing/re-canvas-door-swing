@@ -9,3 +9,5 @@ export { default as biohazard1996B02BluePanel } from "./textures/biohazard-1996-
 export { default as doorHandleSingle } from "./models/door_handle_single.glb";
 export { default as doorKnob } from "./models/door_knob.glb";
 export { default as doorOpenClose } from "./sounds/freesound_community-main-door-opening-closing-38280.mp3";
+export { default as biohazard1998A03GridKnobDoorFront } from "./textures/biohazard-1998-a03-grid-knob-door-front.webp";
+export { default as biohazard1998A03GridKnobDoorBack } from "./textures/biohazard-1998-a03-grid-knob-door-front.webp";

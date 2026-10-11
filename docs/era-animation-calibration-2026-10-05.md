@@ -389,3 +389,39 @@ Verification:79 core tests plus2 asset checks and lint passed (existing3 warning
 A focused browser test passed: after a Play gesture, sound stays paused during
 the closed wait, starts when resuming at opening-start and pauses at fade-start.
 The browser run rebuilt the sample; local detail playback was also exercised.
+
+## 2026-10-11 — Replace yellow representative with selected 1998 A03 S2
+
+The requested source is `1-2/a03/a03-s2目字門.mp4`, not1996 A02 S5.
+Source observations and MP4 sampling are recorded in the sibling gallery's
+`docs/door-animation-reference.md`. Added Grid Enter/Leave presets, left/right
+hinges respectively, both toward-viewer. Both share the reusable
+`1998-single-fixed-wait-micro-open-pass` set; no other era defaults change.
+The historical yellow IDs remain explicitly mountable but are retired from
+catalog/random selection. The original35 selection remains unchanged.
+
+Renderer fit:4.80 s duration; fixed camera z5.5 and target y0 until2.90 s;
+handle1.65–2.05 s; opening2.05–2.30 s to6°, hold until2.90 s, then90° at4.25 s;
+camera accelerates to z1.5 by4.80 s; fade4.55–4.80 s. The existing licensed sound
+crop plays only2.05–4.55 s after a Play gesture. These are fitted runtime values,
+not recovered original angles, and this is not original-source audio.
+
+Original generated brown three-panel albedo is shared front/back without baked
+hardware; existing knob model has gray steel finish and a rectangular lock plate.
+Fine material detail, handle rotation and reverse timing remain approximations.
+Closed, micro hold, opening, passage and fade were inspected in the sample;
+[fade-start runtime capture](images/grid-door-fade-start-2026-10-11.png).
+Delivered by [PR #65](https://github.com/moojing/re-canvas-door-swing/pull/65);
+merge state is authoritative there. Previously implementing yellow A02 S5 was
+a source-selection mistake; it was outside the requested35-video list. New
+assets need publication and an updated pinned asset version before library release.
+
+Verification:81 core tests plus2 local asset checks,16 package checks,38 browser
+checks plus1 added real-leaf fade visibility check for both Grid traversals pass.
+Lint passes with0 errors and3 existing Fast Refresh warnings; library/sample
+build passes. Independent review found no blocking issues. Historical yellow
+sample detail URLs now fall back to a catalog preset; explicit library mount/get
+IDs remain compatible. Gallery check retains the pre-existing frame manifest
+mismatch (12,332 expected vs12,428 local ignored extracts); existing data preserved.
+#31, #63, this repo progress table and Project In Progress were synchronized;
+Category #31 remains open with two sources pending; publication remains pending.

@@ -128,8 +128,8 @@ describe("core door entrance presets", () => {
         "biohazard-1996-a01-iron-door-leave",
         "biohazard-1998-a01-no-handle-door",
         "biohazard-1999-a01-parking-door",
-        "biohazard-1996-a02-yellow-panel-knob-door",
-        "biohazard-1996-a02-yellow-panel-knob-door-leave",
+        "biohazard-1998-a03-grid-knob-door",
+        "biohazard-1998-a03-grid-knob-door-leave",
         "biohazard-1996-b02-blue-panel-double-door",
       ]
     );
@@ -268,7 +268,7 @@ describe("core door entrance presets", () => {
       () => 0
     );
 
-    assert.equal(preset.id, "biohazard-1996-a02-yellow-panel-knob-door");
+    assert.equal(preset.id, "biohazard-1998-a03-grid-knob-door");
     assert.equal(preset.handleProfileId, "knob-round");
   });
 

@@ -7,3 +7,14 @@ The library uses this module as a development-only dependency through its door-l
 Model attribution and license information are included in models/ATTRIBUTION.md. build.mjs validates imports without copying or generating files.
 
 The `./cdn` entry exports the same asset names as pinned CDN URL strings. `./base` exports DEFAULT_ASSET_BASE_URL without importing media. Library publication bundles these entries and their declarations; no runtime assets dependency is required. The build validates CDN paths and version against the local entry and package manifest.
+
+## 1998 A03 S2 grid door texture
+
+`textures/biohazard-1998-a03-grid-knob-door-front.webp` is an original generated
+runtime albedo (ImageGen, 2026-10-11), based on observed three-panel aged-brown
+wood construction. It contains no captured source pixels or baked hardware.
+Front/back share the three-panel texture; the physical knob and lock plate are
+renderer geometry. Fine grain, bevel shading and back detail are approximations.
+The existing licensed round knob model is reused with a gray steel finish.
+The new asset is local only until the assets package and library are released;
+do not publish the library with the old pinned assets version.

@@ -9,3 +9,5 @@ export declare const biohazard1996B02BluePanel: string;
 export declare const doorHandleSingle: string;
 export declare const doorKnob: string;
 export declare const doorOpenClose: string;
+export const biohazard1998A03GridKnobDoorFront: string;
+export const biohazard1998A03GridKnobDoorBack: string;

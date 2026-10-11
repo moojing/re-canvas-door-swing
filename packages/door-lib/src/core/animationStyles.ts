@@ -349,3 +349,32 @@ export const wideSwingSingleDoor1996Profile: EraAnimationProfile = {
   soundSourceStartProgress: 0.06,
   soundSourceEndProgress: 0.36,
 };
+
+
+// Fixed closed framing and a short micro-open hold, followed by a full passage.
+// Values fit the observed1998 single-door trajectory, not original engine coordinates.
+export const fixedWaitMicroOpenPass1998Profile: EraAnimationProfile = {
+  durationMs: 4800,
+  events: [
+    event("start", "Start", 0),
+    event("closed-wait", "Closed wait", 1000),
+    event("handle-start", "Handle starts", 1650),
+    event("opening-start", "Opening starts", 2050),
+    event("slight-open", "Slight opening", 2300),
+    event("hold-end", "Pause ends", 2900),
+    event("open-end", "Door opens", 4250),
+    event("passage", "Passage", 4400),
+    event("fade-start", "Fade starts", 4550),
+    event("end", "End", 4800),
+  ],
+  doorAngle: [at(0, 0), at(2050, 0), at(2300, 6 / 90),
+    { ...at(2900, 6 / 90), easing: "ease-in" }, at(4250, 1), at(4800, 1)],
+  handleAngle: [at(0, 0), at(1650, 0), at(2050, radians(65)), at(2900, radians(65)), at(3650, 0), at(4800, 0)],
+  cameraPosition: [camera(0, 5.5), { ...camera(2900, 5.5), easing: "ease-in" }, camera(4800, 1.5)],
+  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 4800, value: [0, 0, 0] }],
+  fadeOut: [at(0, 0), at(4550, 0), at(4800, 1)],
+  soundStartMs: 2050,
+  soundEndMs: 4550,
+  soundSourceStartProgress: 0.06,
+  soundSourceEndProgress: 0.36,
+};

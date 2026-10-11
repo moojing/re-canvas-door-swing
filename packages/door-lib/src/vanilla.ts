@@ -1,6 +1,6 @@
 import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
-import { getDrawingBufferSize, usesAgedWoodLook } from "./core/renderLook.ts";
+import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { getDoorEntranceAnimationConfig, type DoorTimingEvents } from "./core/presetAnimation.ts";
 import { getSoundPlaybackRate } from "./core/soundWindow.ts";
@@ -180,6 +180,7 @@ class VanillaDoorScene {
   private handleMaterial = createHandleMaterial();
   private agedWood = false;
   private knobBackplate = false;
+  private steelKnob = false;
   private readonly retroRasterSize = new THREE.Vector2(360, 360);
   private readonly ambientLight = new THREE.AmbientLight("#ffffff", 0.25);
   private readonly keyLight = new THREE.DirectionalLight("#fff7ee", 0.75);
@@ -262,7 +263,9 @@ class VanillaDoorScene {
   }) {
     const agedWood = usesAgedWoodLook(presetId);
     const knobBackplate = presetId === "biohazard-1996-b02-blue-panel-double-door";
-    const lookChanged = this.agedWood !== agedWood || this.knobBackplate !== knobBackplate;
+    const steelKnob = usesSteelKnobLook(presetId);
+    const lookChanged = this.agedWood !== agedWood || this.knobBackplate !== knobBackplate || this.steelKnob !== steelKnob;
+    this.steelKnob = steelKnob;
     this.knobBackplate = knobBackplate;
     this.agedWood = agedWood;
     this.ambientLight.intensity = agedWood ? 0.46 : 0.25;
@@ -370,6 +373,12 @@ class VanillaDoorScene {
     this.frontDoorMaterial = createDoorFaceMaterial();
     this.backDoorMaterial = createDoorFaceMaterial();
     this.handleMaterial = createHandleMaterial();
+    if (this.steelKnob) {
+      this.handleMaterial.map = null;
+      this.handleMaterial.color.set("#a9ada8");
+      this.handleMaterial.roughness = 0.75;
+      this.handleMaterial.metalness = 0.2;
+    }
     [this.frontDoorMaterial, this.backDoorMaterial, ...this.doorMaterials].forEach((material) => {
       if (this.agedWood) {
         material.roughness = 1;
@@ -594,7 +603,7 @@ class VanillaDoorScene {
       face === "front" ? DOOR_DEPTH + DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET
     );
     if (face === "back") handleGroup.rotation.y = Math.PI;
-    if (this.knobBackplate) {
+    if (this.knobBackplate || this.steelKnob) {
       const plate = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.55, 0.025), this.handleMaterial);
       plate.name = "fixed-backplate";
       plate.position.set(0, -0.09, 0.0125);
@@ -726,6 +735,12 @@ class VanillaDoorScene {
           materials.forEach((material) => {
             if (!(material instanceof THREE.MeshStandardMaterial)) return;
             applyRetroMaterial(material, false, this.knobBackplate ? this.retroRasterSize : undefined);
+            if (this.steelKnob) {
+              material.map = null;
+              material.color.set("#a9ada8");
+              material.roughness = 0.75;
+              material.metalness = 0.2;
+            }
             if (this.agedWood) {
               material.roughness = 1;
               material.metalness = 0;

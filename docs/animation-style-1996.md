@@ -24,6 +24,7 @@ rotation signs or set names. Their preset IDs and catalog grouping stay stable.
 | `1996-single-micro-open-close-pass-advance` | hinge-single | Yellow Enter; 64° opening; close approach completes at fade start |
 | `1996-single-wide-swing-advance` | hinge-single | Iron Leave |
 | `1996-double-micro-open-hold-advance` | hinge-double | Blue double door |
+| `1998-single-fixed-wait-micro-open-pass` | hinge-single | 1998 A03 S2 Grid Enter/Leave |
 | `1998-single-micro-open-hold-advance` | hinge-single | 1998 no-handle door |
 | `1999-single-closed-wait-advance` | hinge-single | 1999 parking door |
 
@@ -96,3 +97,7 @@ claimed identical. Original files remain in sibling gallery materials, outside
 library assets. Details and historical decisions are in
 [the calibration record](era-animation-calibration-2026-10-05.md).
 Full five-door visual/direction QA under issue #58 remains open.
+
+The A03 S2 grid set uses fixed closed framing, a small opening and pause, then
+a wide swing with camera advance. The historical Yellow Enter/Leave sets remain
+for explicit-ID compatibility; those presets are retired from catalog/random.
