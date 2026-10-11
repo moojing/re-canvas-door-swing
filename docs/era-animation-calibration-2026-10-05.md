@@ -467,3 +467,6 @@ arrangement, not an observation of the original video's audio.
 Reset/replay restore full volume; timeline seeking samples the fade consistently.
 Implementation remains local/pending merge and publication; source counts do
 not change. Verification evidence is recorded in the Phase1 progress note.
+
+
+B07 delivery is reviewed in [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66); merge status is authoritative there.

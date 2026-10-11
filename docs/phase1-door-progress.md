@@ -47,7 +47,7 @@
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 22 | `1-1/b04/b04-s2 田字門.mp4` | [#39](https://github.com/moojing/re-canvas-door-swing/issues/39) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 23 | `1-1/b01/b01-s1鐵門.mp4` | [#40](https://github.com/moojing/re-canvas-door-swing/issues/40) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
-| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 本機完成／待合併 | `biohazard-1996-b07-automatic-sliding-door`（另有 Leave） | 待 PR／確認後合併及素材／library 發布；已套用 Kyodon CC0 自動門音效及黑畫面尾聲淡出；原音軌及去回精細 QA 仍為近似。 |
+| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 本機完成／待合併 | `biohazard-1996-b07-automatic-sliding-door`（另有 Leave） | [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 待確認後合併及素材／library 發布；已套用 Kyodon CC0 自動門音效及黑畫面尾聲淡出；原音軌及去回精細 QA 仍為近似。 |
 | 25 | `1-2/b07/b07-s1大電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 26 | `1-3/b06/b06-s1處理廠電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 27 | `1-2/b05/b05-s1纜車門1.mp4` | [#42](https://github.com/moojing/re-canvas-door-swing/issues/42) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
@@ -69,7 +69,7 @@
 
 ## 建議下一步
 
-第24支 B07 S1 已在本機完成中分滑動機制；先檢查預覽，再透過 finish-ticket 建立／review PR，確認後合併。
+第24支 B07 S1 已在本機完成中分滑動與音效收尾；[PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 審查後等待使用者確認合併。
 下一個尚未實作的種類可選第30支單扇水平滑動（#44）、第33支垂直位移（#47）或第35支折疊雙門（#49）。同分類電梯門可沿用滑動機制，但需各自素材與來源校準。
 
 ## 更新規則
@@ -92,3 +92,15 @@
 B07 S1 Enter/Leave now hold black with continuing Kyodon sound after picture fade: picture black5.00s, full-volume sound to5.25s, linear400ms audio fade ending5.65s. Source1.64s–end maps to timeline3.35–5.65s at approximately1x. Shared set and preview timing edits carry the audio fade; Reset/replay restore volume. This is an authored sound arrangement, not original source audio.
 
 Fresh verification:88 core +2 local asset tests,16 package tests,2 focused browser tests covering both traversals and catalog/full-screen controls; lint/build pass (3 existing Fast Refresh warnings). Local/pending merge and publication; counts remain5 merged +1 local. #41 remains In Progress with the two elevator sources pending.
+
+
+## B07 delivery review — 2026-10-11
+
+[PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) delivers B07 S1 Enter/Leave, reusable
+center-split leaf displacement, generated material and Kyodon sound with the
+5.00–5.65s black/audio tail. PR state is authoritative for merge status; this
+record does not claim pending work is merged or published. Delivery branch is
+`feat/ticket-41-b07-delivery`; the original implementation branch is preserved.
+Category #41 has two elevator sources pending; #28 retains single-slide,
+vertical and folding scope. Original35 counts remain5 merged +1 local until
+merge is verified. Assets and library publication are separate follow-up work.
