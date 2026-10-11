@@ -69,7 +69,7 @@ halfway state.
 - Source generation: `exec-e253c35e-7164-4c77-ae18-6dc75fc42ed8.png`. Runtime asset: `packages/door-assets/textures/biohazard-1996-b02-blue-panel-double-door.webp`.
 - Edges sample the solid wood stile, and closed leaves retain a narrow central seam. Uses the shared soft 360p pixel treatment and existing licensed audio.
 - Only the first representative in #37 is implemented; the other selected doors remain pending.
-- Historical 2026-09 follow-up used a 5.5s timeline. The 2026-10-11 calibration delivered by this change lasts 5.35s: approach ends at 1.20s, left leaf starts opening at 4.32s, holds at 6° from 4.50–4.70s, and reaches 40° at 5.35s; right leaf stays closed. Fade runs 5.15–5.35s and sound runs 4.32–5.15s. These renderer fit values are not source-video timestamps. See `docs/era-animation-calibration-2026-10-05.md`; this follow-up is delivered with this change; package publication remains pending.
+- Historical 2026-09 follow-up used a 5.5s timeline. The 2026-10-11 calibration delivered by this change lasts 5.35s: approach ends at 1.20s, left leaf starts opening at 4.32s, holds at 6° from 4.50–4.70s, and reaches 40° at 5.35s; right leaf stays closed. Fade runs 5.15–5.35s and sound runs 4.32–5.15s. These renderer fit values are not source-video timestamps. See `docs/era-animation-calibration-2026-10-05.md`; this change delivers the follow-up via [PR #64](https://github.com/moojing/re-canvas-door-swing/pull/64); merge state follows the PR, and package publication remains pending.
 
 B02 的顯示效果補充（2026-09-09）：依本機原片的柔化亮邊與移動邊線觀感，
 在投影座標加入半個渲染像素的格點量化，並對門板貼圖加入四向取樣的輕微
