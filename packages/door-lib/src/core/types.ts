@@ -121,6 +121,7 @@ export interface DoorAnimationConfig {
   timelineEvents?: Array<{ id: string; label: string; atMs: number }>;
   soundStartProgress?: number;
   soundEndProgress?: number;
+  soundFadeOutStartProgress?: number;
   soundSourceStartProgress?: number;
   soundSourceEndProgress?: number;
   easing?: (progress: number) => number;

@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { getDoorEntranceAnimationConfig, type DoorTimingEvents } from "./core/presetAnimation.ts";
-import { getSoundPlaybackRate } from "./core/soundWindow.ts";
+import { getSoundPlaybackRate, getSoundVolume } from "./core/soundWindow.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
 import {
   resolveDoorSurfaceTextureUrls,
@@ -1042,6 +1042,7 @@ export const mountDoorEntrance = (
 
   const renderProgress = (nextProgress: number, config = activeConfig) => {
     progress = clampProgress(nextProgress);
+    audio.volume = getSoundVolume(progress, config);
     const easedProgress = clampProgress(config.easing?.(progress) ?? progress);
     const state = config.getState(easedProgress, {
       linearProgress: progress,

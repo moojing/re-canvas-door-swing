@@ -445,3 +445,25 @@ Assets/library are not published: release the new texture and update the CDN-pin
 User selected Kyodon's CC0 `automatic door.wav` (Freesound153423). Public HQ MP3 is stored unmodified in the assets workspace; original WAV requires login. B07 Enter/Leave select `automaticDoorSlide` through preset `soundUrl`. Source2.05–3.30s maps to timeline3350–4600ms at approximately1x playback, replacing the previous hinge effect crop without changing motion/camera/fade. This selection is an authored sound fit, not the source video's audio. Reset/seek and user-gesture unlock remain on the common sound runtime. Publication still requires updated assets/library releases.
 
 Sound replacement verification:85 core +2 assets tests,16 package tests,2 focused browser tests, lint and production build passed. Browser confirmed Kyodon URL, approximately1x rate, paused during approach, playback after sliding begins and silence after Reset in both traversals. Existing lint warnings remain unchanged.
+
+
+### 2026-10-11 — B07 sound tail after picture fade
+
+User requested a short black hold with continuing sound followed by an audio
+fade, to avoid the effect ending abruptly. The existing shared
+`1996-double-slide-approach-hold-pass` set now ends at5650ms: picture fades
+4600–5000ms as before, holds black with full-volume sound until5250ms, then
+sound volume fades linearly to zero over400ms. Leaf/camera movement timings
+remain unchanged; their final values hold through the black tail.
+
+B07 Enter/Leave,1996 slide-double style-only callers and the legacy
+center-split-slide config share the tail. A reusable optional sound-fade marker
+participates in preview retiming; other profiles retain their previous volume.
+Kyodon's unchanged3.940227s MP3 now uses source1.64s–end, mapped onto
+3350–5650ms at approximately1x. The slightly earlier crop supplies enough
+recorded tail for the extended window. This is the user's authored sound
+arrangement, not an observation of the original video's audio.
+
+Reset/replay restore full volume; timeline seeking samples the fade consistently.
+Implementation remains local/pending merge and publication; source counts do
+not change. Verification evidence is recorded in the Phase1 progress note.

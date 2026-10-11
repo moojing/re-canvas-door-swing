@@ -24,6 +24,14 @@ const validateProfile = (profile: EraAnimationProfile) => {
   ) {
     throw new Error("Animation events must begin at zero and end at duration");
   }
+  if (
+    profile.soundFadeOutStartMs !== undefined &&
+    (!Number.isFinite(profile.soundFadeOutStartMs) ||
+      profile.soundFadeOutStartMs < profile.soundStartMs ||
+      profile.soundFadeOutStartMs >= profile.soundEndMs)
+  ) {
+    throw new Error("Sound fade must start inside the sound window");
+  }
   const ids = new Set<string>();
   let previousTime = -1;
   for (const event of profile.events) {
@@ -86,6 +94,7 @@ const retimeProfile = (
     fadeOut: retimeTrack(profile.fadeOut, oldAnchors, newAnchors),
     soundStartMs: warpTime(profile.soundStartMs, oldAnchors, newAnchors),
     soundEndMs: warpTime(profile.soundEndMs, oldAnchors, newAnchors),
+    soundFadeOutStartMs: profile.soundFadeOutStartMs === undefined ? undefined : warpTime(profile.soundFadeOutStartMs, oldAnchors, newAnchors),
   };
 };
 
@@ -113,6 +122,7 @@ export const getDoorEntranceAnimationConfig = (
     progressMarkers: profile.events.map(({ atMs }) => atMs / duration),
     soundStartProgress: profile.soundStartMs / duration,
     soundEndProgress: profile.soundEndMs / duration,
+    soundFadeOutStartProgress: profile.soundFadeOutStartMs === undefined ? undefined : profile.soundFadeOutStartMs / duration,
     soundSourceStartProgress: profile.soundSourceStartProgress,
     soundSourceEndProgress: profile.soundSourceEndProgress,
     getState: (progress) => sampleProfileState(profile, progress),

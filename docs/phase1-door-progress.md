@@ -47,7 +47,7 @@
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 22 | `1-1/b04/b04-s2 田字門.mp4` | [#39](https://github.com/moojing/re-canvas-door-swing/issues/39) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 23 | `1-1/b01/b01-s1鐵門.mp4` | [#40](https://github.com/moojing/re-canvas-door-swing/issues/40) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
-| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 本機完成／待合併 | `biohazard-1996-b07-automatic-sliding-door`（另有 Leave） | 待 PR／確認後合併及素材／library 發布；已套用 Kyodon CC0 自動門音效；原音軌及去回精細 QA 仍為近似。 |
+| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 本機完成／待合併 | `biohazard-1996-b07-automatic-sliding-door`（另有 Leave） | 待 PR／確認後合併及素材／library 發布；已套用 Kyodon CC0 自動門音效及黑畫面尾聲淡出；原音軌及去回精細 QA 仍為近似。 |
 | 25 | `1-2/b07/b07-s1大電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 26 | `1-3/b06/b06-s1處理廠電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 27 | `1-2/b05/b05-s1纜車門1.mp4` | [#42](https://github.com/moojing/re-canvas-door-swing/issues/42) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
@@ -86,3 +86,9 @@
 20 張分類票 #30–#49 及共用工程票 #24–#29、#58 均有回連到 #63。
 `AGENTS.md` 已要求實作、校準、合併或發布時同步總覽、此文件、分類票及看板。
 目前是雙向參照與更新規則，沒有自動同步機制；結案前必須核對相應影片列。
+
+
+## B07 sound-tail update — 2026-10-11
+B07 S1 Enter/Leave now hold black with continuing Kyodon sound after picture fade: picture black5.00s, full-volume sound to5.25s, linear400ms audio fade ending5.65s. Source1.64s–end maps to timeline3.35–5.65s at approximately1x. Shared set and preview timing edits carry the audio fade; Reset/replay restore volume. This is an authored sound arrangement, not original source audio.
+
+Fresh verification:88 core +2 local asset tests,16 package tests,2 focused browser tests covering both traversals and catalog/full-screen controls; lint/build pass (3 existing Fast Refresh warnings). Local/pending merge and publication; counts remain5 merged +1 local. #41 remains In Progress with the two elevator sources pending.

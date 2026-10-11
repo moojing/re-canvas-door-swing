@@ -1,6 +1,7 @@
 export interface DoorAnimationSoundWindow {
   soundStartProgress?: number;
   soundEndProgress?: number;
+  soundFadeOutStartProgress?: number;
   soundSourceStartProgress?: number;
   soundSourceEndProgress?: number;
 }
@@ -36,4 +37,14 @@ export const getSoundPlaybackRate = (
   ) return null;
   const rate = sourceSpan / timelineSpan;
   return Number.isFinite(rate) && rate > 0 ? rate : null;
+};
+
+/** Fade only the sound tail; profiles without a fade retain full volume. */
+export const getSoundVolume = (progress: number, window: DoorAnimationSoundWindow): number => {
+  const start = window.soundFadeOutStartProgress;
+  const end = window.soundEndProgress ?? 1;
+  if (start === undefined) return 1;
+  if (progress >= end) return 0;
+  if (progress <= start) return 1;
+  return clamp((end - progress) / Math.max(end - start, Number.EPSILON), 0, 1);
 };

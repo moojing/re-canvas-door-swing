@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { getDoorEntrancePreset, resolveDoorEntrancePresetSelection } from "../presets.ts";
+import { getSoundVolume } from "../soundWindow.ts";
+import { getDoorAnimationConfig } from "../animationState.ts";
 import { getDoorEntranceAnimationConfig } from "../presetAnimation.ts";
 
 const id = "biohazard-1996-b07-automatic-sliding-door" as const;
@@ -18,10 +20,10 @@ test("automatic sliding preset selects translation with no accessory", () => {
 test("automatic leaves wait, translate symmetrically and never rotate", () => {
   const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset(id));
   const state = (ms: number) => config.getState(ms / config.duration);
-  assert.equal(config.duration, 5000);
+  assert.equal(config.duration, 5650);
   assert.deepEqual(state(3300).leftDoorOffset, [0, 0, 0]);
   assert.deepEqual(state(1600).cameraPosition, state(3300).cameraPosition);
-  for (let ms = 0; ms <= 5000; ms += 50) {
+  for (let ms = 0; ms <= config.duration; ms += 50) {
     const s = state(ms);
     assert.equal(s.doorAngle, 0);
     assert.equal(s.rightDoorAngle, undefined);
@@ -32,16 +34,16 @@ test("automatic leaves wait, translate symmetrically and never rotate", () => {
   assert.ok(state(3850).leftDoorOffset![0] < -0.5);
   assert.equal(state(4600).fadeOut, 0);
   assert.equal(state(5000).fadeOut, 1);
-  assert.equal(config.soundStartProgress, 3350 / 5000);
-  assert.equal(config.soundEndProgress, 4600 / 5000);
+  assert.equal(config.soundStartProgress, 3350 / 5650);
+  assert.equal(config.soundEndProgress, 1);
 });
 test("preview timing edits retime translation and sound together without changing the preset", () => {
   const preset = getDoorEntrancePreset(id);
   const authored = getDoorEntranceAnimationConfig(preset);
   const edited = getDoorEntranceAnimationConfig(preset, { "opening-start": 3000 });
-  assert.deepEqual(authored.getState(0.64).leftDoorOffset, [0, 0, 0]);
-  assert.ok(edited.getState(0.64).leftDoorOffset![0] < 0);
-  assert.equal(edited.soundStartProgress, 0.6);
+  assert.deepEqual(authored.getState(3200 / 5650).leftDoorOffset, [0, 0, 0]);
+  assert.ok(edited.getState(3200 / 5650).leftDoorOffset![0] < 0);
+  assert.equal(edited.soundStartProgress, 3000 / 5650);
   assert.equal(getDoorEntranceAnimationConfig(preset).soundStartProgress, authored.soundStartProgress);
 });
 
@@ -50,7 +52,35 @@ test("sliding traversals use the Kyodon automatic-door sound and its opening cro
     const preset = getDoorEntrancePreset(`${id}${suffix}`);
     assert.match(preset.soundUrl ?? "", /freesound_kyodon-automatic-door-153423-hq\.mp3$/);
     const config = getDoorEntranceAnimationConfig(preset);
-    assert.equal(config.soundSourceStartProgress, 2.05 / 3.940227);
-    assert.equal(config.soundSourceEndProgress, 3.3 / 3.940227);
+    assert.equal(config.soundSourceStartProgress, 1.64 / 3.940227);
+    assert.equal(config.soundSourceEndProgress, 1);
   }
+});
+
+test("sliding keeps a black hold before fading the sound tail", () => {
+  for (const suffix of ["", "-leave"] as const) {
+    const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset(`${id}${suffix}`));
+    for (const ms of [5000, 5100, 5250, 5450, 5650]) {
+      assert.equal(config.getState(ms / config.duration).fadeOut, 1);
+    }
+    assert.equal(getSoundVolume(5100 / config.duration, config), 1);
+    assert.ok(Math.abs(getSoundVolume(5450 / config.duration, config) - 0.5) < 1e-9);
+    assert.equal(getSoundVolume(1, config), 0);
+    assert.equal(config.soundFadeOutStartProgress, 5250 / config.duration);
+  }
+  const fallback = getDoorAnimationConfig("center-split-slide");
+  assert.equal(getSoundVolume(1, fallback), 0);
+});
+
+
+test("preview edits retime sound fade and picture black independently", () => {
+  const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset(id), {
+    "fade-end": 4900,
+    "sound-fade-start": 5350,
+  });
+  assert.equal(config.getState(4900 / config.duration).fadeOut, 1);
+  assert.equal(config.soundFadeOutStartProgress, 5350 / config.duration);
+  assert.equal(getSoundVolume(5300 / config.duration, config), 1);
+  assert.ok(Math.abs(getSoundVolume(5500 / config.duration, config) - 0.5) < 1e-9);
+  assert.equal(getDoorEntranceAnimationConfig(getDoorEntrancePreset(id)).soundFadeOutStartProgress, 5250 / config.duration);
 });

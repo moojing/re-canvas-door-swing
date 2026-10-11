@@ -342,9 +342,9 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     }, suffix);
     await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
     await expect(page.locator("audio")).toHaveAttribute("src", /freesound_kyodon-automatic-door-153423-hq\.mp3/);
-    await expect.poll(async () => (await capture(0.65)).windowRatio).toBeLessThan(0.6);
-    expect((await capture(0.65)).middle).toBeGreaterThan(0.1);
-    const open = await capture(0.92);
+    await expect.poll(async () => (await capture(3250 / 5650)).windowRatio).toBeLessThan(0.6);
+    expect((await capture(3250 / 5650)).middle).toBeGreaterThan(0.1);
+    const open = await capture(4600 / 5650);
     expect(open.middle).toBeLessThan(0.01);
     expect(open.left).toBeGreaterThan(0.04);
     expect(open.right).toBeGreaterThan(0.04);
@@ -357,7 +357,20 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     await expect.poll(() => page.locator("audio").evaluate((element) => (element as HTMLAudioElement).duration)).toBeGreaterThan(3.9);
     expect(await page.locator("audio").evaluate((element) => (element as HTMLAudioElement).playbackRate)).toBeCloseTo(1, 2);
     await expect(page.locator("audio")).toHaveJSProperty("paused", false, { timeout: 5000 });
+    await page.evaluate(() => window.__doorEntranceTestApi__?.seek(5100 / 5650));
+    const overlay = page.locator('div[style*="pointer-events: none"][style*="background: rgb(0, 0, 0)"]');
+    await expect(overlay).toHaveCSS("opacity", "1");
+    await expect(overlay).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 1);
+    await page.evaluate(() => window.__doorEntranceTestApi__?.play());
+    await expect(page.locator("audio")).toHaveJSProperty("paused", false);
+    await expect.poll(() => page.locator("audio").evaluate((a) => (a as HTMLAudioElement).volume)).toBeLessThan(0.9);
+    await expect(page.locator("audio")).toHaveJSProperty("paused", true, { timeout: 3000 });
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 0);
+    await page.evaluate(() => window.__doorEntranceTestApi__?.play());
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 1);
     await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
     await expect(page.locator("audio")).toHaveJSProperty("paused", true);
+    await expect(page.locator("audio")).toHaveJSProperty("volume", 1);
   }
 });

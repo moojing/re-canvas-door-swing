@@ -107,3 +107,8 @@ Sliding sets use optional per-leaf XYZ displacement tracks in scene units,
 validated and retimed with camera/fade/sound tracks. They do not repurpose the
 hinge angle. B07 uses center-split-slide navigation and slide-double motion;
 style-only1996 slide callers default to its reusable set. Hinge defaults stay intact.
+
+
+B07's slide set has a user-requested sound tail: picture black at5.00s,
+full-volume hold to5.25s, audio fade to5.65s. Optional sound fade markers retime
+with the other events. Other sets retain full volume through their sound windows.

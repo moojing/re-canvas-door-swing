@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getSoundPlaybackRate, mapAnimationProgressToSoundProgress } from "../soundWindow.ts";
+import { getSoundVolume, getSoundPlaybackRate, mapAnimationProgressToSoundProgress } from "../soundWindow.ts";
 
 describe("core sound window", () => {
   it("maps animation progress into the configured sound window", () => {
@@ -31,4 +31,13 @@ describe("core sound window", () => {
     assert.equal(getSoundPlaybackRate(Number.NaN, 5000, {}), null);
     assert.equal(getSoundPlaybackRate(4000, 0, {}), null);
   });
+});
+
+it("sound tail holds, fades to silence and resets without affecting legacy windows", () => {
+  const window = { soundFadeOutStartProgress: 0.8, soundEndProgress: 1 };
+  assert.equal(getSoundVolume(0.75, window), 1);
+  assert.ok(Math.abs(getSoundVolume(0.9, window) - 0.5) < 1e-9);
+  assert.equal(getSoundVolume(1, window), 0);
+  assert.equal(getSoundVolume(0, window), 1);
+  assert.equal(getSoundVolume(1, {}), 1);
 });

@@ -548,7 +548,7 @@ test("automatic sliding door groups source traversals and preserves playback con
   await expect(page.getByText("1996-double-slide-approach-hold-pass", { exact: true })).toBeVisible();
   await expect(page.getByText("slide-double", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Seek to Sliding starts" }).click();
-  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("67");
+  await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("59.3");
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await variants.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(page).toHaveURL(/preset=biohazard-1996-b07-automatic-sliding-door-leave$/);

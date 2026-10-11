@@ -391,6 +391,9 @@ export const centerSplitSlideConfig: DoorAnimationConfig = {
   progressMarkers: centerSplitSlide1996Profile.events.map(({ atMs }) => atMs / centerSplitSlide1996Profile.durationMs),
   soundStartProgress: centerSplitSlide1996Profile.soundStartMs / centerSplitSlide1996Profile.durationMs,
   soundEndProgress: centerSplitSlide1996Profile.soundEndMs / centerSplitSlide1996Profile.durationMs,
+  soundFadeOutStartProgress: centerSplitSlide1996Profile.soundFadeOutStartMs === undefined
+    ? undefined
+    : centerSplitSlide1996Profile.soundFadeOutStartMs / centerSplitSlide1996Profile.durationMs,
   soundSourceStartProgress: centerSplitSlide1996Profile.soundSourceStartProgress,
   soundSourceEndProgress: centerSplitSlide1996Profile.soundSourceEndProgress,
   getState: (progress) => sampleProfileState(centerSplitSlide1996Profile, progress),
