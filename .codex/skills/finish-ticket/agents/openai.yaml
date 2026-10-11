@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finish Ticket"
+  short_description: "Review, fix, merge a ticket branch and sync progress"
+  default_prompt: "Use $finish-ticket to push this ticket branch, create its PR, delegate review and fixes, merge, and synchronize related tickets."

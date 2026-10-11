@@ -1,0 +1,4 @@
+interface:
+  display_name: "Start Ticket"
+  short_description: "Confirm the animation scope and start its branch"
+  default_prompt: "Use $start-ticket to select the ticket and exact animation, then create its implementation branch."

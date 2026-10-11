@@ -168,3 +168,10 @@ document.querySelector("#continue")?.addEventListener("click", () => {
 ```
 
 The sample catalog includes this flow on each preset card.
+
+## Phase 1 implementation progress
+
+Track all 35 selected source videos in the [online progress overview #63](https://github.com/moojing/re-canvas-door-swing/issues/63)
+or the [repository progress table](docs/phase1-door-progress.md). Each row links
+its category ticket and records the runtime preset, implementation status and
+remaining work. Local calibration is distinguished from merged/published work.

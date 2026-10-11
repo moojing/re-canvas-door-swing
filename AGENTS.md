@@ -95,3 +95,19 @@ door classification records, the report, and the estimation CSV. Do not copy
 those files here. Edit the gallery's `docs/` files and run
 `npm run gallery:check` after any evaluation-data change. Gallery source videos
 and frame extracts are local-only under ignored `materials/` directories.
+
+## Phase 1 Progress Synchronization
+
+- The per-video online overview is [#63](https://github.com/moojing/re-canvas-door-swing/issues/63),
+  with the repository counterpart in [docs/phase1-door-progress.md](docs/phase1-door-progress.md).
+- For every preset implementation, calibration, merge, or publication, update
+  the affected overview rows (status, preset, remaining work), the repository
+  progress table, the category ticket's Source Doors, and Project status before
+  reporting the task complete or closing its ticket.
+- New Phase 1 implementation tickets must link back to #63. Existing category
+  tickets #30–#49 and shared engineering tickets #24–#29/#58 have backlinks.
+- Distinguish local completion, merged implementation, and published changes.
+  Count only the 35 originally selected sources; additional representatives and
+  Leave variants must not inflate the completed-video count.
+- Links do not synchronize status automatically. Verify the online overview and
+  affected ticket states after updating them.
