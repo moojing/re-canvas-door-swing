@@ -131,8 +131,8 @@ describe("released preset animation styles", () => {
   it("keeps double leaves and knob action on their own tracks", () => {
     const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset("biohazard-1996-b02-blue-panel-double-door"));
     const opening = stateAt("biohazard-1996-b02-blue-panel-double-door", "open-end");
-    assert.ok(opening.doorAngle > 0.9);
-    assert.ok((opening.rightDoorAngle ?? 0) > 0.9);
+    assert.ok(opening.doorAngle > 0.15 && opening.doorAngle < 0.5);
+    assert.equal(opening.rightDoorAngle, 0);
     assert.ok(config.getState(0.5).handleAngle !== undefined);
   });
 

@@ -22,6 +22,68 @@ declare global {
   }
 }
 
+test("blue double keeps real leaves visible at fade start and honors swing direction", async ({ page }, testInfo) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  await page.evaluate(() => {
+    const select = document.querySelector<HTMLSelectElement>("#door-preset")!;
+    const id = "biohazard-1996-b02-blue-panel-double-door";
+    select.add(new Option(id, id));
+    select.value = id;
+    select.dispatchEvent(new Event("change"));
+  });
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  const capture = (direction?: "toward-viewer" | "away-from-viewer") => page.evaluate((direction) => {
+    if (direction) window.__doorEntranceTestApi__?.preview({ swingDirection: direction });
+    window.__doorEntranceTestApi__?.seek(5150 / 5350);
+    const canvas = document.querySelector("canvas")!;
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    if (!gl) throw new Error("WebGL context unavailable");
+    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    let visible = 0;
+    let checksum = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) visible++;
+      checksum += pixels[index] * ((index % 97) + 1);
+    }
+    return { fraction: visible / (canvas.width * canvas.height), checksum };
+  }, direction);
+  const authored = await capture();
+  expect(authored.fraction).toBeGreaterThan(0.25);
+  await page.locator("canvas").screenshot({ path: testInfo.outputPath("blue-double-fade-start.png") });
+  const toward = await capture("toward-viewer");
+  expect(Math.abs(toward.checksum - authored.checksum) / authored.checksum).toBeGreaterThan(0.005);
+  expect((await capture("away-from-viewer")).fraction).toBeCloseTo(authored.fraction, 2);
+  await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
+  expect((await capture()).fraction).toBeCloseTo(authored.fraction, 2);
+});
+
+test("blue sound stays silent during the closed wait and starts with opening", async ({ page }) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  await page.evaluate(() => {
+    const select = document.querySelector<HTMLSelectElement>("#door-preset")!;
+    const id = "biohazard-1996-b02-blue-panel-double-door";
+    select.add(new Option(id, id));
+    select.value = id;
+    select.dispatchEvent(new Event("change"));
+  });
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  await page.locator("#door-play").click();
+  await page.waitForFunction(() => (window.__doorEntranceTestApi__?.progress() ?? 0) > 0.6);
+  expect(await page.locator("audio").evaluate((audio) => audio.paused)).toBe(true);
+  await page.evaluate(() => {
+    window.__doorEntranceTestApi__?.seek(4320 / 5350);
+    window.__doorEntranceTestApi__?.resume();
+  });
+  await expect.poll(() => page.locator("audio").evaluate((audio) => audio.paused), {
+    timeout: 700,
+  }).toBe(false);
+  await page.waitForFunction(() => (window.__doorEntranceTestApi__?.progress() ?? 0) >= 5150 / 5350);
+  await expect.poll(() => page.locator("audio").evaluate((audio) => audio.paused)).toBe(true);
+});
+
 test("vanilla sample renders and responds to playback controls", async ({
   page,
 }) => {

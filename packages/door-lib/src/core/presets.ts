@@ -140,6 +140,7 @@ export const doorEntrancePresetMap: Record<
     animationStyle: "biohazard-1996",
     animationSet: "1996-double-micro-open-hold-advance",
     hingeSide: "left",
+    swingDirection: "away-from-viewer",
     mirrorTextureX: false,
     handleProfileId: "knob-round",
     handleModelUrl: doorKnob,

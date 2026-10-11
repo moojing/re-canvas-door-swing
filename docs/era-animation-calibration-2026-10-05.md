@@ -314,3 +314,78 @@ Removed the remaining Toward/Away preview buttons. The parking and 1998 no-handl
 The shared `calibrate-door-animation` skill links to gallery `docs/door-animation-reference.md`, which maps the tracked reference GIFs to full source IDs and passage segments. GIF observations are separated from fitted renderer angles/camera values, and audio/sub-frame limitations remain explicit. Local gallery validation is blocked by 96 extra ignored frame extracts (12,428 local versus 12,332 manifest entries); these files were preserved.
 
 Verification: 73 core tests, 2 local-asset tests, 16 package tests and 5 focused browser tests passed. Lint passed with the three existing Fast Refresh warnings; library and browser sample builds succeeded. Skill validation passed. A temporary gallery checkout containing versioned assets/docs and no `materials/` passed `gallery:check` (113 doors/stills/GIFs; MP4/frame checks explicitly skipped), demonstrating the no-video handoff path.
+
+## 2026-10-10 Blue double camera and source alignment
+
+User requested a source comparison and then adjustment of the blue double door.
+The existing `1996-double-micro-open-hold-advance` set now uses S3
+`1-1/b02/b02-s3方塊門.mp4`, first passage, for motion as well as appearance.
+Earlier S5 timing is historical. Gallery `docs/door-animation-reference.md`
+records the source observations and portable tracked GIF; MP4/contact sheets
+remain local-only. The first passage was sampled at1280×800/60fps, densely at
+6.2–7.2 file seconds. Source timing is approximate, with local origin near1.87 s.
+
+The former shallow approach (z8→6.9 over2.50 s), full90° opening and z6.2→1.4
+sprint over0.15 s caused a black passage before fade. The refitted set lasts5.35 s:
+initial approach z7.6→5.3 eases out over1.20 s, then holds until4.70 s. Camera
+position and target both use y0.65, keeping the view level and shifting the door
+downward: the lower edge crops while the upper hinge edge remains visible.
+Opening starts4.32 s, reaches6° at4.50, holds to4.70, then accelerates along one
+track toward40° at5.35. Only the left leaf opens away from the viewer; the right
+angle track remains zero throughout. Camera accelerates
+from z5.3 at4.70 to4.1 at5.15, then continues at its fade-start velocity to
+approximately3.033 at5.35; no passage speed jump or second stop. Fade5.15–5.35
+begins with both broad faces still visible. Late opening5.05 and passage5.10 are
+inspection markers, not full-open or velocity boundaries. These are renderer
+fits, not recovered original 3D coordinates.
+
+Affected: the blue released preset and1996 hinge-double style-only fallback.
+The double renderer now honors the existing `swingDirection` property; legacy
+callers without a direction retain toward-viewer. Single profiles are unchanged.
+The handle model/action, source sound crop and sound window2.75–4.70 remain
+existing approximations; they have not been independently source-calibrated.
+No reverse traversal is synthesized or claimed calibrated.
+
+Local visual QA compared actual leaves and knobs at closed, approach, micro hold,
+late opening, passage and fade, including complete playback and full-screen preview.
+At1.6 aspect the late broad faces/cropped hinge tops approximate S3; source texture
+color, hardware size and exact silhouette remain different.
+[Fade-start preview](images/blue-double-fade-start-2026-10-10.png).
+
+Verification:77 core tests and2 local asset tests,16 package checks, lint and full
+library/sample build passed. Lint retains the existing3 Fast Refresh warnings.
+An independent code review found no material issues. Gallery validation is still
+blocked by the existing96 extra ignored extracts (12,428 local vs12,332 manifest);
+those files were preserved. All3 focused browser checks passed: actual leaf pixel
+visibility/direction at fade start, vanilla playback/reset, and blue catalog seek,
+full-screen completion/reset/Back navigation.
+
+### 2026-10-10 — Single active leaf correction
+
+User identified that S3 opens only one side. Reinspection of6.2,6.8,7.0 file
+seconds confirms left-leaf perspective rotation while the right front stays
+flat. The previous symmetric opening fit confused the right leaf's camera-driven
+growth with rotation. Right angle now stays zero for the entire set; left angle,
+camera, fade and sound retain the preceding fit. The same correction applies to
+the style-only fallback. Gallery source observations were corrected accordingly.
+The earlier symmetric runtime screenshot is replaced with the corrected browser
+capture. A focused regression samples the stationary right track every25 ms.
+Verification after correction:78 core plus2 asset tests,16 package tests and2
+double browser cases passed; lint passed with the existing3 warnings. Package
+and browser runs rebuilt library/sample. Gallery validation retains the same
+pre-existing96-extract count blocker.
+
+## 2026-10-11 Blue opening sound alignment
+
+User found that the opening sound led the revised motion. The double set had
+retained its old2.75–4.70 s sound window while leaf opening moved to4.32 s.
+It now plays the existing source crop over4.32–5.15 s, from opening-start to
+fade-start. The closed wait is silent; playback rate fits the crop into that
+window. This affects the blue preset and1996 double style-only fallback, without
+changing motion, handle action or other sets. This is alignment of the existing
+effect, not a reproduction of S3's original audio.
+
+Verification:79 core tests plus2 asset checks and lint passed (existing3 warnings).
+A focused browser test passed: after a Play gesture, sound stays paused during
+the closed wait, starts when resuming at opening-start and pauses at fade-start.
+The browser run rebuilt the sample; local detail playback was also exercised.
