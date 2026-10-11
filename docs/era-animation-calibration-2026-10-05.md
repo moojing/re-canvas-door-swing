@@ -425,3 +425,16 @@ IDs remain compatible. Gallery check retains the pre-existing frame manifest
 mismatch (12,332 expected vs12,428 local ignored extracts); existing data preserved.
 #31, #63, this repo progress table and Project In Progress were synchronized;
 Category #31 remains open with two sources pending; publication remains pending.
+
+
+## 2026-10-11：1996 B07 S1 中分自動滑门（本機完成／待合併）
+
+Source observations are recorded in sibling gallery `docs/door-animation-reference.md`. The local MP4 has door segments approximately 1.333–6.299s and 10.366–15.333s: closed approach, wait, both leaves slide outward without hinge rotation, continued camera approach and fade. Small upper pentagonal windows and mirrored inner push plates inform the generated material; this is not an extracted source texture.
+
+Renderer fit: `1996-double-slide-approach-hold-pass`, duration 5000ms. Approach ends at1500ms, sliding starts3350ms, advance resumes3600ms, sliding ends4350ms, fade4600–5000ms. Leaves translate x=0→±2.25 scene units; angles and handle rotation remain zero. Camera z=10→5.6, holds until3600ms, then reaches4 at4700ms; target remains origin. Sound window3350–4600ms crops the existing licensed effect at0.06–0.36; source audio is not reproduced. Enter/Leave currently share the observed path; fine directional timing and opposite-face detail remain approximate.
+
+New translation fields participate in timeline sampling/retiming alongside camera/fade/sound. Texture upload orientation is explicit preset metadata, with mirrored right-leaf UVs. No accessory/frame/floor geometry is introduced.
+
+Validation: 84 core +2 assets tests,16 package tests, lint and production build passed;41 full browser tests and2 final focused sliding tests passed (including upper-window orientation and symmetric gap/reset). Local source contact sheets and closed/open preview were compared; independent review found no blockers. Screenshots: `docs/images/automatic-sliding-closed-2026-10-11.png` and `automatic-sliding-fade-2026-10-11.png`. These checks establish local behavior, not exact source fidelity. Gallery check remains blocked by a preexisting frame inventory mismatch (manifest12332/destination12428); unrelated gallery data was preserved.
+
+Assets/library are not published: release the new texture and update the CDN-pinned asset version before library publication. Original35 progress is5 merged +1 local, not6 merged.

@@ -16,6 +16,8 @@ export interface EraAnimationProfile {
   events: TimelineEvent[];
   doorAngle: TimelineKeyframe<number>[];
   rightDoorAngle?: TimelineKeyframe<number>[];
+  leftDoorOffset?: TimelineKeyframe<Vector3Tuple>[];
+  rightDoorOffset?: TimelineKeyframe<Vector3Tuple>[];
   handleAngle: TimelineKeyframe<number>[];
   cameraPosition: TimelineKeyframe<Vector3Tuple>[];
   cameraTarget: TimelineKeyframe<Vector3Tuple>[];
@@ -375,6 +377,31 @@ export const fixedWaitMicroOpenPass1998Profile: EraAnimationProfile = {
   fadeOut: [at(0, 0), at(4550, 0), at(4800, 1)],
   soundStartMs: 2050,
   soundEndMs: 4550,
+  soundSourceStartProgress: 0.06,
+  soundSourceEndProgress: 0.36,
+};
+
+
+/** Center-split translation: approach, closed wait, slide and final advance. */
+export const centerSplitSlide1996Profile: EraAnimationProfile = {
+  durationMs: 5000,
+  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1500),
+    event("opening-start", "Sliding starts", 3350), event("advance-start", "Advance starts", 3600),
+    event("open-end", "Doors open", 4350), event("fade-start", "Fade starts", 4600), event("end", "End", 5000)],
+  doorAngle: [at(0, 0), at(5000, 0)],
+  leftDoorOffset: [{ atMs: 0, value: [0, 0, 0] },
+    { atMs: 3350, value: [0, 0, 0], easing: "ease-in-out" },
+    { atMs: 4350, value: [-2.25, 0, 0] }, { atMs: 5000, value: [-2.25, 0, 0] }],
+  rightDoorOffset: [{ atMs: 0, value: [0, 0, 0] },
+    { atMs: 3350, value: [0, 0, 0], easing: "ease-in-out" },
+    { atMs: 4350, value: [2.25, 0, 0] }, { atMs: 5000, value: [2.25, 0, 0] }],
+  handleAngle: [at(0, 0), at(5000, 0)],
+  cameraPosition: [camera(0, 10), camera(1500, 5.6),
+    { ...camera(3600, 5.6), easing: "ease-in" }, camera(4700, 4), camera(5000, 4)],
+  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 5000, value: [0, 0, 0] }],
+  fadeOut: [at(0, 0), at(4600, 0), at(5000, 1)],
+  soundStartMs: 3350,
+  soundEndMs: 4600,
   soundSourceStartProgress: 0.06,
   soundSourceEndProgress: 0.36,
 };

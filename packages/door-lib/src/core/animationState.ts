@@ -1,3 +1,5 @@
+import { centerSplitSlide1996Profile } from "./animationStyles.ts";
+import { sampleProfileState } from "./profileState.ts";
 import type {
   DoorAnimationConfig,
   DoorAnimationState,
@@ -97,7 +99,7 @@ const handleMotionByProfile: Record<
   HandleProfileId,
   {
     maxPressAngleDeg: number;
-    timingsByAnimation: Record<
+    timingsByAnimation: Partial<Record<
       DoorAnimationId,
       {
         pressStart?: number;
@@ -109,7 +111,7 @@ const handleMotionByProfile: Record<
         releaseBounce?: number;
         motionSpeed?: number;
       }
-    >;
+    >>;
   }
 > = {
   "lever-l": {
@@ -198,6 +200,7 @@ const getHandlePressAngle = ({
     handleMotionByProfile[profileId] ??
     handleMotionByProfile[DEFAULT_HANDLE_PROFILE_ID];
   const timing = profile.timingsByAnimation[animation];
+  if (!timing) return 0;
   const slowKnob = profileId === "knob-round" &&
     (animation === "direct-entry" || animation === "double-swing");
   // Smoothstep spreads the turn across the full 1.05 seconds instead of
@@ -380,10 +383,24 @@ export const doubleSwingConfig: DoorAnimationConfig = {
   },
 };
 
+export const centerSplitSlideConfig: DoorAnimationConfig = {
+  id: "center-split-slide",
+  label: "Center-split Slide",
+  description: "雙扇自動門向左右滑開後前進淡出",
+  duration: centerSplitSlide1996Profile.durationMs,
+  progressMarkers: centerSplitSlide1996Profile.events.map(({ atMs }) => atMs / centerSplitSlide1996Profile.durationMs),
+  soundStartProgress: centerSplitSlide1996Profile.soundStartMs / centerSplitSlide1996Profile.durationMs,
+  soundEndProgress: centerSplitSlide1996Profile.soundEndMs / centerSplitSlide1996Profile.durationMs,
+  soundSourceStartProgress: centerSplitSlide1996Profile.soundSourceStartProgress,
+  soundSourceEndProgress: centerSplitSlide1996Profile.soundSourceEndProgress,
+  getState: (progress) => sampleProfileState(centerSplitSlide1996Profile, progress),
+};
+
 export const doorAnimationConfigs: DoorAnimationConfig[] = [
   directEntryConfig,
   singleTopDownConfig,
   doubleSwingConfig,
+  centerSplitSlideConfig,
 ];
 
 export const doorAnimationMap: Record<DoorAnimationId, DoorAnimationConfig> =

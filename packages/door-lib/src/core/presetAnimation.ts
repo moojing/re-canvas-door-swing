@@ -1,7 +1,8 @@
+import { sampleProfileState } from "./profileState.ts";
 import { getDoorAnimationConfig } from "./animationState.ts";
 import type { EraAnimationProfile } from "./animationStyles.ts";
 import { getAnimationSetProfile } from "./animationSets.ts";
-import { sampleTrack, validateTrack, warpTime, type TimelineKeyframe, type TimelineValue } from "./animationTimeline.ts";
+import { validateTrack, warpTime, type TimelineKeyframe, type TimelineValue } from "./animationTimeline.ts";
 import type { DoorAnimationConfig, DoorEntrancePreset } from "./types.ts";
 
 export type DoorTimingEvents = Record<string, number>;
@@ -10,6 +11,8 @@ const validateProfile = (profile: EraAnimationProfile) => {
   const duration = profile.durationMs;
   validateTrack(profile.doorAngle, duration);
   if (profile.rightDoorAngle) validateTrack(profile.rightDoorAngle, duration);
+  if (profile.leftDoorOffset) validateTrack(profile.leftDoorOffset, duration);
+  if (profile.rightDoorOffset) validateTrack(profile.rightDoorOffset, duration);
   validateTrack(profile.handleAngle, duration);
   validateTrack(profile.cameraPosition, duration);
   validateTrack(profile.cameraTarget, duration);
@@ -75,6 +78,8 @@ const retimeProfile = (
     rightDoorAngle: profile.rightDoorAngle
       ? retimeTrack(profile.rightDoorAngle, oldAnchors, newAnchors)
       : undefined,
+    leftDoorOffset: profile.leftDoorOffset ? retimeTrack(profile.leftDoorOffset, oldAnchors, newAnchors) : undefined,
+    rightDoorOffset: profile.rightDoorOffset ? retimeTrack(profile.rightDoorOffset, oldAnchors, newAnchors) : undefined,
     handleAngle: retimeTrack(profile.handleAngle, oldAnchors, newAnchors),
     cameraPosition: retimeTrack(profile.cameraPosition, oldAnchors, newAnchors),
     cameraTarget: retimeTrack(profile.cameraTarget, oldAnchors, newAnchors),
@@ -110,18 +115,6 @@ export const getDoorEntranceAnimationConfig = (
     soundEndProgress: profile.soundEndMs / duration,
     soundSourceStartProgress: profile.soundSourceStartProgress,
     soundSourceEndProgress: profile.soundSourceEndProgress,
-    getState: (progress) => {
-      const timeMs = Math.min(Math.max(progress, 0), 1) * duration;
-      return {
-        doorAngle: sampleTrack(profile.doorAngle, duration, timeMs),
-        rightDoorAngle: profile.rightDoorAngle
-          ? sampleTrack(profile.rightDoorAngle, duration, timeMs)
-          : undefined,
-        handleAngle: sampleTrack(profile.handleAngle, duration, timeMs),
-        cameraPosition: sampleTrack(profile.cameraPosition, duration, timeMs),
-        cameraTarget: sampleTrack(profile.cameraTarget, duration, timeMs),
-        fadeOut: sampleTrack(profile.fadeOut, duration, timeMs),
-      };
-    },
+    getState: (progress) => sampleProfileState(profile, progress),
   };
 };

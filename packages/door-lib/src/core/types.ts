@@ -3,7 +3,8 @@ export type Vector3Tuple = [number, number, number];
 export type DoorAnimationId =
   | "direct-entry"
   | "single-top-down-entry"
-  | "double-swing";
+  | "double-swing"
+  | "center-split-slide";
 
 export type HandleProfileId = "lever-l" | "knob-round";
 
@@ -12,7 +13,8 @@ export type DoorEntranceType = "single" | "double";
 export type DoorEntranceMotion =
   | "hinge-single"
   | "hinge-single-overhead"
-  | "hinge-double";
+  | "hinge-double"
+  | "slide-double";
 
 export type DoorHingeSide = "left" | "right";
 
@@ -24,6 +26,7 @@ export type DoorAnimationStyleId =
   | "biohazard-1999";
 
 export type DoorAnimationSetId =
+  | "1996-double-slide-approach-hold-pass"
   | "1998-single-fixed-wait-micro-open-pass"
   | "1996-single-micro-open-advance"
   | "1996-single-micro-open-close-pass-advance"
@@ -39,6 +42,8 @@ export type DoorMaterialId =
   | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
+  | "biohazard-1996-b07-automatic-sliding-door"
+  | "biohazard-1996-b07-automatic-sliding-door-leave"
   | "biohazard-1998-a03-grid-knob-door"
   | "biohazard-1998-a03-grid-knob-door-leave"
   | "biohazard-1996-a01-iron-door"
@@ -50,6 +55,8 @@ export type DoorEntrancePresetId =
   | "biohazard-1996-b02-blue-panel-double-door";
 
 export interface DoorSurfaceTextureUrls {
+  /** Texture upload orientation; false preserves the legacy asset convention. */
+  textureFlipY?: boolean;
   frontTextureUrl?: string;
   edgeTextureUrl?: string;
   backTextureUrl?: string;
@@ -96,6 +103,9 @@ export interface DoorEntrancePresetSelection {
 export interface DoorAnimationState {
   doorAngle: number;
   rightDoorAngle?: number;
+  /** Per-leaf displacement in scene units; sliding tracks do not rotate leaves. */
+  leftDoorOffset?: Vector3Tuple;
+  rightDoorOffset?: Vector3Tuple;
   handleAngle?: number;
   cameraPosition: Vector3Tuple;
   cameraTarget: Vector3Tuple;

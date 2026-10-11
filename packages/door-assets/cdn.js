@@ -12,3 +12,4 @@ export const doorKnob = `${DEFAULT_ASSET_BASE_URL}/models/door_knob.glb`;
 export const doorOpenClose = `${DEFAULT_ASSET_BASE_URL}/sounds/freesound_community-main-door-opening-closing-38280.mp3`;
 export const biohazard1998A03GridKnobDoorFront = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1998-a03-grid-knob-door-front.webp`;
 export const biohazard1998A03GridKnobDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1998-a03-grid-knob-door-front.webp`;
+export const biohazard1996B07AutomaticDoorLeaf = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-b07-automatic-door-leaf.webp`;

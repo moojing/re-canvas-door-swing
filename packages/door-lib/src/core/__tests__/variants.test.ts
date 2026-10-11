@@ -130,6 +130,8 @@ describe("core door entrance presets", () => {
         "biohazard-1999-a01-parking-door",
         "biohazard-1998-a03-grid-knob-door",
         "biohazard-1998-a03-grid-knob-door-leave",
+        "biohazard-1996-b07-automatic-sliding-door",
+        "biohazard-1996-b07-automatic-sliding-door-leave",
         "biohazard-1996-b02-blue-panel-double-door",
       ]
     );
@@ -142,7 +144,11 @@ describe("core door entrance presets", () => {
       assert.ok(preset.motion, `${preset.id} needs a motion`);
       assert.ok(preset.material, `${preset.id} needs a material`);
       assert.ok(preset.animation, `${preset.id} needs an animation`);
-      assert.ok(preset.hingeSide, `${preset.id} needs a hinge side`);
+      if (preset.motion.startsWith("hinge-")) {
+        assert.ok(preset.hingeSide, `${preset.id} needs a hinge side`);
+      } else {
+        assert.equal(preset.hingeSide, undefined, `${preset.id} should not invent a hinge`);
+      }
       assert.equal(
         typeof preset.mirrorTextureX,
         "boolean",
