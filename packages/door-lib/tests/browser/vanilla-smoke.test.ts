@@ -309,17 +309,19 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     const pixels = new Uint8Array(canvas.width * canvas.height * 4);
     gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     let left = 0, right = 0, middle = 0;
+    let minY = canvas.height, maxY = -1;
     for (let y = 0; y < canvas.height; y++) {
       for (let x = 0; x < canvas.width; x++) {
         const i = (y * canvas.width + x) * 4;
         if (pixels[i] + pixels[i + 1] + pixels[i + 2] <= 24) continue;
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
         if (x < canvas.width / 2) left++; else right++;
         if (x > canvas.width * 0.4 && x < canvas.width * 0.6) middle++;
       }
     }
     const area = canvas.width * canvas.height;
     // At the held closed framing the authored window is above the push plate.
-    const scale = canvas.height / (2 * (5.6 - 0.221) * Math.tan(Math.PI / 6));
+    const scale = canvas.height / (2 * (6.65 - 0.221) * Math.tan(Math.PI / 6));
     const x = Math.round(canvas.width / 2 - 1.5 * scale);
     const patchLuma = (y: number) => {
       let sum = 0;
@@ -331,7 +333,7 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     };
     const upper = patchLuma(canvas.height / 2 + 1.68 * scale);
     const lower = patchLuma(canvas.height / 2 - 1.68 * scale);
-    return { left: left / area, right: right / area, middle: middle / area, windowRatio: upper / Math.max(lower, 1) };
+    return { left: left / area, right: right / area, middle: middle / area, heightFraction: (maxY - minY + 1) / canvas.height, windowRatio: upper / Math.max(lower, 1) };
   }, progress);
   for (const suffix of ["", "-leave"]) {
     await page.evaluate((suffix) => {
@@ -343,7 +345,10 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
     await expect(page.locator("audio")).toHaveAttribute("src", /freesound_kyodon-automatic-door-153423-hq\.mp3/);
     await expect.poll(async () => (await capture(3250 / 5650)).windowRatio).toBeLessThan(0.6);
-    expect((await capture(3250 / 5650)).middle).toBeGreaterThan(0.1);
+    const closed = await capture(3250 / 5650);
+    expect(closed.middle).toBeGreaterThan(0.1);
+    expect(closed.heightFraction).toBeGreaterThan(0.78);
+    expect(closed.heightFraction).toBeLessThan(0.83);
     const open = await capture(4600 / 5650);
     expect(open.middle).toBeLessThan(0.01);
     expect(open.left).toBeGreaterThan(0.04);

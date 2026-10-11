@@ -482,3 +482,10 @@ fits above are now on main; preceding local/pending status notes are history.
 independent review found no actionable findings. Assets/library are not published.
 #41 retains two elevator sources pending; detailed reverse/source-audio QA remains
 approximate. See the synchronized Phase1 progress table for original35 counts.
+
+
+### 2026-10-11：B07 閉門靠近構圖
+
+User supplied a source screenshot showing approximately80% vertical occupancy at the held closed framing. Local original1280×800 frame at file3.5s has approximate bright bounds x233–1042/y107–755 (threshold35; bottom shading makes this approximate), or81.1% height. Previous renderer camera z5.6 projected the6-unit door at roughly96.6% viewport height. The shared1996 sliding set now holds z6.65 from1500–3600ms (approximately80.8% projected height), while initialz10, opening, passagez4 and image/audio tail timings remain unchanged. Both B07 traversals and the style fallback share this fit. This adjusts closed approach framing, not the later moving passage.
+
+Verification:89 core +2 assets,16 package and2 focused browser tests passed; lint/build passed (existing warnings). Pixel bounds confirm78–83% closed door height in both traversals; window orientation, symmetric opening, sound-tail fade and Reset remain covered. Local preview screenshot: `docs/images/automatic-sliding-framing-2026-10-11.png`. Gallery check still reports the preexisting frame-count mismatch12332/12428; unrelated gallery files were preserved.
