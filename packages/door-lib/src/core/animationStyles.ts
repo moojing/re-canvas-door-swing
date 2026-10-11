@@ -250,26 +250,64 @@ export const eraStyleDefaults: Record<DoorAnimationStyleId, EraAnimationProfile>
   "biohazard-1999": parkingDoor(),
 };
 
+const doubleDoor1996 = (): EraAnimationProfile => {
+  const durationMs = 5350;
+  const profile = heldDoor({
+    durationMs,
+    approachEndMs: 1200,
+    knobStartMs: 2750,
+    knobEndMs: 3350,
+    slightOpenMs: 4500,
+    holdEndMs: 4700,
+    openEndMs: 5050,
+    passageMs: 5100,
+    fadeStartMs: 5150,
+    slightAngle: 6 / 90,
+    approachZ: 5.3,
+    openZ: 4.6,
+    double: true,
+  });
+  // S3 retains broad faces through fade; its late approach has no full-open sprint.
+  const opening = [
+    at(0, 0), at(4320, 0), at(4500, 6 / 90),
+    { ...at(4700, 6 / 90), easing: "ease-in" as const },
+    at(durationMs, 40 / 90),
+  ];
+  return {
+    ...profile,
+    events: profile.events.map((marker) => marker.id === "open-end"
+      ? { ...marker, label: "Late opening" }
+      : marker),
+    doorAngle: opening,
+    // S3's right leaf stays closed; its apparent growth is camera motion.
+    rightDoorAngle: [at(0, 0), at(durationMs, 0)],
+    cameraPosition: ([
+      { ...camera(0, 7.6), easing: "ease-out" },
+      camera(1200, 5.3),
+      { ...camera(4700, 5.3), easing: "ease-in" },
+      camera(5150, 4.1),
+      // Continue the fade-start velocity (2 × 1.2 / 0.45 units/s).
+      camera(durationMs, 4.1 - (2 * 1.2 / 450) * 200),
+    ] as TimelineKeyframe<Vector3Tuple>[]).map((frame) => ({
+      ...frame,
+      value: [0, 0.65, frame.value[2]],
+    })),
+    cameraTarget: [
+      { atMs: 0, value: [0, 0.65, 0] },
+      { atMs: durationMs, value: [0, 0.65, 0] },
+    ],
+    // Fit the opening clip to leaf motion, rather than the earlier knob action.
+    soundStartMs: 4320,
+    soundEndMs: 5150,
+  };
+};
+
 // Profiles are selected by motion and explicit era, never by door or traversal ID.
 export const motionStyleProfiles: Record<DoorAnimationStyleId,
   Partial<Record<DoorEntranceMotion, EraAnimationProfile>>> = {
   "biohazard-1996": {
     "hinge-single": eraStyleDefaults["biohazard-1996"],
-    "hinge-double": heldDoor({
-      durationMs: 4900,
-      approachEndMs: 2500,
-      knobStartMs: 2750,
-      knobEndMs: 3350,
-      slightOpenMs: 3500,
-      holdEndMs: 4000,
-      openEndMs: 4550,
-      passageMs: 4700,
-      fadeStartMs: 4780,
-      slightAngle: 0.07,
-      approachZ: 6.9,
-      openZ: 6.2,
-      double: true,
-    }),
+    "hinge-double": doubleDoor1996(),
   },
   "biohazard-1998": { "hinge-single": eraStyleDefaults["biohazard-1998"] },
   "biohazard-1999": { "hinge-single": eraStyleDefaults["biohazard-1999"] },

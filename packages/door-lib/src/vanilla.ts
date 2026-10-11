@@ -166,7 +166,7 @@ class VanillaDoorScene {
   private activeMirrorBackTextureX?: boolean;
   private activeMirrorTextureX?: boolean;
   private activeSingleHingeSide: DoorHingeSide = "left";
-  private activeSingleSwingDirection: DoorSwingDirection = "toward-viewer";
+  private activeSwingDirection: DoorSwingDirection = "toward-viewer";
   private activeAnimation?: DoorAnimationId;
   private activeHandleGroups: Array<{
     group: THREE.Group;
@@ -306,7 +306,7 @@ class VanillaDoorScene {
       this.activeSingleHingeSide = hingeSide;
     }
 
-    this.activeSingleSwingDirection = swingDirection;
+    this.activeSwingDirection = swingDirection;
     this.applyDoorState(config.id, state);
     this.applyCameraState(state, cameraPanX, cameraPanY);
     this.fadeOverlay.style.opacity = String(clampProgress(state.fadeOut));
@@ -677,13 +677,13 @@ class VanillaDoorScene {
     const left = this.doorRoot.getObjectByName("left-door");
     const right = this.doorRoot.getObjectByName("right-door");
     const single = this.doorRoot.getObjectByName("single-door");
+    const swingDirection = this.activeSwingDirection === "away-from-viewer" ? -1 : 1;
 
     if (animation === "double-swing") {
-      if (left) left.rotation.y = -state.doorAngle * maxAngle;
-      if (right) right.rotation.y = (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
+      if (left) left.rotation.y = -swingDirection * state.doorAngle * maxAngle;
+      if (right) right.rotation.y = swingDirection * (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
     } else if (single) {
       const singleRotationDirection = this.activeSingleHingeSide === "right" ? 1 : -1;
-      const swingDirection = this.activeSingleSwingDirection === "away-from-viewer" ? -1 : 1;
       single.rotation.y =
         swingDirection * singleRotationDirection * state.doorAngle * maxAngle;
     }

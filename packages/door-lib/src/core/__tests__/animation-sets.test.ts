@@ -67,17 +67,17 @@ test("wide swing has a distinct path and retiming/reset keeps its marker contrac
 });
 
 test("double and other-era profiles retain their authored timing and end states", () => {
-  for (const [id, duration, slightMs] of [
-    ["biohazard-1996-b02-blue-panel-double-door", 4900, 3500],
-    ["biohazard-1998-a01-no-handle-door", 4400, 2000],
-    ["biohazard-1999-a01-parking-door", 4800, undefined],
+  for (const [id, duration, slightMs, finalAngle] of [
+    ["biohazard-1996-b02-blue-panel-double-door", 5350, 4500, 40 / 90],
+    ["biohazard-1998-a01-no-handle-door", 4400, 2000, 1],
+    ["biohazard-1999-a01-parking-door", 4800, undefined, 1],
   ] as const) {
     const preset = getDoorEntrancePreset(id);
     const config = getDoorEntranceAnimationConfig(preset);
     const fallback = getDoorEntranceAnimationConfig({ ...preset, animationSet: undefined });
     assert.equal(config.duration, duration);
     assert.equal(config.timelineEvents!.find(({ id }) => id === "slight-open")?.atMs, slightMs);
-    assert.equal(config.getState(1).doorAngle, 1);
+    assert.equal(config.getState(1).doorAngle, finalAngle);
     assert.equal(config.getState(1).fadeOut, 1);
     for (const progress of [0, 0.25, 0.5, 0.75, 1]) {
       assert.deepEqual(config.getState(progress), fallback.getState(progress));

@@ -261,6 +261,10 @@ test("blue double door has a playable catalog preset", async ({ page }) => {
     await slider.fill(progress);
     await expect(slider).toHaveValue(progress);
   }
+  await page.getByRole("button", { name: "Full-screen preview", exact: true }).click();
+  const preview = page.getByRole("status", { name: "Full-screen preview in progress" });
+  await expect(preview).toBeVisible();
+  await expect(preview).toBeHidden({ timeout: 10_000 });
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(slider).toHaveValue("0");
   await page.getByRole("link", { name: "Back to catalog" }).click();
