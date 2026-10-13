@@ -118,3 +118,8 @@ Current count:6 merged,0 local-only,29 pending. #41 remains In Progress for
 its two elevator sources; #28/#29/#58 and #63 remain open for their broader scope.
 No assets/library publication occurred; source timing/reverse-face/original audio
 limits remain as documented. Earlier local/pending entries above are history.
+
+
+## B07 publication preparation — 2026-10-13
+
+Release candidate: `retro-horror-door-assets@0.1.0-beta.2` and `retro-horror-door@0.2.0-beta.3`. Site deployment is updated to build the exact new library version after publication. This includes the merged B07 Enter/Leave, Kyodon sound tail and81% closed framing, plus the selected1998 grid door assets. Source count stays6/35. Package publication and live deployment must be verified before marking these delivered; currently npm authentication is unavailable.
