@@ -154,7 +154,9 @@ const parkingDoor = (): EraAnimationProfile => {
     doorAngle: [at(0, 0), at(3100, 0), at(4050, 1), at(durationMs, 1)],
     handleAngle: [at(0, 0), at(durationMs, 0)],
     cameraPosition: [
-      { ...camera(0, 5.5), easing: "ease-out" },
+      camera(0, 6.9),
+      { ...camera(500, 6.9), easing: "ease-in-out" },
+      { ...camera(1800, 4.55), easing: "ease-out" },
       camera(2300, 4.5),
       { ...camera(3100, 4.5), easing: "ease-in" },
       camera(durationMs, 2.3),
