@@ -70,7 +70,7 @@
 
 ## 建議下一步
 
-第24支 B07 S1 中分滑動與音效收尾已由 [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 合併；接續素材／library 發布與去回精細 QA。
+第24支 B07 S1 中分滑動與音效收尾已由 [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 合併；素材／library 已發布，網站已部署；接續去回精細 QA。
 下一個尚未實作的種類可選第30支單扇水平滑動（#44）、第33支垂直位移（#47）或第35支折疊雙門（#49）。同分類電梯門可沿用滑動機制，但需各自素材與來源校準。
 
 ## 更新規則
@@ -129,3 +129,8 @@ Release candidate: `retro-horror-door-assets@0.1.0-beta.2` and `retro-horror-doo
 ## Verified npm publication — 2026-10-14
 
 Assets0.1.0-beta.2 and library0.2.0-beta.3 are available in npm under beta (latest unchanged). Registry-installed beta sample build passed and contains B07 Enter/Leave, grid material and Kyodon sound. B07 CDN texture/audio match local SHA-256. Fresh89 core +2 assets,16 package,12 beta-build tests and lint passed; candidate full browser41 passed. Website delivery: [PR #69](https://github.com/moojing/re-canvas-door-swing/pull/69); verify its deployment workflow/live site before marking website delivery complete. Source count stays6/35.
+
+
+## Verified live website - 2026-10-14
+
+[Deployment run38529523310](https://github.com/moojing/re-canvas-door-swing/actions/runs/38529523310) succeeded and Pages built gh-pages commit8bae41c815ff64f6b84ffcc1cc645a905ca16a24. The live site serves index-CrU3nOp3.js from the registry-installed beta.3 build. B07 catalog card, CDN texture/Kyodon audio and Enter/Leave playback were verified on https://muji.dev/re-canvas-door-swing/; actual closed rendering measured80.6% height, sound fades to zero and Reset restores playback.6/35 beta-published,29 pending; source-fidelity QA remains open.
