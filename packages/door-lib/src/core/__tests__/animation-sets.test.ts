@@ -185,7 +185,7 @@ test("yellow Enter late silhouette has the source-like side edge / front ratio",
 });
 
 
-test("parking starts close and crops both vertical edges during its closed wait", () => {
+test("parking starts framed at source scale before approaching its cropped closed wait", () => {
   const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset("biohazard-1999-a01-parking-door"));
   const camera = new PerspectiveCamera(60, 1.6, 0.1, 100);
   const project = (ms: number) => {
@@ -196,7 +196,11 @@ test("parking starts close and crops both vertical edges during its closed wait"
     return [new Vector3(0, 3, 0.16).project(camera).y, new Vector3(0, -3, 0.16).project(camera).y];
   };
   const [top, bottom] = project(0);
-  assert.ok((top - bottom) / 2 > 0.9 && (top - bottom) / 2 < 1.05);
+  assert.ok((top - bottom) / 2 > 0.75 && (top - bottom) / 2 < 0.80);
+  assert.deepEqual(project(0), project(500));
+  const [midTop, midBottom] = project(1000);
+  assert.ok((midTop - midBottom) / 2 > 0.84 && (midTop - midBottom) / 2 < 0.93);
+  assert.ok(project(1400)[0] > 1);
   for (const ms of [2300, 2700, 3100]) {
     const [top, bottom] = project(ms);
     assert.ok(top > 1.1 && bottom < -1.1);

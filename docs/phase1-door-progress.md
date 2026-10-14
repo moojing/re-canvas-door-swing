@@ -11,7 +11,7 @@
 | --- | ---: | --- |
 | 原選單已合併 main | 6 / 35 | 三支無配件單門、藍色 B02 S3 雙門、1998 A03 S2目字門及1996 B07 S1自動滑門；B07由 [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 合併。 |
 | 本機完成／待合併 | 0 / 35 | B07 S1 Enter／Leave 已合併且 beta 已發布。 |
-| 原選單已發布 beta | 6 / 35 | library0.2.0-beta.3/assets0.1.0-beta.2；網站部署交付見 [PR #69](https://github.com/moojing/re-canvas-door-swing/pull/69)。 |
+| 原選單已發布 beta | 6 / 35 | library0.2.0-beta.4/assets0.1.0-beta.2；最新網站交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71) 與其部署 workflow。 |
 | 尚待實作 | 29 | 尚無對應的 runtime preset。 |
 | 選單外相容性 preset | 1 支門 | 黃色 A02 S5 已退出 catalog／random，舊 ID 保留；不取代 S9。 |
 
@@ -27,7 +27,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 01 | `1-1/a01/a01-s1鐵門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1996-a01-iron-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
 | 02 | `1-2/a01/a01單門-無把手.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1998-a01-no-handle-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
-| 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
+| 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 開場77%→靠近裁切構圖校準：交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71)，合併／發布以 PR 與 npm 為準（library beta.4）；其他來源 QA 見 #58。 |
 | 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 待實作 | — | 實作 S9 狂奔動作；S5 黃色門不能算此片完成。 |
 | 05 | `1-2/a03/a03-s2目字門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 已合併／beta 已發布 | `biohazard-1998-a03-grid-knob-door`（另有 Leave） | 素材與 library 已發布；去回精細時序及原音軌仍為近似。 |
 | 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
@@ -134,3 +134,7 @@ Assets0.1.0-beta.2 and library0.2.0-beta.3 are available in npm under beta (late
 ## Verified live website - 2026-10-14
 
 [Deployment run38529523310](https://github.com/moojing/re-canvas-door-swing/actions/runs/38529523310) succeeded and Pages built gh-pages commit8bae41c815ff64f6b84ffcc1cc645a905ca16a24. The live site serves index-CrU3nOp3.js from the registry-installed beta.3 build. B07 catalog card, CDN texture/Kyodon audio and Enter/Leave playback were verified on https://muji.dev/re-canvas-door-swing/; actual closed rendering measured80.6% height, sound fades to zero and Reset restores playback.6/35 beta-published,29 pending; source-fidelity QA remains open.
+
+## Parking calibration publication - 2026-10-14
+
+Library0.2.0-beta.4 is available under npm beta (latest unchanged), reusing assets0.1.0-beta.2. Registry-installed beta sample build passed. Parking initial framing is approximately77%, with500ms hold and approach into the unchanged cropped closed wait. Fresh89 core +2 assets,16 package,12 beta-build and42 browser tests passed; lint passed with3 existing warnings. Independent review found no actionable findings. Merge/live delivery is tracked by [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71) and its deployment workflow.6/35 source count unchanged; fine source QA remains open.

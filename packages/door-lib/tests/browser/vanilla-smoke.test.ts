@@ -379,3 +379,41 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     await expect(page.locator("audio")).toHaveJSProperty("volume", 1);
   }
 });
+
+
+test("parking approach starts smaller, then reaches the cropped closed wait", async ({ page }) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  await page.evaluate(() => {
+    const select = document.querySelector<HTMLSelectElement>("#door-preset")!;
+    const id = "biohazard-1999-a01-parking-door";
+    select.add(new Option(id, id));
+  });
+  await page.selectOption("#door-preset", "biohazard-1999-a01-parking-door");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  const heightAt = (ms: number) => page.evaluate((ms) => {
+    window.__doorEntranceTestApi__?.seek(ms / 4800);
+    const canvas = document.querySelector("canvas")!;
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    if (!gl) throw new Error("WebGL unavailable");
+    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    let low = canvas.height, high = -1;
+    for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+      const i = (y * canvas.width + x) * 4;
+      if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 24) {
+        low = Math.min(low, y); high = Math.max(high, y);
+      }
+    }
+    return (high - low + 1) / canvas.height;
+  }, ms);
+  await expect.poll(() => heightAt(0)).toBeGreaterThan(0.75);
+  expect(await heightAt(0)).toBeLessThan(0.80);
+  expect(await heightAt(500)).toBeCloseTo(await heightAt(0), 2);
+  expect(await heightAt(1000)).toBeGreaterThan(0.84);
+  expect(await heightAt(1000)).toBeLessThan(0.93);
+  expect(await heightAt(2300)).toBeGreaterThan(0.98);
+  expect(await heightAt(3100)).toBeGreaterThan(0.98);
+  await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
+  expect(await heightAt(0)).toBeLessThan(0.80);
+});

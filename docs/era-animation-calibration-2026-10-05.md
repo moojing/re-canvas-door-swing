@@ -491,3 +491,14 @@ User supplied a source screenshot showing approximately80% vertical occupancy at
 Verification:89 core +2 assets,16 package and2 focused browser tests passed; lint/build passed (existing warnings). Pixel bounds confirm78–83% closed door height in both traversals; window orientation, symmetric opening, sound-tail fade and Reset remain covered. Local preview screenshot: `docs/images/automatic-sliding-framing-2026-10-11.png`. Gallery check still reports the preexisting frame-count mismatch12332/12428; unrelated gallery files were preserved.
 
 Framing calibration delivery: [PR #68](https://github.com/moojing/re-canvas-door-swing/pull/68); merge state is recorded on the PR. This adjustment does not change the6/35 source count or publication status.
+
+
+## 2026-10-14 Parking initial framing correction
+
+Source1-3/a01/a01-s2停車場門.mp4 at file1.4s has approximate bright door height77% (y135–750 of800 at threshold35); file1.9s80.8%,2.2s89.2%,2.5s99.1% cropped. Initial size remains stable through roughly1.7s, then approaches; closed waiting near3.6s crops vertically. Previous camera z5.5 made runtime start at97.8% height, confusing late close framing with the opening shot.
+
+Shared1999-single-closed-wait-advance now starts z6.9, holds0–500ms, eases in/out to4.55 at1800ms, then slightly approaches4.5 at2300ms. Existing closed wait2300–3100ms, opening3100–4050ms, later passage toz2.3, target, sound, fade and4800ms duration are retained. Both explicit parking preset and1999 hinge-single style fallback use it; no reverse preset is invented. This fits size/approach, not exact source projection/vertical placement/material or full path.
+
+Delivery includes library beta.4 and site version pin; assets beta.2 reused. Publication/live deployment must be verified after review before reporting remote correction delivered.
+
+Verification:89 core +2 assets,16 package,12 beta-build and42 browser tests passed; lint passed with3 existing warnings. Pixel regression verifies75–80% initial/500ms hold,84–93% mid-approach, and vertically cropped2300/3100ms wait. Local initial/held screenshots are in docs/images/parking-initial-framing-2026-10-14.png and parking-held-framing-2026-10-14.png. Registry-installed beta.4 sample build passed; assets beta.2 unchanged. Delivery/merge status: [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71). Gallery check retains its preexisting12332/12428 frame count mismatch.
