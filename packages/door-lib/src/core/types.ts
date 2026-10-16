@@ -26,6 +26,9 @@ export type DoorAnimationStyleId =
   | "biohazard-1999";
 
 export type DoorAnimationSetId =
+  | "1996-single-open-running-pass"
+  | "1999-single-knob-approach-wait-pass"
+  | "1999-single-knob-approach-outward-pass"
   | "1996-double-slide-approach-hold-pass"
   | "1998-single-fixed-wait-micro-open-pass"
   | "1996-single-micro-open-advance"
@@ -42,6 +45,9 @@ export type DoorMaterialId =
   | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
+  | "biohazard-1996-a02-red-cross-running-door"
+  | "biohazard-1999-a02-iron-window-door"
+  | "biohazard-1999-a02-iron-window-door-leave"
   | "biohazard-1996-b07-automatic-sliding-door"
   | "biohazard-1996-b07-automatic-sliding-door-leave"
   | "biohazard-1998-a03-grid-knob-door"
@@ -87,6 +93,8 @@ export interface DoorEntrancePreset extends DoorSurfaceTextureUrls {
   mirrorTextureX?: boolean;
   handleModelUrl?: string;
   handleProfileId?: HandleProfileId;
+  /** Grip turn as seen from the front face; independent of leaf swing. */
+  handleTurnDirection?: "clockwise" | "counterclockwise";
   soundUrl?: string;
   className?: string;
 }

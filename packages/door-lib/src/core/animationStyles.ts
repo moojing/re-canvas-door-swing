@@ -41,6 +41,72 @@ const event = (id: string, label: string, atMs: number): TimelineEvent => ({
   atMs,
 });
 
+// S9 is already open on its first visible transition frame. Do not invent a
+// closed-door/knob phase from the S2 appearance thumbnail. Coordinates are fits.
+export const openRunningPass1996Profile: EraAnimationProfile = {
+  durationMs: 4640,
+  events: [event("start", "Open door", 0), event("run-start", "Running approach", 2400),
+    event("passage", "Passage", 4000), event("fade-start", "Fade starts", 4400),
+    event("end", "End", 4640)],
+  doorAngle: [at(0, 78 / 90), at(4640, 78 / 90)],
+  handleAngle: [at(0, 0), at(4640, 0)],
+  // One cubic path: slow start, 50% faster terminal speed than quadratic,
+  // with no intermediate ease restart or velocity drop.
+  cameraPosition: [
+    { atMs: 0, value: [3, 0, 15.5], easing: "ease-in-cubic" },
+    { atMs: 4640, value: [3, 0, 0.45] },
+  ],
+  cameraTarget: [{ atMs: 0, value: [3, 0, -4] }, { atMs: 4640, value: [3, 0, -4] }],
+  fadeOut: [at(0, 0), at(4400, 0), at(4640, 1)],
+  // The silent GIF cannot establish a running sound. Disable the default door
+  // creak rather than attaching it to a stationary, already-open leaf.
+  soundStartMs: 0,
+  soundEndMs: 0,
+  soundSourceStartProgress: 0,
+  soundSourceEndProgress: 0,
+};
+
+export const knobApproachWaitPass1999Profile: EraAnimationProfile = {
+  durationMs: 4800,
+  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1920),
+    event("handle-start", "Handle starts", 2720), event("opening-start", "Opening starts", 3040),
+    event("slight-open", "Slight opening", 3200), event("hold-end", "Pause ends", 3520),
+    event("open-end", "Door opens", 4400), event("passage", "Passage", 4480),
+    event("fade-start", "Fade starts", 4560), event("end", "End", 4800)],
+  doorAngle: [at(0, 0), at(3040, 0), at(3200, 6 / 90),
+    { ...at(3520, 6 / 90), easing: "ease-in" }, at(4400, 1), at(4800, 1)],
+  handleAngle: [at(0, 0), at(2720, 0), at(3040, radians(180)), at(3520, radians(180)), at(4000, 0), at(4800, 0)],
+  cameraPosition: [camera(0, 8), { ...camera(320, 8), easing: "ease-in-out" }, camera(1920, 4.8),
+    { ...camera(3520, 4.8), easing: "ease-in" }, camera(4800, 1.6)],
+  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 4800, value: [0, 0, 0] }],
+  fadeOut: [at(0, 0), at(4560, 0), at(4800, 1)],
+  soundStartMs: 3040,
+  soundEndMs: 4560,
+  soundSourceStartProgress: 0.06,
+  soundSourceEndProgress: 0.36,
+};
+
+// The reverse passage turns earlier and has a longer visible traversal.
+export const knobApproachOutwardPass1999Profile: EraAnimationProfile = {
+  durationMs: 5280,
+  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1920),
+    event("handle-start", "Handle starts", 2240), event("opening-start", "Opening starts", 2560),
+    event("slight-open", "Slight opening", 2720), event("hold-end", "Pause ends", 3040),
+    event("open-end", "Door opens", 4160), event("passage", "Passage", 4480),
+    event("fade-start", "Fade starts", 4800), event("end", "End", 5280)],
+  doorAngle: [at(0, 0), at(2560, 0), at(2720, 6 / 90),
+    { ...at(3040, 6 / 90), easing: "ease-in" }, at(4160, 1), at(5280, 1)],
+  handleAngle: [at(0, 0), at(2240, 0), at(2560, radians(180)), at(3040, radians(180)), at(3840, 0), at(5280, 0)],
+  cameraPosition: [camera(0, 8), { ...camera(320, 8), easing: "ease-in-out" }, camera(1920, 4.8),
+    { ...camera(3040, 4.8), easing: "ease-in" }, camera(5280, 1.6)],
+  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 5280, value: [0, 0, 0] }],
+  fadeOut: [at(0, 0), at(4800, 0), at(5280, 1)],
+  soundStartMs: 2560,
+  soundEndMs: 4800,
+  soundSourceStartProgress: 0.06,
+  soundSourceEndProgress: 0.36,
+};
+
 interface HeldDoorTiming {
   durationMs: number;
   approachEndMs: number;

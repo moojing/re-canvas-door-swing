@@ -284,7 +284,8 @@ describe("package boundary", () => {
       source,
       /const singleRotationDirection = this\.activeSingleHingeSide === "right" \? 1 : -1/
     );
-    assert.match(source, /new THREE\.PlaneGeometry\(leafWidth, height\)/);
+    assert.match(source, /new THREE\.PlaneGeometry\(leafWidth, height, 1, this\.compactWindowLayout \? 20 : 1\)/);
+    assert.match(source, /compactWindowTextureV\(uv\.getY\(index\)\)/);
     assert.doesNotMatch(source, /DOOR_FACE_INSET/);
     assert.doesNotMatch(source, /width: 1\.48/);
   });

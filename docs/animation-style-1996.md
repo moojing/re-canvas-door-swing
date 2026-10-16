@@ -29,6 +29,12 @@ rotation signs or set names. Their preset IDs and catalog grouping stay stable.
 | `1998-single-micro-open-hold-advance` | hinge-single | 1998 no-handle door |
 | `1999-single-closed-wait-advance` | hinge-single | 1999 parking door |
 
+Local #31 candidates (not merged/published): S9 selects
+`1996-single-open-running-pass` (4.64s). Iron-window first selects
+`1999-single-knob-approach-wait-pass` (4.8s); second selects
+`1999-single-knob-approach-outward-pass` (5.28s). They have distinct passage
+tracks rather than per-preset overrides; no era default changes.
+
 The micro-open advance set lasts 5.00 s: initial approach ends1.20, optional
 handle action2.60–3.10, opening starts3.12, reaches10° at3.30, resumes3.70,
 then opens continuously at constant speed to30° at5.00, fading4.80–5.00.

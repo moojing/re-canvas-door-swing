@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import * as THREE from "three";
-import { createAgedHandleMaterial, prepareHandleModel } from "../handleModel.ts";
+import { createAgedHandleMaterial, prepareHandleModel, getImportedGripTurnMultiplier } from "../handleModel.ts";
 
 describe("imported handle model", () => {
   it("centers the named door_handle node and keeps a fallback when missing", () => {
@@ -199,4 +199,23 @@ it("shipped knob keeps its base fixed while the grip turns about its shaft", asy
   assert.deepEqual(base.matrixWorld.elements, before.elements);
   assert.ok(shaftPoint.distanceTo(new THREE.Vector3(0, 0, 1).applyMatrix4(grip.matrixWorld)) < 1e-6);
   assert.ok(surfacePoint.distanceTo(new THREE.Vector3(1, 0, 0).applyMatrix4(grip.matrixWorld)) > 0.1);
+  const face = new THREE.Group();
+  const wrapper = new THREE.Group();
+  wrapper.rotation.x = Math.PI / 2;
+  face.add(wrapper);
+  wrapper.add(prepared.object);
+  for (const mirror of [1, -1]) {
+    wrapper.scale.set(mirror, 1, 1);
+    for (const desired of [-1, 1] as const) {
+      grip.rotation.copy(prepared.pressTargets[0].baseRotation);
+      const sign = getImportedGripTurnMultiplier(grip, face, desired);
+      const origin = new THREE.Vector3().applyMatrix4(grip.matrixWorld);
+      const from = new THREE.Vector3(1, 0, 0).applyMatrix4(grip.matrixWorld).sub(origin);
+      grip.rotation.z += sign * 0.2;
+      face.updateMatrixWorld(true);
+      const to = new THREE.Vector3(1, 0, 0).applyMatrix4(grip.matrixWorld).sub(origin);
+      assert.equal(Math.sign(from.x * to.y - from.y * to.x), desired,
+        `visible turn must match requested direction with mirror ${mirror}`);
+    }
+  }
 });

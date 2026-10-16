@@ -1,4 +1,6 @@
 export { default as doorWood } from "./textures/door-1.png";
+export { default as biohazard1996A02RedCrossDoor } from "./textures/biohazard-1996-a02-red-cross-door.jpg";
+export { default as biohazard1999A02IronWindowDoor } from "./textures/biohazard-1999-a02-iron-window-door.jpg";
 export { default as biohazard1996A01IronDoorFront } from "./textures/biohazard-1996-a01-iron-door-front.webp";
 export { default as biohazard1996A01IronDoorBack } from "./textures/biohazard-1996-a01-iron-door-back.webp";
 export { default as biohazard1999A01ParkingDoorFront } from "./textures/biohazard-1999-a01-parking-door-front.jpg";

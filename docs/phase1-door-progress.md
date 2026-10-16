@@ -28,9 +28,9 @@
 | 01 | `1-1/a01/a01-s1鐵門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1996-a01-iron-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
 | 02 | `1-2/a01/a01單門-無把手.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1998-a01-no-handle-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
 | 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 開場77%→靠近裁切構圖校準：交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71)，合併／發布以 PR 與 npm 為準（library beta.4）；其他來源 QA 見 #58。 |
-| 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 待實作 | — | 實作 S9 狂奔動作；S5 黃色門不能算此片完成。 |
+| 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 本機校準中／未合併／未發布 | `biohazard-1996-a02-red-cross-running-door` | GIF 複核後縮至4.64秒、提前通過；持續加速，門面更窄、更暗，金色水平把手縮小。待獨立審查與交付。S5 不計此來源。 |
 | 05 | `1-2/a03/a03-s2目字門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 已合併／beta 已發布 | `biohazard-1998-a03-grid-knob-door`（另有 Leave） | 素材與 library 已發布；去回精細時序及原音軌仍為近似。 |
-| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
+| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 本機校準中／未合併／未發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒，靠近放慢、旋鈕縮小；旋鈕依使用者最新校正。待獨立審查與交付，原音未驗。 |
 | 07 | `1-1/a03/a03-s2紅十字門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 08 | `1-1/a03/a03-s4紅花紋門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 09 | `1-3/a07/a12-s1鐵門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
