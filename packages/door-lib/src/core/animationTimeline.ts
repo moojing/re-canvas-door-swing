@@ -1,7 +1,7 @@
 import type { Vector3Tuple } from "./types.ts";
 
 export type TimelineValue = number | Vector3Tuple;
-export type TimelineEasing = "linear" | "ease-in" | "ease-out" | "ease-in-out";
+export type TimelineEasing = "linear" | "ease-in" | "ease-in-cubic" | "ease-out" | "ease-in-out";
 
 export interface TimelineKeyframe<T extends TimelineValue> {
   atMs: number;
@@ -41,6 +41,7 @@ export const validateTrack = <T extends TimelineValue>(
 
 const ease = (value: number, easing: TimelineEasing = "linear") => {
   if (easing === "ease-in") return value * value;
+  if (easing === "ease-in-cubic") return value * value * value;
   if (easing === "ease-out") return value * (2 - value);
   if (easing === "ease-in-out") {
     return value < 0.5 ? 2 * value * value : 1 - 2 * (1 - value) ** 2;

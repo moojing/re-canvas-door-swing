@@ -46,7 +46,7 @@ const validateProfile = (profile: EraAnimationProfile) => {
     !Number.isFinite(profile.soundEndMs) ||
     profile.soundStartMs < 0 ||
     profile.soundEndMs > duration ||
-    profile.soundEndMs <= profile.soundStartMs
+    profile.soundEndMs < profile.soundStartMs
   ) {
     throw new Error("Animation sound window must fit the duration");
   }

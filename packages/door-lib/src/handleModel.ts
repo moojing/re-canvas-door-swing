@@ -35,6 +35,19 @@ export interface PreparedHandleModel {
   pressTargets: Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>;
 }
 
+/** Account for imported model axes and mirrored wrappers, not only hinge side. */
+export const getImportedGripTurnMultiplier = (
+  grip: THREE.Object3D,
+  faceGroup: THREE.Object3D,
+  desired: number
+): 1 | -1 => {
+  faceGroup.updateWorldMatrix(true, true);
+  const local = new THREE.Matrix4().copy(faceGroup.matrixWorld).invert().multiply(grip.matrixWorld);
+  const e = local.elements;
+  const projectedOrientation = e[0] * e[5] - e[1] * e[4];
+  return desired * (projectedOrientation < 0 ? -1 : 1) < 0 ? -1 : 1;
+};
+
 const loader = new GLTFLoader();
 const sceneCache = new Map<string, Promise<THREE.Object3D>>();
 let agedHandleTexture: THREE.DataTexture | null = null;

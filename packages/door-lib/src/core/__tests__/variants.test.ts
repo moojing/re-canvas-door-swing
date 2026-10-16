@@ -124,6 +124,9 @@ describe("core door entrance presets", () => {
     assert.deepEqual(
       doorEntrancePresets.map((preset) => preset.id),
       [
+        "biohazard-1996-a02-red-cross-running-door",
+        "biohazard-1999-a02-iron-window-door",
+        "biohazard-1999-a02-iron-window-door-leave",
         "biohazard-1996-a01-iron-door",
         "biohazard-1996-a01-iron-door-leave",
         "biohazard-1998-a01-no-handle-door",
@@ -259,7 +262,8 @@ describe("core door entrance presets", () => {
       const primary = getDoorEntrancePreset(preset.variantOf);
       assert.equal(primary.variantOf, undefined);
       assert.equal(primary.animation, preset.animation);
-      assert.equal(primary.label, preset.label);
+      // Traversals may append a visible direction suffix for unambiguous selection.
+      assert.equal(primary.label.split(" — ")[0], preset.label.split(" — ")[0]);
       assert.notEqual(primary.traversal, preset.traversal);
     }
     const selected = resolveDoorEntrancePresetSelection(
@@ -274,7 +278,7 @@ describe("core door entrance presets", () => {
       () => 0
     );
 
-    assert.equal(preset.id, "biohazard-1998-a03-grid-knob-door");
+    assert.equal(preset.id, "biohazard-1999-a02-iron-window-door");
     assert.equal(preset.handleProfileId, "knob-round");
   });
 

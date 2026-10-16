@@ -456,7 +456,7 @@ test("detail full-screen preview applies calibration timing and clears restored 
 test("iron door uses one catalog card and switches actual Enter/Leave preset IDs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true })).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(6);
+  await expect(page.locator("main article")).toHaveCount(8);
   await page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true }).click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -498,7 +498,7 @@ test("1998 grid door groups Enter/Leave and switches preset-backed camera and kn
   await page.goto("/");
   const detail = page.getByRole("link", { name: "View details for 1-2 A-3 Grid Knob Door", exact: true });
   await expect(detail).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(6);
+  await expect(page.locator("main article")).toHaveCount(8);
   await detail.click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");

@@ -169,6 +169,7 @@ const AnimationPreviewWorkbench = ({
                 <button
                   key={variant.id}
                   type="button"
+                  aria-label={variant.traversal === "leave" ? "Leave" : "Enter"}
                   aria-pressed={variant.id === preset.id}
                   onClick={() => onVariantChange(variant.id)}
                   className={`min-h-11 px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] ${
@@ -176,6 +177,12 @@ const AnimationPreviewWorkbench = ({
                   }`}
                 >
                   {variant.traversal === "leave" ? "Leave" : "Enter"}
+                  {variant.motion === "hinge-single" && (
+                    <span aria-hidden="true" className="mt-1 block text-xs">
+                      {variant.hingeSide === "right" ? "右鉸鏈" : "左鉸鏈"}
+                      {variant.swingDirection === "away-from-viewer" ? "・向內推" : "・向外拉"}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
