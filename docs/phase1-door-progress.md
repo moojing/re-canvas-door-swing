@@ -2,7 +2,7 @@
 
 線上總覽：[GitHub #63](https://github.com/moojing/re-canvas-door-swing/issues/63)；本文件為 repo 內的對照版本。
 
-更新日期：2026-10-14。這是 runtime 實作追蹤，不是門分類資料的副本。
+更新日期：2026-10-19。這是 runtime 實作追蹤，不是門分類資料的副本。
 原始選單依 2026-08-25 匯出的 35 支影片、20 個分類；分類與影片仍由 sibling `re-door-gallery` 管理。
 
 ## 目前進度
@@ -10,14 +10,14 @@
 | 範圍 | 數量 | 說明 |
 | --- | ---: | --- |
 | 原選單已合併 main | 6 / 35 | 三支無配件單門、藍色 B02 S3 雙門、1998 A03 S2目字門及1996 B07 S1自動滑門；B07由 [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 合併。 |
-| 本機完成／待合併 | 0 / 35 | B07 S1 Enter／Leave 已合併且 beta 已發布。 |
+| 已開 PR／待合併 | 2 / 35 | S9 狂奔門及鐵窗門兩段見 [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74)；未合併、未發布。 |
 | 原選單已發布 beta | 6 / 35 | library0.2.0-beta.4/assets0.1.0-beta.2；最新網站交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71) 與其部署 workflow。 |
-| 尚待實作 | 29 | 尚無對應的 runtime preset。 |
+| 尚待實作 | 27 | 不含已合併6支及 PR #74 的2支；仍有29支未合併。 |
 | 選單外相容性 preset | 1 支門 | 黃色 A02 S5 已退出 catalog／random，舊 ID 保留；不取代 S9。 |
 
 「已合併」表示 main 已有該影片對應的完整 preset、runtime 素材與 renderer 支援，
 不代表所有正反向穿越均已精確校準，或現有音效是原片音軌。
-本機 catalog 的9個 presets 包含6支基礎門與3個 Leave 變體；原選單為6支已合併、0支僅本機完成。
+本分支 catalog 的12個 presets 包含8支基礎門與4個 Leave 變體；原選單為6支已合併、2支已開 PR 待合併。Leave 不增加來源數。
 第05支由 [PR #65](https://github.com/moojing/re-canvas-door-swing/pull/65) 合併；第24支由 [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 合併。新版已發布 npm beta；網站部署見 PR #69。
 本表不將分類 ticket 的 Done／In Progress 直接套到分類內所有影片。
 
@@ -28,9 +28,9 @@
 | 01 | `1-1/a01/a01-s1鐵門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1996-a01-iron-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
 | 02 | `1-2/a01/a01單門-無把手.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1998-a01-no-handle-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
 | 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 開場77%→靠近裁切構圖校準：交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71)，合併／發布以 PR 與 npm 為準（library beta.4）；其他來源 QA 見 #58。 |
-| 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 本機校準中／未合併／未發布 | `biohazard-1996-a02-red-cross-running-door` | GIF 複核後縮至4.64秒、提前通過；持續加速，門面更窄、更暗，金色水平把手縮小。待獨立審查與交付。S5 不計此來源。 |
+| 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 待合併／未發布 | `biohazard-1996-a02-red-cross-running-door` | GIF 複核後縮至4.64秒、提前通過；持續加速，金色水平把手。待合併、素材發布與 CDN pin 更新；S5 不計此來源。 |
 | 05 | `1-2/a03/a03-s2目字門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 已合併／beta 已發布 | `biohazard-1998-a03-grid-knob-door`（另有 Leave） | 素材與 library 已發布；去回精細時序及原音軌仍為近似。 |
-| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 本機校準中／未合併／未發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒，靠近放慢、旋鈕縮小；旋鈕依使用者最新校正。待獨立審查與交付，原音未驗。 |
+| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 待合併／未發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒；待合併、素材發布與 CDN pin 更新，原音未驗。 |
 | 07 | `1-1/a03/a03-s2紅十字門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 08 | `1-1/a03/a03-s4紅花紋門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 09 | `1-3/a07/a12-s1鐵門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |

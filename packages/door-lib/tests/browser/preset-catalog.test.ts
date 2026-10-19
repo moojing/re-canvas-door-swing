@@ -42,7 +42,9 @@ test("unified animation navigation returns to the animation list and handles dir
   await expect(page).toHaveURL(/\/dev\/animations$/);
 
   await page.goto("/dev/animations/direct-entry?preset=biohazard-1996-b02-blue-panel-double-door");
-  await expect(page.getByText("biohazard-1996-a01-iron-door", { exact: true })).toBeVisible();
+  // An incompatible preset falls back to the first registered Direct Entry preset.
+  await expect(page.getByText("biohazard-1996-a02-red-cross-running-door", { exact: true })).toBeVisible();
+  await expect(page.getByText("biohazard-1996-b02-blue-panel-double-door", { exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Back to Animations" }).click();
   await expect(page).toHaveURL(/\/dev\/animations$/);
 });
