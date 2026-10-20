@@ -22,7 +22,7 @@ The option changes only library-owned URLs. Explicit `textureUrl`, `handleModelU
 
 ## Publish a beta
 
-Prepared versions: library `0.2.0-beta.0`, assets `0.1.0-beta.0`. They have not been published by this change. Confirm npm name ownership and sign in before publishing. Keep the pinned base URL in `packages/door-assets/base.js` aligned with the asset manifest version. Never replace media under an already released version.
+Published beta versions: library `0.2.0-beta.5`, assets `0.1.0-beta.3` (2026-10-20). This release adds the S9 running-door and iron-window-door textures. Sign in before publishing, publish assets first, verify CDN media, then publish the library. Keep the pinned base URL in `packages/door-assets/base.js` aligned with the asset manifest version. Never replace media under an already released version.
 
 From the repository root:
 
@@ -41,7 +41,7 @@ Verify the pinned jsDelivr asset URLs return the correct media and CORS headers 
 
 ```sh
 npm publish --workspace retro-horror-door --tag beta --access public
-npm run dev:beta --workspace retro-horror-door-sample -- 0.2.0-beta.0
+npm run dev:beta --workspace retro-horror-door-sample -- 0.2.0-beta.5
 ```
 
 The beta sample launcher installs the requested registry version into an isolated temporary directory, bypasses the workspace source alias, and uses CDN assets. Stop the existing local sample first or use the new port Vite prints. Catalog previews, modal playback and full-screen transitions use the installed package. The handle-material development verifier remains a local authoring tool.
@@ -52,6 +52,6 @@ The beta command installs into an OS temporary directory and leaves it for inspe
 
 ## GitHub Pages beta deployment
 
-Pushes to `main` build the sample against `retro-horror-door@0.2.0-beta.0` from npm and load runtime media from jsDelivr. The workflow does not build the workspace library. Its beta launcher installs the exact version into an isolated temporary directory, rejects failed installs and builds, and scans the finished output for workspace-source references before deployment.
+Pushes to `main` build the sample against `retro-horror-door@0.2.0-beta.5` from npm and load runtime media from jsDelivr. The workflow does not build the workspace library. Its beta launcher installs the exact version into an isolated temporary directory, rejects failed installs and builds, and scans the finished output for workspace-source references before deployment.
 
 To deploy a newer beta, publish it first, verify it with `npm run build:beta --workspace retro-horror-door-sample -- <version>`, then update the exact version in `.github/workflows/deploy-gh-pages.yml` and push that change to `main`.
