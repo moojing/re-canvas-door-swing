@@ -181,7 +181,7 @@ test("GitHub Pages builds the published beta sample without building the workspa
 
   assert.match(
     workflow,
-    /npm run build:beta --workspace retro-horror-door-sample -- 0\.2\.0-beta\.4/
+    /npm run build:beta --workspace retro-horror-door-sample -- 0\.2\.0-beta\.5/
   );
   assert.doesNotMatch(workflow, /npm run build:lib/);
   assert.match(workflow, /folder: packages\/sample\/dist/);

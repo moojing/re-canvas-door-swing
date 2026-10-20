@@ -153,3 +153,8 @@ package 測試仍要求舊常數；另一位 fixer B 修正後，A 核准最終�
 原始 MP4 已可在 sibling gallery 本機取得；材質、完整時序及原音軌仍為近似。
 #31、#26、#29、#58、#63 保持開啟／In Progress，尚有素材發布、CDN pin、
 library 發布與來源 QA；未自動發布。Gallery PR #10 的來源文字仍獨立待合併。
+
+
+## S9／鐵窗發布準備 — 2026-10-20
+
+Release candidate：assets `0.1.0-beta.3`、library `0.2.0-beta.5`，包含已合併的 S9 狂奔門與鐵窗門（含 Leave）。新素材先發布並驗證 jsDelivr，再發布內嵌新版 CDN URL 的 library；網站部署版本同步準備更新。npm 登入已恢復，發布及 CDN 驗證尚未執行；原選單仍8/35已合併、6/35已發布、27支待實作。
