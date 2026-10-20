@@ -22,7 +22,7 @@ The option changes only library-owned URLs. Explicit `textureUrl`, `handleModelU
 
 ## Publish a beta
 
-Release candidate: library `0.2.0-beta.5`, assets `0.1.0-beta.3`. This candidate adds the S9 running-door and iron-window-door textures. Sign in before publishing, publish assets first, verify CDN media, then publish the library. Keep the pinned base URL in `packages/door-assets/base.js` aligned with the asset manifest version. Never replace media under an already released version.
+Published beta versions: library `0.2.0-beta.5`, assets `0.1.0-beta.3` (2026-10-20). This release adds the S9 running-door and iron-window-door textures. Sign in before publishing, publish assets first, verify CDN media, then publish the library. Keep the pinned base URL in `packages/door-assets/base.js` aligned with the asset manifest version. Never replace media under an already released version.
 
 From the repository root:
 
