@@ -1,5 +1,30 @@
 # 1996–1999 released preset timing calibration
 
+## 2026-10-20 — Iron-window knob placement and review corrections
+
+Both iron-window traversals now mount their front/back knobs at the same
+physical leaf location, centered on the raised edge stile at 4% of leaf width
+from its free edge (0.12 scene units for a 3-unit leaf). The prior generic
+0.2-unit inset placed the base across the stile/panel seam. Enter uses the
+left visible stile and Leave the right; other presets retain their existing
+inset. This is a renderer/texture alignment fit, not a source measurement.
+The added passage subtitles and hinge/push/pull subtitles below Enter/Leave
+have been removed. Timing, swing directions, grip rotation and sound are unchanged.
+
+Original S9 and iron-window MP4s are now available locally in the sibling
+gallery materials directory. Fresh isolated source frames were compared to
+the runtime staging; S9 remains screen-left, consistent with its tracked GIF.
+Earlier unavailable-MP4 notes describe the prior review environment. Fine
+motion, original texture detail and audio fidelity remain approximate.
+
+Independent review found a stale package assertion requiring the old constant
+inset expression. A separate fixer updated that assertion to cover the compact
+window inset, signed placement and the existing shared front/back position.
+The 16 package checks pass. Runtime screenshots in `docs/reviews/ticket-31/`
+show the corrected positions and concise controls. Delivery/merge state is
+tracked in [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74);
+no new asset/library publication is included.
+
 ## 2026-10-17 — GIF re-review correction (current local fit)
 
 This section supersedes the earlier same-day fits below. No merge/publication yet.
