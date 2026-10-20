@@ -106,7 +106,7 @@ async function writeValidBetaOutput(directory, moduleIds = []) {
   await writeFile(join(directory, "index.html"), "<div id=\"root\"></div>");
   await writeFile(
     join(directory, "assets/index.js"),
-    "https://cdn.jsdelivr.net/npm/retro-horror-door-assets@0.1.0-beta.2"
+    "https://cdn.jsdelivr.net/npm/retro-horror-door-assets@0.1.0-beta.3"
   );
   const moduleIdsPath = join(directory, "module-ids.json");
   await writeFile(moduleIdsPath, JSON.stringify(moduleIds));

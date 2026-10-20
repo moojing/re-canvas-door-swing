@@ -157,4 +157,4 @@ library 發布與來源 QA；未自動發布。Gallery PR #10 的來源文字仍
 
 ## S9／鐵窗發布準備 — 2026-10-20
 
-Release candidate：assets `0.1.0-beta.3`、library `0.2.0-beta.5`，包含已合併的 S9 狂奔門與鐵窗門（含 Leave）。新素材先發布並驗證 jsDelivr，再發布內嵌新版 CDN URL 的 library；網站部署版本同步準備更新。npm 登入已恢復，發布及 CDN 驗證尚未執行；原選單仍8/35已合併、6/35已發布、27支待實作。
+Release candidate：assets `0.1.0-beta.3`、library `0.2.0-beta.5`，包含已合併的 S9 狂奔門與鐵窗門（含 Leave）。新素材先發布並驗證 jsDelivr，再發布內嵌新版 CDN URL 的 library；網站部署版本同步準備更新。assets 已發布；16個 CDN 素材均為HTTP200、CORS允許跨域且SHA-256與本機一致。library 發布請求已成功送出，npm仍在處理，尚待registry安裝驗證與網站部署；原選單仍8/35已合併、6/35完成套件發布驗證、27支待實作。
