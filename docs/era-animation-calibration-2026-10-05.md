@@ -640,3 +640,8 @@ Final tail verification:95core＋2local-assets,16package,46browser tests pass; l
 ### Final delivery review — 2026-10-20
 
 [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77) delivers the final6.90s blue double calibration described above; [Gallery PR #11](https://github.com/moojing/re-door-gallery/pull/11) records the portable source observations separately. PR state is authoritative for merge status. Earlier same-day local/pending candidate notes are history. This delivery does not publish a new package: registry beta.5/live site retain the released curve until a separate version release. Source counts remain8/35 merged/published and27pending; #37 remains incomplete for its two other sources, and #58 retains fine source/directional/audio QA.
+
+
+### Verified merge — 2026-10-20
+
+PR #77 merged as `20ff5e3cade84f6304589e167355f80eb48e6b3e`, reviewed head `171473dcccf4622bd1f884faa4bdc728fb6c5b51`; Gallery PR #11 merged as `af4c8563bb10ed36b5a555189ce199d4b8350719`. Final independent review found no actionable findings. Fresh95core＋2assets,16package,46browser,lint and library/sample build passed with existing warnings. The6.9s curve is on main, not published; earlier local/pending notes describe prior states. Fine source and original-audio QA remain approximate.

@@ -41,7 +41,7 @@
 | 14 | `1-2/a08/a08-s1自動旋轉門把.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
-| 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準交付見 PR #77 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；合併狀態以PR為準；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 |
+| 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 |
 | 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -166,3 +166,12 @@ assets `0.1.0-beta.3`、library `0.2.0-beta.5` 已發布於 npm beta，registry�
 驗證：93 core＋2本機素材、16 package、12 beta-build、46 browser tests通過，lint及library/sample build通過（保留既有warnings）。更新beta-build的素材版本檢查前，beta.3 fixture確實使舊檢查失敗；同步版本後12項全部通過。獨立release及增量審查均無需修正事項。
 
 原選單8/35已合併且beta已發布，27支待實作，Leave不增加來源數。網站部署版本更新見 [PR #76](https://github.com/moojing/re-canvas-door-swing/pull/76)，網站驗證另行記錄；精細來源／方向／原音QA仍由#58追蹤。
+
+
+## Blue double verified calibration merge — 2026-10-20
+
+[PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77) merged as `20ff5e3cade84f6304589e167355f80eb48e6b3e` after read-only independent reviewer approval of head `171473dcccf4622bd1f884faa4bdc728fb6c5b51`. No actionable final findings or unresolved inline comments remained. [Gallery PR #11](https://github.com/moojing/re-door-gallery/pull/11) merged source observations as `af4c8563bb10ed36b5a555189ce199d4b8350719`.
+
+The blue preset and1996 hinge-double fallback now preserve4500–4700ms micro-open pause, give1s camera advance4700–5700ms, fade5500–5700ms and hold fully black5700–6900ms before completion. Source observations and authored pacing remain distinct.
+
+Fresh95core＋2local-assets,16package,46browser tests pass; lint and library/sample build pass with existing warnings. Gallery check passes113doors/stills/GIFs (ignored local videos/frames absent in isolated reference worktree). No new package was published: beta.5/live site retain the prior released curve. Counts stay8/35 merged/published,27pending; this is a calibration of an existing source. #37 staysOpen/In Progress for its two remaining sources; #27/#29/#58/#63 retain their broader implementation, release and QA scope.
