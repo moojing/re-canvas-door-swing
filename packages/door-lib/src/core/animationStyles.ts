@@ -355,11 +355,11 @@ const doubleDoor1996 = (): EraAnimationProfile => {
     cameraPosition: ([
       { ...camera(0, 7.6), easing: "ease-out" },
       camera(1200, 5.3),
-      // Begin gently while the leaf holds; avoid compressing the approach into the tail.
-      { ...camera(4500, 5.3), easing: "ease-in" },
-      camera(5150, 4.65),
+      // Let the micro-open leaf and camera pause together before advancing.
+      { ...camera(4700, 5.3), easing: "ease-in" },
+      camera(5150, 4.85),
       // Continue at 2 units/s through fade, without the previous late rush.
-      camera(durationMs, 4.25),
+      camera(durationMs, 4.45),
     ] as TimelineKeyframe<Vector3Tuple>[]).map((frame) => ({
       ...frame,
       value: [0, 0.65, frame.value[2]],

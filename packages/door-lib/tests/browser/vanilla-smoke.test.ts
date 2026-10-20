@@ -56,6 +56,9 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
     return { fraction: visible / (canvas.width * canvas.height), checksum, rightWidth };
   }, { direction, atMs });
   const held = await capture(undefined, 4500);
+  const pauseEnd = await capture(undefined, 4700);
+  expect(pauseEnd.rightWidth).toBe(held.rightWidth);
+  expect(pauseEnd.checksum).toBe(held.checksum);
   const authored = await capture();
   expect(authored.rightWidth / held.rightWidth).toBeGreaterThan(1.05);
   expect(authored.rightWidth / held.rightWidth).toBeLessThan(1.2);

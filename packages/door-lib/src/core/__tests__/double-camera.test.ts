@@ -30,8 +30,11 @@ test("blue double pauses briefly then advances continuously without a passage sp
   const slight = marker("slight-open");
   const resume = marker("hold-end");
   assert.ok(resume - slight <= 250, "S3 does not support the old half-second hold");
-  assert.ok(at(resume).cameraPosition[2] < at(slight).cameraPosition[2],
-    "camera should begin a gentle approach during the leaf hold");
+  for (let ms = slight; ms <= resume; ms += 25) {
+    assert.deepEqual(at(ms).cameraPosition, at(slight).cameraPosition,
+      "camera must hold together with the micro-open leaf");
+    assert.equal(at(ms).doorAngle, at(slight).doorAngle);
+  }
   assert.equal(at(slight).doorAngle, at(resume).doorAngle);
   const z = (ms: number) => at(ms).cameraPosition[2];
   let previousStep = z(resume - 25) - z(resume);

@@ -54,10 +54,10 @@ Blue was refitted to S3 on 2026-10-10: 5.35 s, initial approach ends1.20,
 opening starts4.32, micro-open6° at4.50, resumes4.70, and fades5.15–5.35.
 Only the left leaf opens away; the right leaf remains closed. Both faces remain
 visible at fade start. Its camera is level
-at y0.65, approaches from z7.6 to5.3, holds until4.50, then gently accelerates
-to z4.65 at fade start and continues at2 units/s to z4.25 through fade. The
-2026-10-20 fit reduces excessive late enlargement while the leaf retains its
-4.50–4.70 micro-opening hold. The fitted final
+at y0.65, approaches from z7.6 to5.3, holds until4.70 together with the micro-open leaf, then gently accelerates
+to z4.85 at fade start and continues at2 units/s to z4.45 through fade. The
+2026-10-20 fit reduces excessive late enlargement and preserves the complete
+4.50–4.70 micro-opening pause for both leaf and camera. The fitted final
 40° is reached only at the black endpoint; it is not a measured source angle.
 1998 retains the preceding numeric profile. Parking camera framing and
 late acceleration were refitted on 2026-10-09; see the latest calibration section.
