@@ -631,10 +631,15 @@ class VanillaDoorScene {
   }) {
     const handleGroup = new THREE.Group();
     handleGroup.name = `${face}-handle`;
+    // Both iron-window passages mount their knobs on the narrow raised stile,
+    // centered 4% from the leaf edge rather than on the recessed-panel seam.
+    const handleEdgeInset = this.compactWindowLayout
+      ? width * 0.04
+      : KNOB_HANDLE_EDGE_INSET;
     const resolvedHandleX =
       handleProfileId === "knob-round" || this.rectangularKnobPlate
         ? Math.sign(handleX) *
-          (width - KNOB_HANDLE_EDGE_INSET)
+          (width - handleEdgeInset)
         : handleX;
     handleGroup.position.set(
       resolvedHandleX,

@@ -48,7 +48,7 @@ export const doorEntrancePresetMap: Record<
   "biohazard-1999-a02-iron-window-door": {
     id: "biohazard-1999-a02-iron-window-door",
     handleTurnDirection: "counterclockwise",
-    label: "1-3 A-2 S1 Iron Window Door — 第一段：左側旋鈕・向右內推",
+    label: "1-3 A-2 S1 Iron Window Door",
     traversal: "enter",
     type: "single",
     motion: "hinge-single",
@@ -69,7 +69,7 @@ export const doorEntrancePresetMap: Record<
   "biohazard-1999-a02-iron-window-door-leave": {
     id: "biohazard-1999-a02-iron-window-door-leave",
     handleTurnDirection: "clockwise",
-    label: "1-3 A-2 S1 Iron Window Door — 第二段：右側旋鈕・向左外拉",
+    label: "1-3 A-2 S1 Iron Window Door",
     variantOf: "biohazard-1999-a02-iron-window-door",
     traversal: "leave",
     type: "single",

@@ -177,12 +177,6 @@ const AnimationPreviewWorkbench = ({
                   }`}
                 >
                   {variant.traversal === "leave" ? "Leave" : "Enter"}
-                  {variant.motion === "hinge-single" && (
-                    <span aria-hidden="true" className="mt-1 block text-xs">
-                      {variant.hingeSide === "right" ? "右鉸鏈" : "左鉸鏈"}
-                      {variant.swingDirection === "away-from-viewer" ? "・向內推" : "・向外拉"}
-                    </span>
-                  )}
                 </button>
               ))}
             </div>

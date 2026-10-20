@@ -15,7 +15,9 @@ for (const id of ["biohazard-1996-a02-red-cross-running-door", "biohazard-1999-a
     if (!id.includes("running")) {
       const variant = id.endsWith("-leave") ? "Leave" : "Enter";
       await expect(page.getByRole("button", { name: variant, exact: true })).toHaveAttribute("aria-pressed", "true");
-      await expect(page.locator("main")).toContainText(id.endsWith("-leave") ? "第二段：右側旋鈕・向左外拉" : "第一段：左側旋鈕・向右內推");
+      await expect(page.locator("main")).toContainText("1-3 A-2 S1 Iron Window Door");
+      await expect(page.locator("main")).not.toContainText("第一段：");
+      await expect(page.locator("main")).not.toContainText("第二段：");
       await page.getByRole("button", { name: "Seek to Slight opening", exact: true }).click();
       await expect(progress).toHaveValue(id.endsWith("-leave") ? "51.5" : "66.7");
       await page.getByRole("button", { name: "Seek to Pause ends", exact: true }).click();
