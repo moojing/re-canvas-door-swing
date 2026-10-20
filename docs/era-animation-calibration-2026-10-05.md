@@ -635,3 +635,8 @@ Sound retains the existing licensed crop, with its playback window4320–5500ms 
 Regression first failed without the black marker/hold; new checks require950–1050ms forward movement,1150–1250ms fully black hold, frozen geometry throughout the black tail, and no premature completion. Browser coverage additionally verifies the actual black overlay remains fully opaque at5700/6800ms while progress is below100%. Updated final validation is recorded in PR #77; earlier runs above apply to earlier candidates. Local/unpublished calibration;8/35 published and27pending stay unchanged.
 
 Final tail verification:95core＋2local-assets,16package,46browser tests pass; lint and library/sample build pass with existing warnings. Independent incremental review found no blockers; its sound-test timing-margin note was addressed by checking silence at3200ms instead of a duration-dependent60% threshold. Gallery check passes113doors/stills/GIFs, with ignored video/frame directories absent in the isolated reference worktree.
+
+
+### Final delivery review — 2026-10-20
+
+[PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77) delivers the final6.90s blue double calibration described above; [Gallery PR #11](https://github.com/moojing/re-door-gallery/pull/11) records the portable source observations separately. PR state is authoritative for merge status. Earlier same-day local/pending candidate notes are history. This delivery does not publish a new package: registry beta.5/live site retain the released curve until a separate version release. Source counts remain8/35 merged/published and27pending; #37 remains incomplete for its two other sources, and #58 retains fine source/directional/audio QA.
