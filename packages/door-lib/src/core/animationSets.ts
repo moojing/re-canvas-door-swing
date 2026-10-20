@@ -1,5 +1,6 @@
 import { centerSplitSlide1996Profile, fixedWaitMicroOpenPass1998Profile, microOpenClosePassSingleDoor1996Profile, motionStyleProfiles, wideSwingSingleDoor1996Profile, type EraAnimationProfile } from "./animationStyles.ts";
 import type { DoorAnimationSetId, DoorAnimationStyleId, DoorEntranceMotion, DoorEntrancePreset } from "./types.ts";
+import { openRunningPass1996Profile, knobApproachWaitPass1999Profile, knobApproachOutwardPass1999Profile } from "./animationStyles.ts";
 
 export interface DoorAnimationSetMetadata {
   readonly id: DoorAnimationSetId;
@@ -25,6 +26,9 @@ const defineSet = (
 }];
 
 const sets = new Map<DoorAnimationSetId, AnimationSet>([
+  defineSet("1996-single-open-running-pass", "Already-open running passage", "biohazard-1996", "hinge-single", openRunningPass1996Profile),
+  defineSet("1999-single-knob-approach-wait-pass", "Approach, knob wait and passage", "biohazard-1999", "hinge-single", knobApproachWaitPass1999Profile),
+  defineSet("1999-single-knob-approach-outward-pass", "Approach, early knob and outward passage", "biohazard-1999", "hinge-single", knobApproachOutwardPass1999Profile),
   defineSet("1996-double-slide-approach-hold-pass", "Approach, wait and center-split passage", "biohazard-1996", "slide-double", centerSplitSlide1996Profile),
   defineSet("1998-single-fixed-wait-micro-open-pass", "Fixed wait, micro-open and passage", "biohazard-1998", "hinge-single", fixedWaitMicroOpenPass1998Profile),
   defineSet("1996-single-micro-open-advance", "Micro-open and advance", "biohazard-1996", "hinge-single", motionStyleProfiles["biohazard-1996"]["hinge-single"]!),

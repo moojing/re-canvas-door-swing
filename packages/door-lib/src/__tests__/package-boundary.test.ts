@@ -284,7 +284,8 @@ describe("package boundary", () => {
       source,
       /const singleRotationDirection = this\.activeSingleHingeSide === "right" \? 1 : -1/
     );
-    assert.match(source, /new THREE\.PlaneGeometry\(leafWidth, height\)/);
+    assert.match(source, /new THREE\.PlaneGeometry\(leafWidth, height, 1, this\.compactWindowLayout \? 20 : 1\)/);
+    assert.match(source, /compactWindowTextureV\(uv\.getY\(index\)\)/);
     assert.doesNotMatch(source, /DOOR_FACE_INSET/);
     assert.doesNotMatch(source, /width: 1\.48/);
   });
@@ -335,7 +336,11 @@ describe("package boundary", () => {
     assert.match(source, /const backHandleGroup = this\.createHandleGroup/);
     assert.match(source, /face: "front"/);
     assert.match(source, /face: "back"/);
-    assert.match(source, /width - KNOB_HANDLE_EDGE_INSET/);
+    assert.match(
+      source,
+      /const handleEdgeInset = this\.compactWindowLayout\s*\? width \* 0\.04\s*: KNOB_HANDLE_EDGE_INSET/
+    );
+    assert.match(source, /Math\.sign\(handleX\) \*\s*\(width - handleEdgeInset\)/);
     assert.match(
       source,
       /handleGroup\.position\.set\(\s*resolvedHandleX,\s*-0\.02,\s*face === "front" \? DOOR_DEPTH \+ DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET\s*\)/

@@ -42,7 +42,9 @@ test("unified animation navigation returns to the animation list and handles dir
   await expect(page).toHaveURL(/\/dev\/animations$/);
 
   await page.goto("/dev/animations/direct-entry?preset=biohazard-1996-b02-blue-panel-double-door");
-  await expect(page.getByText("biohazard-1996-a01-iron-door", { exact: true })).toBeVisible();
+  // An incompatible preset falls back to the first registered Direct Entry preset.
+  await expect(page.getByText("biohazard-1996-a02-red-cross-running-door", { exact: true })).toBeVisible();
+  await expect(page.getByText("biohazard-1996-b02-blue-panel-double-door", { exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Back to Animations" }).click();
   await expect(page).toHaveURL(/\/dev\/animations$/);
 });
@@ -456,7 +458,7 @@ test("detail full-screen preview applies calibration timing and clears restored 
 test("iron door uses one catalog card and switches actual Enter/Leave preset IDs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true })).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(6);
+  await expect(page.locator("main article")).toHaveCount(8);
   await page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true }).click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -498,7 +500,7 @@ test("1998 grid door groups Enter/Leave and switches preset-backed camera and kn
   await page.goto("/");
   const detail = page.getByRole("link", { name: "View details for 1-2 A-3 Grid Knob Door", exact: true });
   await expect(detail).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(6);
+  await expect(page.locator("main article")).toHaveCount(8);
   await detail.click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");

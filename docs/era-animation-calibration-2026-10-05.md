@@ -1,5 +1,110 @@
 # 1996–1999 released preset timing calibration
 
+## 2026-10-20 — Iron-window knob placement and review corrections
+
+Both iron-window traversals now mount their front/back knobs at the same
+physical leaf location, centered on the raised edge stile at 4% of leaf width
+from its free edge (0.12 scene units for a 3-unit leaf). The prior generic
+0.2-unit inset placed the base across the stile/panel seam. Enter uses the
+left visible stile and Leave the right; other presets retain their existing
+inset. This is a renderer/texture alignment fit, not a source measurement.
+The added passage subtitles and hinge/push/pull subtitles below Enter/Leave
+have been removed. Timing, swing directions, grip rotation and sound are unchanged.
+
+Original S9 and iron-window MP4s are now available locally in the sibling
+gallery materials directory. Fresh isolated source frames were compared to
+the runtime staging; S9 remains screen-left, consistent with its tracked GIF.
+Earlier unavailable-MP4 notes describe the prior review environment. Fine
+motion, original texture detail and audio fidelity remain approximate.
+
+Independent review found a stale package assertion requiring the old constant
+inset expression. A separate fixer updated that assertion to cover the compact
+window inset, signed placement and the existing shared front/back position.
+The 16 package checks pass. Runtime screenshots in `docs/reviews/ticket-31/`
+show the corrected positions and concise controls. Delivery/merge state is
+tracked in [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74);
+no new asset/library publication is included.
+
+## 2026-10-17 — GIF re-review correction (current local fit)
+
+This section supersedes the earlier same-day fits below. No merge/publication yet.
+Source GIF order is first knob on screen-left, receding to screen-right; second
+knob on screen-right, approaching the camera and passing to screen-left.
+Enter now selects right hinge/away, Leave left hinge/toward. Latest user correction:
+first grip counterclockwise180°, second clockwise180°. This supersedes earlier
+same-day grip assignments; leaf direction, phase times and passage order are unchanged.
+
+S9 remains a monotonic cubic approach, but ends at4640ms rather than5920ms:
+the previous fit incorrectly included the source's trailing black interval.
+Passage marker4000ms, fade4400–4640ms, fitted fixed leaf angle78° rather than72°.
+Camera endpoints/target remain unchanged. The authored horizontal brass accessory
+is scaled0.85; wood tint#b4aaa0 reduces brightness. S9 alone uses this set.
+
+Iron first passage keeps4800ms and its existing micro/hold, but approach now
+ends1920ms instead of1440ms. Second passage uses the separate reusable
+`1999-single-knob-approach-outward-pass`:5280ms, approach1920, handle2240–2560,
+micro2720, hold-end3040, full-open4160, fade4800–5280ms. This earlier swing follows
+the second GIF passage's distinct sequence; era fallbacks are unchanged.
+Both retain the shortened/top-aligned window, lower-corner handles, and scale
+the entire imported/fallback accessory to0.7. Door faces/edges use tint#929892.
+These are renderer fits; original generated surface details remain approximate.
+
+Evidence: tracked288×216/6.25fps GIFs, sampled every0.32s, compared to fresh4:3
+local preview captures at0–98%. S9 visible passage approximately3.52–8.0s;
+iron passages approximately3.04–7.84s and10.56–15.84s. MP4 unavailable, original
+audio unverified. Existing creak remains an approximation; S9 remains silent.
+
+### Earlier same-day iterations (historical, superseded)
+
+## 2026-10-17 — #31 local preview correction (not merged or published)
+
+S9 `1996-single-open-running-pass` starts already open at a fitted72° with
+right hinge and a level camera/target x3 throughout. This puts the visible face
+and knob left of the view from the first frame, instead of an almost edge-on
+leaf that only drifts left at the end. Duration5920ms and accelerating z path
+are local fits. There is no evidenced knob action; its sound window is silent.
+
+Iron-window Enter/Leave share `1999-single-knob-approach-wait-pass` (4800ms):
+approach ends1440ms, handle2720–3040ms, micro-open reaches6° at3200ms,
+leaf/camera/grip hold3200–3520ms, full opening4400ms, fade4560–4800ms.
+Preset-owned grip handedness makes the right-hinged Enter clockwise and
+left-hinged Leave counterclockwise from the front; back-face shaft signs reverse.
+No other preset's turn direction or era default is changed. Two separate single
+door traversals remain selectable, not a simultaneous double leaf.
+
+Latest user-confirmed correction (supersedes the direction assignments above):
+Enter is the first passage, left hinge/outward pull/clockwise knob. Leave is the
+second passage, right hinge/inward push/counterclockwise knob. The user explicitly
+confirmed that clockwise/counterclockwise describes the grip, not the leaf.
+Distinct visible labels identify the two passages; controls show hinge and push/pull direction.
+S9 uses the existing authored horizontal lever geometry with brass finish and
+rectangular plate, not the imported round knob. The free-edge lever extends into
+the leaf and mirrors on its rear. The imported knob remains on iron-window only.
+The S9 lever/plate material is now yellow brass #e5c343 without the dark bronze
+map, roughness0.78/metalness0.15; shared retro rendering is retained.
+
+Latest pacing/layout adjustment: S9 now uses one cubic ease-in from z15.5
+to0.45 over5920ms. The former2400ms easing restart dropped velocity to zero,
+and the4800ms join reduced it again; both joins are removed. A20ms finite-step
+regression verifies nondecreasing forward speed across the full path.
+Following the user's further request for a faster ending, cubic replaces quadratic:
+terminal speed increases50% (5.08 to7.63 scene units/s), while the first10% travels
+only0.1% of the path. Duration, endpoints and fade are unchanged; the final2%
+displacement regression requires at least48% improvement over quadratic.
+Only S9 selects this set; era fallbacks and both iron-window tracks are unchanged.
+Iron-window front/back UVs map the upper65% of the authored face into the top45%
+of the leaf, retaining its top position and overall door dimensions. The window
+bottom moves from58% to40.15% of door height, above the unchanged50.3% handle
+center. Only the two iron-window presets use this layout; mirror and traversal
+settings are unchanged. This is a user-directed layout fit, not a source measurement.
+
+Reference: tracked gallery GIFs a02-009 (1-1) and a02-001 (1-3), plus the user's
+explicit direction/staging review. Fine timing, angles and original audio remain
+unverified without MP4. New hardware-free generated JPEGs are original surfaces;
+symmetrical front/back share each material, edges map the same texture. Existing
+CC BY knob model is reused. Assets and new presets are still local/unpublished.
+
+
 This note supports [issue #58](https://github.com/moojing/re-canvas-door-swing/issues/58). The source of truth for the videos and classification remains the sibling `re-door-gallery` repository; no original media or frame extracts are shipped in the library. Observations came from the [gallery camera review](https://github.com/moojing/re-door-gallery/blob/main/docs/door-camera-era-review-2026-10-02.md), the exact local MP4s listed below, 0.1-second contact sheets, and `ffmpeg blackdetect=d=0.2:pix_th=0.07`. Blackdetect locates the first visible segment and next black transition, not the game engine's own animation boundaries.
 
 The five source clips all include more than one passage or surrounding game footage. Only their **first ordinary door passage** is fitted here. Absolute file times are approximate to 0.1–0.2 seconds. The captured pixels do not uniquely determine 3D camera position, opening angle, or whether a brief nearly static interval is mathematically motionless. Those values in `packages/door-lib/src/core/animationStyles.ts` are visual fitting parameters.

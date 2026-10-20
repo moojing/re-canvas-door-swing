@@ -1,7 +1,8 @@
 import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
-import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook } from "./core/renderLook.ts";
+import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook, usesRectangularKnobPlate, getHandleTurnMultiplier } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
+import { usesCompactWindowLayout, compactWindowTextureV } from "./core/renderLook.ts";
 import { getDoorEntranceAnimationConfig, type DoorTimingEvents } from "./core/presetAnimation.ts";
 import { getSoundPlaybackRate, getSoundVolume } from "./core/soundWindow.ts";
 import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
@@ -31,6 +32,7 @@ import {
   createAgedHandleMaterial,
   loadHandleScene,
   prepareHandleModel,
+  getImportedGripTurnMultiplier,
 } from "./handleModel.ts";
 
 interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
@@ -181,6 +183,9 @@ class VanillaDoorScene {
   private agedWood = false;
   private knobBackplate = false;
   private steelKnob = false;
+  private rectangularKnobPlate = false;
+  private compactWindowLayout = false;
+  private handleTurnDirection?: "clockwise" | "counterclockwise";
   private activeTextureFlipY = false;
   private readonly retroRasterSize = new THREE.Vector2(360, 360);
   private readonly ambientLight = new THREE.AmbientLight("#ffffff", 0.25);
@@ -235,6 +240,7 @@ class VanillaDoorScene {
 
   render({
     presetId,
+    handleTurnDirection,
     state,
     config,
     surfaceTextureUrls,
@@ -250,6 +256,7 @@ class VanillaDoorScene {
     cameraPanY,
   }: {
     presetId: DoorEntrancePresetId;
+    handleTurnDirection?: "clockwise" | "counterclockwise";
     state: DoorAnimationState;
     config: DoorAnimationConfig;
     surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls;
@@ -267,7 +274,12 @@ class VanillaDoorScene {
     const agedWood = usesAgedWoodLook(presetId);
     const knobBackplate = presetId === "biohazard-1996-b02-blue-panel-double-door";
     const steelKnob = usesSteelKnobLook(presetId);
-    const lookChanged = this.agedWood !== agedWood || this.knobBackplate !== knobBackplate || this.steelKnob !== steelKnob;
+    const rectangularKnobPlate = usesRectangularKnobPlate(presetId);
+    const compactWindowLayout = usesCompactWindowLayout(presetId);
+    const lookChanged = this.agedWood !== agedWood || this.knobBackplate !== knobBackplate || this.steelKnob !== steelKnob || this.rectangularKnobPlate !== rectangularKnobPlate || this.handleTurnDirection !== handleTurnDirection || this.compactWindowLayout !== compactWindowLayout;
+    this.compactWindowLayout = compactWindowLayout;
+    this.handleTurnDirection = handleTurnDirection;
+    this.rectangularKnobPlate = rectangularKnobPlate;
     this.steelKnob = steelKnob;
     this.knobBackplate = knobBackplate;
     this.agedWood = agedWood;
@@ -380,6 +392,13 @@ class VanillaDoorScene {
     this.frontDoorMaterial = createDoorFaceMaterial();
     this.backDoorMaterial = createDoorFaceMaterial();
     this.handleMaterial = createHandleMaterial();
+    if (this.rectangularKnobPlate && handleProfileId === "lever-l") {
+      // The running door's horizontal lock is yellow brass, not dark bronze.
+      this.handleMaterial.map = null;
+      this.handleMaterial.color.set("#e5c343");
+      this.handleMaterial.roughness = 0.78;
+      this.handleMaterial.metalness = 0.15;
+    }
     if (this.steelKnob) {
       this.handleMaterial.map = null;
       this.handleMaterial.color.set("#a9ada8");
@@ -396,6 +415,10 @@ class VanillaDoorScene {
         material.roughness = 1;
         material.metalness = 0;
         material.color.set("#ffffff");
+      }
+      if (this.compactWindowLayout) material.color.set("#929892");
+      if (this.rectangularKnobPlate && handleProfileId === "lever-l") {
+        material.color.set("#b4aaa0");
       }
       applyRetroMaterial(
         material,
@@ -541,8 +564,16 @@ class VanillaDoorScene {
     door.position.set(doorCenterX, 0, DOOR_DEPTH / 2);
     pivot.add(door);
 
+    const faceGeometry = () => {
+      const geometry = new THREE.PlaneGeometry(leafWidth, height, 1, this.compactWindowLayout ? 20 : 1);
+      if (this.compactWindowLayout) {
+        const uv = geometry.getAttribute("uv");
+        for (let index = 0; index < uv.count; index++) uv.setY(index, compactWindowTextureV(uv.getY(index)));
+      }
+      return geometry;
+    };
     const front = new THREE.Mesh(
-      new THREE.PlaneGeometry(leafWidth, height),
+      faceGeometry(),
       this.frontDoorMaterial
     );
     front.position.set(doorCenterX, 0, DOOR_DEPTH + DOOR_SURFACE_OFFSET);
@@ -550,7 +581,7 @@ class VanillaDoorScene {
     pivot.add(front);
 
     const back = new THREE.Mesh(
-      new THREE.PlaneGeometry(leafWidth, height),
+      faceGeometry(),
       this.backDoorMaterial
     );
     if (mirrorBackTextureX) mirrorPlaneTextureX(back.geometry);
@@ -600,10 +631,15 @@ class VanillaDoorScene {
   }) {
     const handleGroup = new THREE.Group();
     handleGroup.name = `${face}-handle`;
+    // Both iron-window passages mount their knobs on the narrow raised stile,
+    // centered 4% from the leaf edge rather than on the recessed-panel seam.
+    const handleEdgeInset = this.compactWindowLayout
+      ? width * 0.04
+      : KNOB_HANDLE_EDGE_INSET;
     const resolvedHandleX =
-      handleProfileId === "knob-round"
+      handleProfileId === "knob-round" || this.rectangularKnobPlate
         ? Math.sign(handleX) *
-          (width - KNOB_HANDLE_EDGE_INSET)
+          (width - handleEdgeInset)
         : handleX;
     handleGroup.position.set(
       resolvedHandleX,
@@ -611,7 +647,10 @@ class VanillaDoorScene {
       face === "front" ? DOOR_DEPTH + DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET
     );
     if (face === "back") handleGroup.rotation.y = Math.PI;
-    if (this.knobBackplate || this.steelKnob) {
+    // Scale the complete accessory, including imported and fallback geometry.
+    if (this.compactWindowLayout) handleGroup.scale.setScalar(0.7);
+    if (this.rectangularKnobPlate && handleProfileId === "lever-l") handleGroup.scale.setScalar(0.85);
+    if (this.rectangularKnobPlate) {
       const plate = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.55, 0.025), this.handleMaterial);
       plate.name = "fixed-backplate";
       plate.position.set(0, -0.09, 0.0125);
@@ -660,18 +699,23 @@ class VanillaDoorScene {
         this.handleMaterial
       );
       stem.rotation.x = Math.PI / 2;
+      stem.position.z = 0.075;
       const lever = new THREE.Mesh(
         new THREE.BoxGeometry(0.6, 0.08, 0.08),
         this.handleMaterial
       );
-      lever.position.x = side === "left" ? -0.25 : 0.25;
+      // Extend along the leaf from its free edge, mirrored on the rear face.
+      lever.position.x = -Math.sign(handleX) * (face === "front" ? 0.25 : -0.25);
+      lever.position.z = 0.15;
       handleGroup.add(stem, lever);
     }
 
     const handleEntry = {
       group: handleGroup,
       rotationMultiplier:
-        face === "front"
+        this.handleTurnDirection && handleProfileId === "knob-round"
+          ? getHandleTurnMultiplier(this.handleTurnDirection, face)
+          : face === "front"
           ? side === "left"
             ? 1
             : -1
@@ -787,6 +831,11 @@ class VanillaDoorScene {
           ? undefined
           : prepared.pressRotationMultiplier;
         handleEntry.pressTargets = prepared.pressTargets;
+        if (handleProfileId === "knob-round" && this.handleTurnDirection && prepared.pressTargets[0]) {
+          handleEntry.pressRotationMultiplier = getImportedGripTurnMultiplier(
+            prepared.pressTargets[0].node, handleEntry.group, handleEntry.rotationMultiplier
+          );
+        }
         this.renderer.render(this.scene, this.camera);
       })
       .catch(() => undefined);
@@ -916,7 +965,7 @@ export const mountDoorEntrance = (
   const getSoundWindow = (config = activeConfig) => {
     const startProgress = clampProgress(config.soundStartProgress ?? 0.18);
     const endProgress = Math.min(
-      Math.max(config.soundEndProgress ?? 1, startProgress + 0.001),
+      Math.max(config.soundEndProgress ?? 1, startProgress),
       1
     );
     const sourceStartProgress = clampProgress(config.soundSourceStartProgress ?? 0);
@@ -1050,6 +1099,7 @@ export const mountDoorEntrance = (
     });
     scene.render({
       presetId: activeDoorPreset.id,
+      handleTurnDirection: activeDoorPreset.handleTurnDirection,
       state,
       config,
       surfaceTextureUrls: resolvedSurfaceTextureUrls,
