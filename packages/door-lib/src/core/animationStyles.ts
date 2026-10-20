@@ -322,17 +322,18 @@ export const eraStyleDefaults: Record<DoorAnimationStyleId, EraAnimationProfile>
 };
 
 const doubleDoor1996 = (): EraAnimationProfile => {
-  const durationMs = 5350;
+  const pictureEndMs = 5700;
+  const durationMs = pictureEndMs + 1200;
   const profile = heldDoor({
-    durationMs,
+    durationMs: pictureEndMs,
     approachEndMs: 1200,
     knobStartMs: 2750,
     knobEndMs: 3350,
     slightOpenMs: 4500,
     holdEndMs: 4700,
-    openEndMs: 5050,
-    passageMs: 5100,
-    fadeStartMs: 5150,
+    openEndMs: 5400,
+    passageMs: 5450,
+    fadeStartMs: 5500,
     slightAngle: 6 / 90,
     approachZ: 5.3,
     openZ: 4.6,
@@ -342,14 +343,21 @@ const doubleDoor1996 = (): EraAnimationProfile => {
   const opening = [
     at(0, 0), at(4320, 0), at(4500, 6 / 90),
     { ...at(4700, 6 / 90), easing: "ease-in" as const },
-    at(durationMs, 40 / 90),
+    at(pictureEndMs, 40 / 90), at(durationMs, 40 / 90),
   ];
   return {
     ...profile,
-    events: profile.events.map((marker) => marker.id === "open-end"
-      ? { ...marker, label: "Late opening" }
-      : marker),
+    durationMs,
+    events: profile.events.flatMap((marker) => {
+      if (marker.id === "end") return [
+        event("black-start", "Black hold", pictureEndMs),
+        { ...marker, atMs: durationMs },
+      ];
+      return [{ ...marker, ...(marker.id === "open-end" ? { label: "Late opening" } : {}) }];
+    }),
+    fadeOut: [at(0, 0), at(5500, 0), at(pictureEndMs, 1), at(durationMs, 1)],
     doorAngle: opening,
+    handleAngle: [...profile.handleAngle, at(durationMs, 0)],
     // S3's right leaf stays closed; its apparent growth is camera motion.
     rightDoorAngle: [at(0, 0), at(durationMs, 0)],
     cameraPosition: ([
@@ -357,8 +365,8 @@ const doubleDoor1996 = (): EraAnimationProfile => {
       camera(1200, 5.3),
       // Let the micro-open leaf and camera pause together before advancing.
       { ...camera(4700, 5.3), easing: "ease-in" },
-      camera(5150, 4.85),
-      // Continue at 2 units/s through fade, without the previous late rush.
+      // Spread the same travel over one second, including the image fade.
+      camera(pictureEndMs, 4.45),
       camera(durationMs, 4.45),
     ] as TimelineKeyframe<Vector3Tuple>[]).map((frame) => ({
       ...frame,
@@ -370,7 +378,7 @@ const doubleDoor1996 = (): EraAnimationProfile => {
     ],
     // Fit the opening clip to leaf motion, rather than the earlier knob action.
     soundStartMs: 4320,
-    soundEndMs: 5150,
+    soundEndMs: 5500,
   };
 };
 
