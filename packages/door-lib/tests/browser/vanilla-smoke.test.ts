@@ -33,9 +33,9 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
     select.dispatchEvent(new Event("change"));
   });
   await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
-  const capture = (direction?: "toward-viewer" | "away-from-viewer") => page.evaluate((direction) => {
+  const capture = (direction?: "toward-viewer" | "away-from-viewer", atMs = 5150) => page.evaluate(({ direction, atMs }) => {
     if (direction) window.__doorEntranceTestApi__?.preview({ swingDirection: direction });
-    window.__doorEntranceTestApi__?.seek(5150 / 5350);
+    window.__doorEntranceTestApi__?.seek(atMs / 5350);
     const canvas = document.querySelector("canvas")!;
     const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
     if (!gl) throw new Error("WebGL context unavailable");
@@ -47,9 +47,18 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
       if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) visible++;
       checksum += pixels[index] * ((index % 97) + 1);
     }
-    return { fraction: visible / (canvas.width * canvas.height), checksum };
-  }, direction);
+    let rightWidth = 0;
+    const row = Math.floor(canvas.height / 2);
+    for (let x = Math.ceil(canvas.width / 2); x < canvas.width; x++) {
+      const index = (row * canvas.width + x) * 4;
+      if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) rightWidth++;
+    }
+    return { fraction: visible / (canvas.width * canvas.height), checksum, rightWidth };
+  }, { direction, atMs });
+  const held = await capture(undefined, 4500);
   const authored = await capture();
+  expect(authored.rightWidth / held.rightWidth).toBeGreaterThan(1.05);
+  expect(authored.rightWidth / held.rightWidth).toBeLessThan(1.2);
   expect(authored.fraction).toBeGreaterThan(0.25);
   await page.locator("canvas").screenshot({ path: testInfo.outputPath("blue-double-fade-start.png") });
   const toward = await capture("toward-viewer");

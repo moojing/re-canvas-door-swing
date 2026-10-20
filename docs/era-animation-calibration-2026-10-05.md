@@ -607,3 +607,16 @@ Shared1999-single-closed-wait-advance now starts z6.9, holds0–500ms, eases in/
 Delivery includes library beta.4 and site version pin; assets beta.2 reused. Publication/live deployment must be verified after review before reporting remote correction delivered.
 
 Verification:89 core +2 assets,16 package,12 beta-build and42 browser tests passed; lint passed with3 existing warnings. Pixel regression verifies75–80% initial/500ms hold,84–93% mid-approach, and vertically cropped2300/3100ms wait. Local initial/held screenshots are in docs/images/parking-initial-framing-2026-10-14.png and parking-held-framing-2026-10-14.png. Registry-installed beta.4 sample build passed; assets beta.2 unchanged. Delivery/merge status: [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71). Gallery check retains its preexisting12332/12428 frame count mismatch.
+
+
+## 2026-10-20 Blue double late-approach correction (local / unpublished)
+
+User reported a sudden final rush in `biohazard-1996-b02-blue-panel-double-door`. Rechecked original S3 first passage at file6.2–7.1s in100ms steps (1280×800/60fps source; local-only contact sheet under `/tmp/blue-door-late-review`). The existing gallery source record describes gradual enlargement with left-only opening and broad faces through fade, without a separate full-open sprint. MP4 file time is not runtime time; first passage starts approximately1.87s.
+
+Previous renderer fit held camera z5.3 until4700ms, accelerated to4.1 at5150ms (5.33units/s), then reached3.033 by5350ms. Though velocity was continuous, the large displacement near the door exaggerated projected enlargement. New shared `1996-double-micro-open-hold-advance` fit starts gently at4500ms, eases quadratically to z4.65 at5150ms, then continues at2units/s to z4.25 at5350ms. With the stationary right leaf, perspective scale grows about14% by fade start and25% by black, versus29%/75% previously. These are renderer projections, not source measurements.
+
+Only this camera track changes. Initial framing, camera height/target, left-only leaf rotation, knob, audio mapping, fade and5350ms duration retain their prior values. The blue preset and1996 hinge-double style-only fallback share the set; no other released preset or Leave variant is added or changed. Precise source motion and original audio remain approximate.
+
+Focused regression first failed on the old curve; revised core checks bound late projection growth/speed and verify continuity at fade. Real-render browser coverage measures the stationary right leaf at4500/5150ms and retains fade visibility, playback and controls. Local fade-start renderer capture: [blue double late approach](images/blue-double-late-approach-2026-10-20.png). Full playback was recorded locally and compared with the source contact sheet; the revised approach enlarges the leaves more gently. Verification results are recorded in the PR. This calibration is local, not merged or released; source counts remain8/35 published with27pending.
+
+Verification:94 core＋2local-assets,16package,46browser tests pass; lint and library/sample build pass with existing warnings. Independent reviewer found no actionable issues. New real-render leaf-growth assertion passes; full playback, Reset, seek and full-screen remain covered.
