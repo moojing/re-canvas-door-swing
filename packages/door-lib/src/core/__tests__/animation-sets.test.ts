@@ -68,7 +68,7 @@ test("wide swing has a distinct path and retiming/reset keeps its marker contrac
 
 test("double and other-era profiles retain their authored timing and end states", () => {
   for (const [id, duration, slightMs, finalAngle] of [
-    ["biohazard-1996-b02-blue-panel-double-door", 5350, 4500, 40 / 90],
+    ["biohazard-1996-b02-blue-panel-double-door", 6900, 4500, 40 / 90],
     ["biohazard-1998-a01-no-handle-door", 4400, 2000, 1],
     ["biohazard-1999-a01-parking-door", 4800, undefined, 1],
   ] as const) {

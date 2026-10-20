@@ -50,13 +50,17 @@ Initial approach reaches z4.5 at1.35 s,
 visibly cropping both top and bottom before opening, then advances to z3.8. These angles and camera
 values are renderer fits, not recovered original 3D coordinates.
 
-Blue was refitted to S3 on 2026-10-10: 5.35 s, initial approach ends1.20,
-opening starts4.32, micro-open6° at4.50, resumes4.70, and fades5.15–5.35.
-Only the left leaf opens away; the right leaf remains closed. Both faces remain
-visible at fade start. Its camera is level
-at y0.65, approaches from z7.6 to5.3, holds until4.70, then accelerates to z4.1
-at fade start and continues at the same velocity through fade. The fitted final
-40° is reached only at the black endpoint; it is not a measured source angle.
+Blue was refitted to S3 and updated on2026-10-20:6.90s total. Initial
+approach ends1.20, opening starts4.32, micro-open6° at4.50, and both leaf/camera
+hold until4.70. Only the left leaf opens away; the right remains closed.
+The camera stays level at y0.65, approaches from z7.6 to5.3, then after the
+micro-opening pause eases fromz5.3 to4.45 during4.70–5.70 (one second).
+Image fade is5.50–5.70; all geometry holds behind full black5.70–6.90.
+The fitted40° is reached at the black endpoint and held through the tail.
+The earlier5350ms fit ended as soon as it became black; the revised set adds
+an explicit1.2s black tail. Source late enlargement starts during micro-opening;
+the authored post-pause one-second approach preserves the user's clearer pause
+and is not a claim of identical source event timing or recovered3D coordinates.
 1998 retains the preceding numeric profile. Parking camera framing and
 late acceleration were refitted on 2026-10-09; see the latest calibration section.
 

@@ -30,17 +30,58 @@ test("blue double pauses briefly then advances continuously without a passage sp
   const slight = marker("slight-open");
   const resume = marker("hold-end");
   assert.ok(resume - slight <= 250, "S3 does not support the old half-second hold");
-  assert.deepEqual(at(slight).cameraPosition, at(resume).cameraPosition);
+  for (let ms = slight; ms <= resume; ms += 25) {
+    assert.deepEqual(at(ms).cameraPosition, at(slight).cameraPosition,
+      "camera must hold together with the micro-open leaf");
+    assert.equal(at(ms).doorAngle, at(slight).doorAngle);
+  }
   assert.equal(at(slight).doorAngle, at(resume).doorAngle);
   const z = (ms: number) => at(ms).cameraPosition[2];
-  let previousStep = 0;
-  for (let ms = resume; ms + 25 <= config.duration; ms += 25) {
+  let previousStep = z(resume - 25) - z(resume);
+  for (let ms = resume; ms + 25 <= marker("black-start"); ms += 25) {
     const step = z(ms) - z(ms + 25);
     assert.ok(step > 0 && step < 0.15, `camera jumps/stops at ${ms}`);
     assert.ok(Math.abs(step - previousStep) < 0.012, `camera speed changes at ${ms}`);
     assert.ok(at(ms + 25).doorAngle > at(ms).doorAngle, `leaf stops at ${ms}`);
     previousStep = step;
   }
+});
+
+test("blue late approach limits apparent enlargement instead of rushing through fade", () => {
+  const z = (ms: number) => at(ms).cameraPosition[2];
+  const heldZ = z(marker("slight-open"));
+  // The stationary right leaf isolates perspective growth from leaf rotation.
+  assert.ok(heldZ / z(marker("fade-start")) < 1.2,
+    "door grows too much before fade starts");
+  assert.ok(heldZ / z(config.duration) < 1.3,
+    "camera still rushes toward the door during fade");
+  for (let ms = marker("slight-open"); ms + 25 <= marker("black-start"); ms += 25) {
+    assert.ok((z(ms) - z(ms + 25)) / 0.025 < 2.1,
+      `late camera speed is excessive at ${ms}`);
+  }
+  const fade = marker("fade-start");
+  const before = (z(fade - 1) - z(fade)) * 1000;
+  const after = (z(fade) - z(fade + 1)) * 1000;
+  assert.ok(Math.abs(before - after) < 0.01, "fade must not introduce a speed jump");
+});
+
+test("blue forward movement lasts about one second before a separate black hold", () => {
+  const black = marker("black-start");
+  const resume = marker("hold-end");
+  assert.ok(black - resume >= 950 && black - resume <= 1050,
+    "late forward approach should last about one second");
+  assert.ok(config.duration - black >= 1150 && config.duration - black <= 1250,
+    "retain the source's roughly1.2s black interval");
+  assert.ok(at(black - 25).fadeOut < 1);
+  const finalPicture = at(black);
+  for (let ms = black; ms <= config.duration; ms += 25) {
+    assert.equal(at(ms).fadeOut, 1, `picture returns during black hold at ${ms}`);
+    assert.deepEqual(at(ms).cameraPosition, finalPicture.cameraPosition);
+    assert.equal(at(ms).doorAngle, finalPicture.doorAngle);
+    assert.equal(at(ms).handleAngle, finalPicture.handleAngle);
+  }
+  assert.ok(config.soundEndProgress! * config.duration <= black,
+    "no newly authored sound should be introduced in the black hold");
 });
 
 test("blue double opens away with broad faces still in frame when fading begins", () => {
