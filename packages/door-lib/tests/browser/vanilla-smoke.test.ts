@@ -339,7 +339,7 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     }
     const area = canvas.width * canvas.height;
     // At the held closed framing the authored window is above the push plate.
-    const scale = canvas.height / (2 * (6.65 - 0.221) * Math.tan(Math.PI / 6));
+    const scale = canvas.height / (2 * (5.29 - 0.221) * Math.tan(Math.PI / 6));
     const x = Math.round(canvas.width / 2 - 1.5 * scale);
     const patchLuma = (y: number) => {
       let sum = 0;
@@ -349,8 +349,8 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
       }
       return sum / 49;
     };
-    const upper = patchLuma(canvas.height / 2 + 1.68 * scale);
-    const lower = patchLuma(canvas.height / 2 - 1.68 * scale);
+    const upper = patchLuma(canvas.height / 2 + (1.68 - 0.83) * scale);
+    const lower = patchLuma(canvas.height / 2 + (0.25 - 0.83) * scale);
     return { left: left / area, right: right / area, middle: middle / area, heightFraction: (maxY - minY + 1) / canvas.height, windowRatio: upper / Math.max(lower, 1) };
   }, progress);
   for (const suffix of ["", "-leave"]) {
@@ -365,8 +365,8 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     await expect.poll(async () => (await capture(3250 / 5650)).windowRatio).toBeLessThan(0.6);
     const closed = await capture(3250 / 5650);
     expect(closed.middle).toBeGreaterThan(0.1);
-    expect(closed.heightFraction).toBeGreaterThan(0.78);
-    expect(closed.heightFraction).toBeLessThan(0.83);
+    expect(closed.heightFraction).toBeGreaterThan(0.84);
+    expect(closed.heightFraction).toBeLessThan(0.89);
     const open = await capture(4600 / 5650);
     expect(open.middle).toBeLessThan(0.01);
     expect(open.left).toBeGreaterThan(0.04);
@@ -425,13 +425,13 @@ test("parking approach starts smaller, then reaches the cropped closed wait", as
     }
     return (high - low + 1) / canvas.height;
   }, ms);
-  await expect.poll(() => heightAt(0)).toBeGreaterThan(0.75);
-  expect(await heightAt(0)).toBeLessThan(0.80);
+  await expect.poll(() => heightAt(0)).toBeGreaterThan(0.81);
+  expect(await heightAt(0)).toBeLessThan(0.87);
   expect(await heightAt(500)).toBeCloseTo(await heightAt(0), 2);
-  expect(await heightAt(1000)).toBeGreaterThan(0.84);
-  expect(await heightAt(1000)).toBeLessThan(0.93);
+  expect(await heightAt(1000)).toBeGreaterThan((await heightAt(0)) + 0.03);
+  expect(await heightAt(1000)).toBeLessThan(1.01);
   expect(await heightAt(2300)).toBeGreaterThan(0.98);
   expect(await heightAt(3100)).toBeGreaterThan(0.98);
   await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
-  expect(await heightAt(0)).toBeLessThan(0.80);
+  expect(await heightAt(0)).toBeLessThan(0.87);
 });

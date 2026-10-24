@@ -35,6 +35,11 @@ const camera = (atMs: number, z: number): TimelineKeyframe<Vector3Tuple> => ({
   atMs,
   value: [0, 0, z],
 });
+// Screen framing is fitted per reusable set; level closed shots keep position
+// and target at the same height instead of tilting a centered camera upward.
+const framedCamera = (atMs: number, z: number, y: number, x = 0): TimelineKeyframe<Vector3Tuple> => ({
+  atMs, value: [x, y, z],
+});
 const event = (id: string, label: string, atMs: number): TimelineEvent => ({
   id,
   label,
@@ -220,15 +225,19 @@ const parkingDoor = (): EraAnimationProfile => {
     doorAngle: [at(0, 0), at(3100, 0), at(4050, 1), at(durationMs, 1)],
     handleAngle: [at(0, 0), at(durationMs, 0)],
     cameraPosition: [
-      camera(0, 6.9),
-      { ...camera(500, 6.9), easing: "ease-in-out" },
-      { ...camera(1800, 4.55), easing: "ease-out" },
-      camera(2300, 4.5),
-      { ...camera(3100, 4.5), easing: "ease-in" },
+      framedCamera(0, 6.24, 0.675, -0.23),
+      { ...framedCamera(500, 6.24, 0.675, -0.23), easing: "ease-in-out" },
+      { ...framedCamera(1800, 3.98, 0.70, 0.25), easing: "ease-out" },
+      framedCamera(2300, 3.93, 0.70, 0.25),
+      { ...framedCamera(3100, 3.93, 0.70, 0.25), easing: "ease-in" },
       camera(durationMs, 2.3),
     ],
     cameraTarget: [
-      { atMs: 0, value: [0, 0, 0] },
+      { atMs: 0, value: [-0.23, 0.675, 0] },
+      { atMs: 500, value: [-0.23, 0.675, 0], easing: "ease-in-out" },
+      { atMs: 1800, value: [0.25, 0.32, 0], easing: "ease-out" },
+      { atMs: 2300, value: [0.25, 0.325, 0] },
+      { atMs: 3100, value: [0.25, 0.325, 0], easing: "ease-in" },
       { atMs: durationMs, value: [0, 0, 0] },
     ],
     fadeOut: [at(0, 0), at(4600, 0), at(durationMs, 1)],
@@ -242,8 +251,8 @@ const parkingDoor = (): EraAnimationProfile => {
 // Construct the shared single-door continuous approach, opening and fade tracks.
 const continuousApproachSingleDoor = (
   timing: Omit<HeldDoorTiming, "double">,
-  initialZ = 9,
-  initialTargetY = 0.2,
+  initialZ = 7.1,
+  initialTargetY = 0.85,
   driftMidMs = (timing.approachEndMs + timing.slightOpenMs) / 2
 ): EraAnimationProfile => {
   const { durationMs, approachEndMs, slightOpenMs, holdEndMs } = timing;
@@ -262,13 +271,17 @@ const continuousApproachSingleDoor = (
       at(holdEndMs, 10 / 90), at(durationMs, 30 / 90),
     ],
     cameraPosition: [
-      { ...camera(0, initialZ), easing: "ease-out" },
-      camera(approachEndMs, 6.1), camera(driftMidMs, 6.05), camera(slightOpenMs, 6.02),
-      { ...camera(holdEndMs, 6.02), easing: "ease-in" }, camera(durationMs, 3.95),
+      framedCamera(0, initialZ, 0.85),
+      framedCamera(approachEndMs * 0.25, 6.32, 0.85),
+      framedCamera(approachEndMs * 0.5, 5.75, 0.85),
+      framedCamera(approachEndMs * 0.75, 5.46, 0.85),
+      framedCamera(approachEndMs, 5.23, 0.85),
+      framedCamera(driftMidMs, 5.23, 0.85), framedCamera(slightOpenMs, 5.23, 0.85),
+      { ...framedCamera(holdEndMs, 5.23, 0.85), easing: "ease-in" }, camera(durationMs, 3.95),
     ],
     cameraTarget: [
       { atMs: 0, value: [0, initialTargetY, 0] },
-      { atMs: approachEndMs, value: [0, 0.4, 0] },
+      { atMs: holdEndMs, value: [0, 0.85, 0], easing: "ease-in" },
       { atMs: durationMs, value: [0, 0.4, 0] },
     ],
   };
@@ -287,7 +300,7 @@ const singleDoor1996 = (): EraAnimationProfile => continuousApproachSingleDoor({
   slightAngle: 10 / 90,
   approachZ: 6.1,
   openZ: 4.98,
-}, 9, 0.2, 2100);
+}, 7.1, 0.85, 2100);
 
 // Reusable close passage: retain the micro hold, then fit the narrow front / visible edge.
 const microOpenClosePassBase = singleDoor1996();
@@ -304,9 +317,8 @@ export const microOpenClosePassSingleDoor1996Profile: EraAnimationProfile = {
 
 };
 
-export const eraStyleDefaults: Record<DoorAnimationStyleId, EraAnimationProfile> = {
-  "biohazard-1996": singleDoor1996(),
-  "biohazard-1998": heldDoor({
+const singleDoor1998 = (): EraAnimationProfile => {
+  const profile = heldDoor({
     durationMs: 4400,
     approachEndMs: 1000,
     slightOpenMs: 2000,
@@ -317,7 +329,28 @@ export const eraStyleDefaults: Record<DoorAnimationStyleId, EraAnimationProfile>
     slightAngle: 0.08,
     approachZ: 8,
     openZ: 6.3,
-  }),
+  });
+  return {
+    ...profile,
+    cameraPosition: [
+      framedCamera(0, 5.31, 0.43, -0.28),
+      framedCamera(2850, 5.31, 0.43, -0.28),
+      framedCamera(3600, 4.8, 0.17, -0.11),
+      camera(4000, 1.4), camera(4400, 0.5),
+    ],
+    cameraTarget: [
+      { atMs: 0, value: [-0.28, 0.43, 0] },
+      { atMs: 2850, value: [-0.28, 0.43, 0] },
+      { atMs: 3600, value: [-0.11, 0.17, 0] },
+      { atMs: 4000, value: [0, 0, 0] },
+      { atMs: 4400, value: [0, 0, 0] },
+    ],
+  };
+};
+
+export const eraStyleDefaults: Record<DoorAnimationStyleId, EraAnimationProfile> = {
+  "biohazard-1996": singleDoor1996(),
+  "biohazard-1998": singleDoor1998(),
   "biohazard-1999": parkingDoor(),
 };
 
@@ -370,11 +403,11 @@ const doubleDoor1996 = (): EraAnimationProfile => {
       camera(durationMs, 4.45),
     ] as TimelineKeyframe<Vector3Tuple>[]).map((frame) => ({
       ...frame,
-      value: [0, 0.65, frame.value[2]],
+      value: [0, 0.80, frame.value[2]],
     })),
     cameraTarget: [
-      { atMs: 0, value: [0, 0.65, 0] },
-      { atMs: durationMs, value: [0, 0.65, 0] },
+      { atMs: 0, value: [0, 0.80, 0] },
+      { atMs: durationMs, value: [0, 0.80, 0] },
     ],
     // Fit the opening clip to leaf motion, rather than the earlier knob action.
     soundStartMs: 4320,
@@ -413,14 +446,19 @@ export const wideSwingSingleDoor1996Profile: EraAnimationProfile = {
   ],
   handleAngle: [at(0, 0), at(4700, 0)],
   cameraPosition: [
-    { ...camera(0, 5.8), easing: "ease-out" },
-    camera(1350, 4.5), camera(3350, 4.48), camera(3550, 4.46),
-    camera(3650, 4.4), camera(3950, 4.25), camera(4150, 4.1),
-    camera(4350, 4), camera(4450, 3.93), camera(4550, 3.85), camera(4700, 3.8),
+    framedCamera(0, 7.0, 0.85),
+    framedCamera(300, 6.32, 0.85), framedCamera(600, 5.75, 0.85),
+    framedCamera(900, 5.46, 0.85), framedCamera(1350, 5.23, 0.85),
+    framedCamera(3350, 5.23, 0.85),
+    ...[[3550, 4.46], [3650, 4.4], [3950, 4.25], [4150, 4.1],
+      [4350, 4], [4450, 3.93], [4550, 3.85], [4700, 3.8]].map(([ms, z]) => {
+        const remaining = (4700 - ms) / (4700 - 3350);
+        return framedCamera(ms, z + 0.75 * remaining, 0.85 * remaining);
+      }),
   ],
   cameraTarget: [
-    { atMs: 0, value: [0, 0, 0] },
-    { atMs: 1350, value: [0, 0, 0] },
+    { atMs: 0, value: [0, 0.85, 0] },
+    { atMs: 3350, value: [0, 0.85, 0] },
     { atMs: 4700, value: [0, 0, 0] },
   ],
   fadeOut: [at(0, 0), at(4580, 0), at(4700, 1)],
@@ -450,8 +488,11 @@ export const fixedWaitMicroOpenPass1998Profile: EraAnimationProfile = {
   doorAngle: [at(0, 0), at(2050, 0), at(2300, 6 / 90),
     { ...at(2900, 6 / 90), easing: "ease-in" }, at(4250, 1), at(4800, 1)],
   handleAngle: [at(0, 0), at(1650, 0), at(2050, radians(65)), at(2900, radians(65)), at(3650, 0), at(4800, 0)],
-  cameraPosition: [camera(0, 5.5), { ...camera(2900, 5.5), easing: "ease-in" }, camera(4800, 1.5)],
-  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 4800, value: [0, 0, 0] }],
+  cameraPosition: [framedCamera(0, 5.28, 0.39, -0.27),
+    { ...framedCamera(2900, 5.28, 0.39, -0.27), easing: "ease-in" }, camera(4800, 1.5)],
+  cameraTarget: [{ atMs: 0, value: [-0.27, 0.39, 0] },
+    { atMs: 2900, value: [-0.27, 0.39, 0], easing: "ease-in" },
+    { atMs: 4800, value: [0, 0, 0] }],
   fadeOut: [at(0, 0), at(4550, 0), at(4800, 1)],
   soundStartMs: 2050,
   soundEndMs: 4550,
@@ -463,7 +504,7 @@ export const fixedWaitMicroOpenPass1998Profile: EraAnimationProfile = {
 /** Center-split translation: approach, closed wait, slide and final advance. */
 export const centerSplitSlide1996Profile: EraAnimationProfile = {
   durationMs: 5650,
-  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1500),
+  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1900),
     event("opening-start", "Sliding starts", 3350), event("advance-start", "Advance starts", 3600),
     event("open-end", "Doors open", 4350), event("fade-start", "Fade starts", 4600), event("fade-end", "Picture black", 5000),
     event("sound-fade-start", "Sound fade starts", 5250), event("end", "End", 5650)],
@@ -475,9 +516,13 @@ export const centerSplitSlide1996Profile: EraAnimationProfile = {
     { atMs: 3350, value: [0, 0, 0], easing: "ease-in-out" },
     { atMs: 4350, value: [2.25, 0, 0] }, { atMs: 5650, value: [2.25, 0, 0] }],
   handleAngle: [at(0, 0), at(5650, 0)],
-  cameraPosition: [camera(0, 10), camera(1500, 6.65),
-    { ...camera(3600, 6.65), easing: "ease-in" }, camera(4700, 4), camera(5650, 4)],
-  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 5650, value: [0, 0, 0] }],
+  cameraPosition: [framedCamera(0, 10, 0.83), framedCamera(300, 8.5, 0.83),
+    framedCamera(600, 7.53, 0.83), framedCamera(900, 6.96, 0.83),
+    framedCamera(1200, 6.24, 0.83), framedCamera(1500, 5.70, 0.83),
+    framedCamera(1900, 5.29, 0.83),
+    { ...framedCamera(3600, 5.29, 0.83), easing: "ease-in" },
+    framedCamera(4700, 4, 0.83), framedCamera(5650, 4, 0.83)],
+  cameraTarget: [{ atMs: 0, value: [0, 0.83, 0] }, { atMs: 5650, value: [0, 0.83, 0] }],
   fadeOut: [at(0, 0), at(4600, 0), at(5000, 1), at(5650, 1)],
   soundStartMs: 3350,
   soundEndMs: 5650,
