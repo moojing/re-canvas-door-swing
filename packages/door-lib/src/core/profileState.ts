@@ -11,6 +11,7 @@ export const sampleProfileState = (profile: EraAnimationProfile, progress: numbe
     leftDoorOffset: profile.leftDoorOffset ? sampleTrack(profile.leftDoorOffset, duration, timeMs) : undefined,
     rightDoorOffset: profile.rightDoorOffset ? sampleTrack(profile.rightDoorOffset, duration, timeMs) : undefined,
     handleAngle: sampleTrack(profile.handleAngle, duration, timeMs),
+    rightHandleAngle: profile.rightHandleAngle ? sampleTrack(profile.rightHandleAngle, duration, timeMs) : undefined,
     cameraPosition: sampleTrack(profile.cameraPosition, duration, timeMs),
     cameraTarget: sampleTrack(profile.cameraTarget, duration, timeMs),
     fadeOut: sampleTrack(profile.fadeOut, duration, timeMs),

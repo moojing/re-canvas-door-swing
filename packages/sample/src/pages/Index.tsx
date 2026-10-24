@@ -13,6 +13,7 @@ import FullScreenDoorTransition, {
 import SampleHeader from "@/components/SampleHeader";
 import { catalogPresets, presetsForAnimation } from "@/dev/animationPresets";
 import PresetAnimationPreview from "./PresetAnimationPreview";
+import { getPresetReferenceGifUrl } from "@/dev/presetReferenceGifs";
 
 const formatValue = (value: string) =>
   value
@@ -81,6 +82,18 @@ const PresetCard = ({
         >
           Full-screen preview
         </button>
+        {getPresetReferenceGifUrl(preset) && (
+          <a
+            href={getPresetReferenceGifUrl(preset)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`View source GIF for ${preset.label}`}
+            className="mt-3 flex min-h-11 items-center justify-center gap-2 px-3 text-sm text-[#cfa975] underline underline-offset-4 transition-colors hover:text-[#f0bd78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
+          >
+            原片 GIF
+            <ArrowUpRight aria-hidden="true" size={16} />
+          </a>
+        )}
       </div>
     </div>
   </article>

@@ -41,7 +41,7 @@
 | 14 | `1-2/a08/a08-s1自動旋轉門把.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
-| 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24閉門構圖校準僅本機完成，待合併／發布；詳見最新校準紀錄。 |
+| 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24閉門構圖及僅左把手轉動修正僅本機完成，待合併／發布；詳見最新校準紀錄。 |
 | 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -181,3 +181,10 @@ Fresh95core＋2local-assets,16package,46browser tests pass; lint and library/sam
 The6 existing selected sources (rows01/02/03/05/17/24) plus retired Yellow compatibility presets receive camera framing adjustments on `fix/framing-alignment`. No source is newly implemented; original counts remain8/35 merged/published,27pending. The new calibration is not merged/published and does not reset previously delivered base implementations. Current main's S9/window presets and Blue6.9s authored tail are preserved. See the latest calibration record for fitted values, renderer evidence and final checks. #63 and category Source Doors/Project are synchronized separately with the same local status; no issue is closed by this work.
 
 Validation for this local calibration:112 core＋2assets,16package,47browser,lint/build passed with existing warnings; independent review approved. Online #30/#31/#37/#41/#58/#63 and Project states verified; categories retain their existing implementation/QA states. Gallery check retains the existing12332/12428 frame inventory blocker. No new implementation/release count is claimed.
+
+
+## 2026-10-24 Blue handle and catalog GIF follow-up — local, unpublished
+
+Blue B02 S3 now turns only the left handle; the closed right leaf and both faces of its handle remain stationary. An optional reusable right-handle track preserves shared-handle behavior for profiles that omit it. The accepted6.90s door/camera/sound timeline remains unchanged. All8 catalog cards now link to their matching gallery selection GIF in a new tab; mapping stays sample-only and no source media is packaged.
+
+Validation:113 core＋2local-assets,16package,48browser tests,lint and library/sample build pass with existing warnings. A browser pixel regression failed before the fix (211 changed right-half pixels) and passes afterward with zero changed right-half pixels while the left handle moves, including after Reset. Independent review approved. Changes remain local on `fix/framing-alignment`, unmerged/unpublished;8/35 merged/published and27pending unchanged. #37/#58/#63 and Project status synchronized/verified without closing wider work.

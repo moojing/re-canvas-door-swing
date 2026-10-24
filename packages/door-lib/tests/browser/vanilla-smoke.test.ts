@@ -435,3 +435,39 @@ test("parking approach starts smaller, then reaches the cropped closed wait", as
   await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
   expect(await heightAt(0)).toBeLessThan(0.87);
 });
+
+test("blue turns only the left handle while the closed right face stays pixel-identical", async ({ page }) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  await page.evaluate(() => {
+    const select = document.querySelector<HTMLSelectElement>("#door-preset")!;
+    select.add(new Option("blue", "biohazard-1996-b02-blue-panel-double-door"));
+  });
+  await page.selectOption("#door-preset", "biohazard-1996-b02-blue-panel-double-door");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  const changed = () => page.evaluate(() => {
+    const capture = (ms: number) => {
+      window.__doorEntranceTestApi__!.seek(ms / 6900);
+      const canvas = document.querySelector("canvas")!;
+      const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+      if (!gl) throw new Error("WebGL unavailable");
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      return { pixels, width: canvas.width, height: canvas.height };
+    };
+    const before = capture(2700), after = capture(3350);
+    let left = 0, right = 0;
+    for (let y = 0; y < before.height; y++) for (let x = 0; x < before.width; x++) {
+      const i = (y * before.width + x) * 4;
+      const delta = Math.abs(before.pixels[i] - after.pixels[i]) +
+        Math.abs(before.pixels[i + 1] - after.pixels[i + 1]) +
+        Math.abs(before.pixels[i + 2] - after.pixels[i + 2]);
+      if (delta > 6) { if (x < before.width / 2) left++; else right++; }
+    }
+    return { left, right };
+  });
+  await expect.poll(async () => (await changed()).left).toBeGreaterThan(5);
+  expect((await changed()).right).toBe(0);
+  await page.evaluate(() => window.__doorEntranceTestApi__!.reset());
+  expect((await changed()).right).toBe(0);
+});

@@ -19,6 +19,7 @@ export interface EraAnimationProfile {
   leftDoorOffset?: TimelineKeyframe<Vector3Tuple>[];
   rightDoorOffset?: TimelineKeyframe<Vector3Tuple>[];
   handleAngle: TimelineKeyframe<number>[];
+  rightHandleAngle?: TimelineKeyframe<number>[];
   cameraPosition: TimelineKeyframe<Vector3Tuple>[];
   cameraTarget: TimelineKeyframe<Vector3Tuple>[];
   fadeOut: TimelineKeyframe<number>[];
@@ -393,6 +394,7 @@ const doubleDoor1996 = (): EraAnimationProfile => {
     handleAngle: [...profile.handleAngle, at(durationMs, 0)],
     // S3's right leaf stays closed; its apparent growth is camera motion.
     rightDoorAngle: [at(0, 0), at(durationMs, 0)],
+    rightHandleAngle: [at(0, 0), at(durationMs, 0)],
     cameraPosition: ([
       { ...camera(0, 7.6), easing: "ease-out" },
       camera(1200, 5.3),
