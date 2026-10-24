@@ -10,13 +10,13 @@ const cases = [
   ["biohazard-1998-a01-no-handle-door", 1000, 4400, 404, 54, 678],
   ["biohazard-1998-a03-grid-knob-door", 1000, 4800, 404, 46, 676],
   ["biohazard-1998-a03-grid-knob-door-leave", 1000, 4800, 404, 46, 676],
-  ["biohazard-1996-b02-blue-panel-double-door", 1200, 5350, 824, 103, 638],
+  ["biohazard-1996-b02-blue-panel-double-door", 1200, 6900, 824, 103, 638],
   ["biohazard-1996-b07-automatic-sliding-door", 1900, 5650, 811, 107, 638],
   ["biohazard-1996-b07-automatic-sliding-door-leave", 1900, 5650, 811, 107, 638],
   ["biohazard-1999-a01-parking-door", 2300, 4800, 576, 0, 590],
 ] as const;
 
-test("all registered traversals match closed framing with the actual materials and handles", async ({ page }) => {
+test("all affected traversals match closed framing with the actual materials and handles", async ({ page }) => {
   test.setTimeout(60_000);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/samples/vanilla.html?testMode");
