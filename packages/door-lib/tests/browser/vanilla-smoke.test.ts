@@ -33,31 +33,35 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
     select.dispatchEvent(new Event("change"));
   });
   await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
-  const capture = (direction?: "toward-viewer" | "away-from-viewer", atMs = 5500) => page.evaluate(({ direction, atMs }) => {
+  const captureFrames = (direction: "toward-viewer" | "away-from-viewer" | undefined, times: number[]) => page.evaluate(({ direction, times }) => {
     if (direction) window.__doorEntranceTestApi__?.preview({ swingDirection: direction });
-    window.__doorEntranceTestApi__?.seek(atMs / 6900);
-    const canvas = document.querySelector("canvas")!;
-    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
-    if (!gl) throw new Error("WebGL context unavailable");
-    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
-    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    let visible = 0;
-    let checksum = 0;
-    for (let index = 0; index < pixels.length; index += 4) {
-      if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) visible++;
-      checksum += pixels[index] * ((index % 97) + 1);
-    }
-    let rightWidth = 0;
-    const row = Math.floor(canvas.height / 2);
-    for (let x = Math.ceil(canvas.width / 2); x < canvas.width; x++) {
-      const index = (row * canvas.width + x) * 4;
-      if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) rightWidth++;
-    }
-    const fadeOpacity = (canvas.nextElementSibling as HTMLElement).style.opacity;
-    return { fraction: visible / (canvas.width * canvas.height), checksum, rightWidth, fadeOpacity };
-  }, { direction, atMs });
-  const held = await capture(undefined, 4500);
-  const pauseEnd = await capture(undefined, 4700);
+    return times.map((atMs) => {
+      window.__doorEntranceTestApi__?.seek(atMs / 6900);
+      const canvas = document.querySelector("canvas")!;
+      const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+      if (!gl) throw new Error("WebGL context unavailable");
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      let visible = 0;
+      let checksum = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) visible++;
+        checksum += pixels[index] * ((index % 97) + 1);
+      }
+      let rightWidth = 0;
+      const row = Math.floor(canvas.height / 2);
+      for (let x = Math.ceil(canvas.width / 2); x < canvas.width; x++) {
+        const index = (row * canvas.width + x) * 4;
+        if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) rightWidth++;
+      }
+      const fadeOpacity = (canvas.nextElementSibling as HTMLElement).style.opacity;
+      return { fraction: visible / (canvas.width * canvas.height), checksum, rightWidth, fadeOpacity };
+    });
+  }, { direction, times });
+  const capture = async (direction?: "toward-viewer" | "away-from-viewer", atMs = 5500) =>
+    (await captureFrames(direction, [atMs]))[0];
+  // Keep asset-completion callbacks from interleaving between pause samples.
+  const [held, pauseEnd] = await captureFrames(undefined, [4500, 4700]);
   expect(pauseEnd.rightWidth).toBe(held.rightWidth);
   expect(pauseEnd.checksum).toBe(held.checksum);
   const authored = await capture();
@@ -65,8 +69,7 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
   expect(authored.rightWidth / held.rightWidth).toBeLessThan(1.2);
   expect(authored.fraction).toBeGreaterThan(0.25);
   await page.locator("canvas").screenshot({ path: testInfo.outputPath("blue-double-fade-start.png") });
-  const black = await capture(undefined, 5700);
-  const blackTail = await capture(undefined, 6800);
+  const [black, blackTail] = await captureFrames(undefined, [5700, 6800]);
   expect(black.fadeOpacity).toBe("1");
   expect(blackTail).toEqual(black);
   expect(await page.evaluate(() => window.__doorEntranceTestApi__?.progress())).toBeLessThan(1);
