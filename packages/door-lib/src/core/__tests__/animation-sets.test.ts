@@ -115,36 +115,27 @@ test("iron Leave wide swing crosses its middle without a speed dip", () => {
 });
 
 
-test("iron Leave crops both vertical edges during the close approach", () => {
+test("iron Leave retains a top margin during the closed approach and reaches its late crop", () => {
   const config = getDoorEntranceAnimationConfig(leave);
-  const camera = new PerspectiveCamera(60, 640 / 400, 0.1, 100);
-  for (const ms of [1350, 3350, 3650, 4150, 4350, 4550, 4580]) {
+  const camera = new PerspectiveCamera(60, 1.6, 0.1, 100);
+  const project = (ms: number) => {
     const state = config.getState(ms / config.duration);
     camera.position.set(...state.cameraPosition);
     camera.lookAt(...state.cameraTarget);
     camera.updateMatrixWorld();
-    // The six-unit leaf's stationary right hinge edge spans y=-3 to y=3.
-    const top = new Vector3(1.5, 3, 0).project(camera).y;
-    const bottom = new Vector3(1.5, -3, 0).project(camera).y;
-    assert.ok(top > 1.15, `door top is not visibly cropped at ${ms} ms`);
-    assert.ok(bottom < -1.15, `door bottom is not visibly cropped at ${ms} ms`);
-    assert.ok(Math.abs(top + bottom) < 1e-8, `vertical crop is unbalanced at ${ms} ms`);
+    return [new Vector3(1.5, 3, 0.162).project(camera).y,
+      new Vector3(1.5, -3, 0.162).project(camera).y];
+  };
+  const [initialTop, initialBottom] = project(0);
+  assert.ok(initialTop < 0.65 && initialTop > 0.4);
+  assert.ok(initialBottom > -1.05);
+  for (const ms of [1350, 3350]) {
+    const [top, bottom] = project(ms);
+    assert.ok(top > 0.70 && top < 0.80, `closed upper margin lost at ${ms}`);
+    assert.ok(bottom < -1.2, `closed lower crop lost at ${ms}`);
   }
-});
-
-
-test("iron Leave starts with a near-full-height door before approaching", () => {
-  const state = getDoorEntranceAnimationConfig(leave).getState(0);
-  const camera = new PerspectiveCamera(60, 640 / 400, 0.1, 100);
-  camera.position.set(...state.cameraPosition);
-  camera.lookAt(...state.cameraTarget);
-  camera.updateMatrixWorld();
-  const top = new Vector3(1.5, 3, 0).project(camera).y;
-  const bottom = new Vector3(1.5, -3, 0).project(camera).y;
-  const heightFraction = (top - bottom) / 2;
-  assert.ok(heightFraction >= 0.88 && heightFraction <= 0.94,
-    `initial door occupies ${heightFraction * 100}% of the frame height`);
-  assert.ok(top < 1 && bottom > -1, "initial framing must retain both edges");
+  const [lateTop, lateBottom] = project(4580);
+  assert.ok(lateTop > 1.1 && lateBottom < -1.1);
 });
 
 
@@ -196,15 +187,15 @@ test("parking starts framed at source scale before approaching its cropped close
     return [new Vector3(0, 3, 0.16).project(camera).y, new Vector3(0, -3, 0.16).project(camera).y];
   };
   const [top, bottom] = project(0);
-  assert.ok((top - bottom) / 2 > 0.75 && (top - bottom) / 2 < 0.80);
+  assert.ok((top - bottom) / 2 > 0.83 && (top - bottom) / 2 < 0.88);
   assert.deepEqual(project(0), project(500));
   const [midTop, midBottom] = project(1000);
-  assert.ok((midTop - midBottom) / 2 > 0.84 && (midTop - midBottom) / 2 < 0.93);
+  assert.ok((midTop - midBottom) / 2 > 0.94 && (midTop - midBottom) / 2 < 1.10);
   assert.ok(project(1400)[0] > 1);
   for (const ms of [2300, 2700, 3100]) {
     const [top, bottom] = project(ms);
     assert.ok(top > 1.1 && bottom < -1.1);
-    assert.ok(Math.abs(top + bottom) < 1e-8);
+    assert.ok(top > 1 && bottom < -1, "oblique wait crops both edges without requiring symmetry");
     assert.equal(config.getState(ms / config.duration).doorAngle, 0);
   }
 });

@@ -172,6 +172,7 @@ class VanillaDoorScene {
   private activeAnimation?: DoorAnimationId;
   private activeHandleGroups: Array<{
     group: THREE.Group;
+    side: "single" | "left" | "right";
     rotationMultiplier: number;
     pressRotationMultiplier?: 1 | -1;
     pressTargets?: Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>;
@@ -712,6 +713,7 @@ class VanillaDoorScene {
 
     const handleEntry = {
       group: handleGroup,
+      side,
       rotationMultiplier:
         this.handleTurnDirection && handleProfileId === "knob-round"
           ? getHandleTurnMultiplier(this.handleTurnDirection, face)
@@ -765,7 +767,10 @@ class VanillaDoorScene {
       const multiplier = pressTargets?.length
         ? handleEntry.pressRotationMultiplier ?? rotationMultiplier
         : rotationMultiplier;
-      const angle = (state.handleAngle ?? 0) * multiplier;
+      const handleAngle = handleEntry.side === "right"
+        ? state.rightHandleAngle ?? state.handleAngle ?? 0
+        : state.handleAngle ?? 0;
+      const angle = handleAngle * multiplier;
       if (pressTargets?.length) {
         group.rotation.z = 0;
         pressTargets.forEach(({ node, baseRotation }) => {

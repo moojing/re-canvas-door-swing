@@ -14,6 +14,7 @@ const validateProfile = (profile: EraAnimationProfile) => {
   if (profile.leftDoorOffset) validateTrack(profile.leftDoorOffset, duration);
   if (profile.rightDoorOffset) validateTrack(profile.rightDoorOffset, duration);
   validateTrack(profile.handleAngle, duration);
+  if (profile.rightHandleAngle) validateTrack(profile.rightHandleAngle, duration);
   validateTrack(profile.cameraPosition, duration);
   validateTrack(profile.cameraTarget, duration);
   validateTrack(profile.fadeOut, duration);
@@ -89,6 +90,7 @@ const retimeProfile = (
     leftDoorOffset: profile.leftDoorOffset ? retimeTrack(profile.leftDoorOffset, oldAnchors, newAnchors) : undefined,
     rightDoorOffset: profile.rightDoorOffset ? retimeTrack(profile.rightDoorOffset, oldAnchors, newAnchors) : undefined,
     handleAngle: retimeTrack(profile.handleAngle, oldAnchors, newAnchors),
+    rightHandleAngle: profile.rightHandleAngle ? retimeTrack(profile.rightHandleAngle, oldAnchors, newAnchors) : undefined,
     cameraPosition: retimeTrack(profile.cameraPosition, oldAnchors, newAnchors),
     cameraTarget: retimeTrack(profile.cameraTarget, oldAnchors, newAnchors),
     fadeOut: retimeTrack(profile.fadeOut, oldAnchors, newAnchors),

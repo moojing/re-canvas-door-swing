@@ -115,6 +115,8 @@ export interface DoorAnimationState {
   leftDoorOffset?: Vector3Tuple;
   rightDoorOffset?: Vector3Tuple;
   handleAngle?: number;
+  /** Right-leaf handle radians; omitted values retain shared-handle behavior. */
+  rightHandleAngle?: number;
   cameraPosition: Vector3Tuple;
   cameraTarget: Vector3Tuple;
   fadeOut: number;

@@ -25,11 +25,11 @@
 
 | 編號 | 原片識別 | 分類 ticket | 實作狀態 | Runtime preset | 剩餘工作 |
 | --- | --- | --- | --- | --- | --- |
-| 01 | `1-1/a01/a01-s1鐵門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1996-a01-iron-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
-| 02 | `1-2/a01/a01單門-無把手.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1998-a01-no-handle-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 |
-| 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 開場77%→靠近裁切構圖校準：交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71)，合併／發布以 PR 與 npm 為準（library beta.4）；其他來源 QA 見 #58。 |
+| 01 | `1-1/a01/a01-s1鐵門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1996-a01-iron-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
+| 02 | `1-2/a01/a01單門-無把手.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1998-a01-no-handle-door` | 年代／反向穿越後續 QA 見 [#58](https://github.com/moojing/re-canvas-door-swing/issues/58)。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
+| 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 開場77%→靠近裁切構圖校準：交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71)，合併／發布以 PR 與 npm 為準（library beta.4）；其他來源 QA 見 #58。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
 | 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1996-a02-red-cross-running-door` | GIF 複核後縮至4.64秒、提前通過；持續加速，金色水平把手。assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及音軌QA見 #58；S5 不計此來源。 |
-| 05 | `1-2/a03/a03-s2目字門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 已合併／beta 已發布 | `biohazard-1998-a03-grid-knob-door`（另有 Leave） | 素材與 library 已發布；去回精細時序及原音軌仍為近似。 |
+| 05 | `1-2/a03/a03-s2目字門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 已合併／beta 已發布 | `biohazard-1998-a03-grid-knob-door`（另有 Leave） | 素材與 library 已發布；去回精細時序及原音軌仍為近似。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
 | 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒。2026-10-20 修正 Enter／Leave 旋鈕至各自凸起直框中央（距邊4%），移除門名及切換按鈕副標題，由 PR #74 合併；assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及原音QA仍追蹤於 #58。 |
 | 07 | `1-1/a03/a03-s2紅十字門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 08 | `1-1/a03/a03-s4紅花紋門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -41,14 +41,14 @@
 | 14 | `1-2/a08/a08-s1自動旋轉門把.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
-| 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 |
+| 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24構圖及僅左把手轉動修正交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
 | 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 22 | `1-1/b04/b04-s2 田字門.mp4` | [#39](https://github.com/moojing/re-canvas-door-swing/issues/39) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 23 | `1-1/b01/b01-s1鐵門.mp4` | [#40](https://github.com/moojing/re-canvas-door-swing/issues/40) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
-| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 已合併／beta 已發布 | `biohazard-1996-b07-automatic-sliding-door`（另有 Leave） | [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 已合併；素材／library 已發布；已套用 Kyodon CC0 自動門音效及黑畫面尾聲淡出；閉門80%構圖校準見 [PR #68](https://github.com/moojing/re-canvas-door-swing/pull/68)，合併狀態以 PR 為準；原音軌及去回精細 QA 仍為近似。 |
+| 24 | `1-1/b07/b07-s1雙門自動門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 已合併／beta 已發布 | `biohazard-1996-b07-automatic-sliding-door`（另有 Leave） | [PR #66](https://github.com/moojing/re-canvas-door-swing/pull/66) 已合併；素材／library 已發布；已套用 Kyodon CC0 自動門音效及黑畫面尾聲淡出；閉門80%構圖校準見 [PR #68](https://github.com/moojing/re-canvas-door-swing/pull/68)，合併狀態以 PR 為準；原音軌及去回精細 QA 仍為近似。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
 | 25 | `1-2/b07/b07-s1大電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 26 | `1-3/b06/b06-s1處理廠電梯門.mp4` | [#41](https://github.com/moojing/re-canvas-door-swing/issues/41) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
 | 27 | `1-2/b05/b05-s1纜車門1.mp4` | [#42](https://github.com/moojing/re-canvas-door-swing/issues/42) | 待實作 | — | 新增中分滑動支援、本片素材與時間軸；只做門體轉場。 |
@@ -175,3 +175,21 @@ assets `0.1.0-beta.3`、library `0.2.0-beta.5` 已發布於 npm beta，registry�
 The blue preset and1996 hinge-double fallback now preserve4500–4700ms micro-open pause, give1s camera advance4700–5700ms, fade5500–5700ms and hold fully black5700–6900ms before completion. Source observations and authored pacing remain distinct.
 
 Fresh95core＋2local-assets,16package,46browser tests pass; lint and library/sample build pass with existing warnings. Gallery check passes113doors/stills/GIFs (ignored local videos/frames absent in isolated reference worktree). No new package was published: beta.5/live site retain the prior released curve. Counts stay8/35 merged/published,27pending; this is a calibration of an existing source. #37 staysOpen/In Progress for its two remaining sources; #27/#29/#58/#63 retain their broader implementation, release and QA scope.
+
+## 2026-10-24 closed-framing calibration — local, unpublished
+
+The6 existing selected sources (rows01/02/03/05/17/24) plus retired Yellow compatibility presets receive camera framing adjustments on `fix/framing-alignment`. No source is newly implemented; original counts remain8/35 merged/published,27pending. The new calibration is not merged/published and does not reset previously delivered base implementations. Current main's S9/window presets and Blue6.9s authored tail are preserved. See the latest calibration record for fitted values, renderer evidence and final checks. #63 and category Source Doors/Project are synchronized separately with the same local status; no issue is closed by this work.
+
+Validation for this local calibration:112 core＋2assets,16package,47browser,lint/build passed with existing warnings; independent review approved. Online #30/#31/#37/#41/#58/#63 and Project states verified; categories retain their existing implementation/QA states. Gallery check retains the existing12332/12428 frame inventory blocker. No new implementation/release count is claimed.
+
+
+## 2026-10-24 Blue handle and catalog GIF follow-up — local, unpublished
+
+Blue B02 S3 now turns only the left handle; the closed right leaf and both faces of its handle remain stationary. An optional reusable right-handle track preserves shared-handle behavior for profiles that omit it. The accepted6.90s door/camera/sound timeline remains unchanged. All8 catalog cards now link to their matching gallery selection GIF in a new tab; mapping stays sample-only and no source media is packaged.
+
+Validation:113 core＋2local-assets,16package,48browser tests,lint and library/sample build pass with existing warnings. A browser pixel regression failed before the fix (211 changed right-half pixels) and passes afterward with zero changed right-half pixels while the left handle moves, including after Reset. Independent review approved. Changes remain local on `fix/framing-alignment`, unmerged/unpublished;8/35 merged/published and27pending unchanged. #37/#58/#63 and Project status synchronized/verified without closing wider work.
+
+
+## 2026-10-24 delivery request
+
+User requested commit/review/merge. The local-only sections above are historical snapshots; this batch is delivered through [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79) into `main`. Verify its platform merge state for delivery status. Package publication and live deployment remain separate and are not performed by this PR. No original source count changes;8/35 existing sources and27pending remain. Online #30/#31/#37/#41/#58/#63 will record the verified merge outcome while retaining their wider category/QA scope.

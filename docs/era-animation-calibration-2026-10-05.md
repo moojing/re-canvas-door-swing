@@ -645,3 +645,41 @@ Final tail verification:95core＋2local-assets,16package,46browser tests pass; l
 ### Verified merge — 2026-10-20
 
 PR #77 merged as `20ff5e3cade84f6304589e167355f80eb48e6b3e`, reviewed head `171473dcccf4622bd1f884faa4bdc728fb6c5b51`; Gallery PR #11 merged as `af4c8563bb10ed36b5a555189ce199d4b8350719`. Final independent review found no actionable findings. Fresh95core＋2assets,16package,46browser,lint and library/sample build passed with existing warnings. The6.9s curve is on main, not published; earlier local/pending notes describe prior states. Fine source and original-audio QA remain approximate.
+
+
+## 2026-10-24 Closed framing across existing sets (local, unpublished)
+
+User authorized implementation after the gallery's `docs/door-framing-reanalysis-2026-10-24.md`:874 source samples across14 passages exposed cropping/fade errors in the initial size-only conclusions. Stable closed width, upper edge, center and bottom crop are fitted independently. Original videos and source/runtime overlays remain ignored in `DOOR_GALLERY_ROOT/materials/framing-fit-2026-10-24/`; no source imagery enters this repo/package. Initial fade-hidden positions remain approximate.
+
+Implementation was transplanted onto main `3d000c4` before final verification. The accepted Blue6.90s timeline remains: leaf/camera pause4500–4700, forward4700–5700, fade5500–5700, black5700–6900. Only its level camera height/target changes0.65→0.80. The newer S9 running and iron-window Enter/Leave sets, textures and registry entries remain intact. This task changes8 existing sets/11 affected presets, not every preset now on main.
+
+Renderer fits (coordinates are internal fits, not recovered source parameters):
+
+| Set / affected users | Closed framing fit | Connection to later motion |
+| --- | --- | --- |
+| 1996 micro-open advance: Iron Enter, retired Yellow Leave; close-pass variant: retired Yellow Enter | Level y0.85. Initialz7.1, approach samplesz6.32/5.75/5.46 at300/600/900ms, waitz5.23 at1200ms. The former small closed drift is removed. | Hold through3700ms, then ease to existingz3.95 endpoint/targety0.4; angle/handle/fade/sound unchanged. |
+| 1996 wide-swing: Iron Leave | Level y0.85, initialz7.0, waitz5.23 at1350ms through3350ms. | Release framing correction across the existing late samples, rejoiningz3.8/y0/target0 at4700ms. Existing leaf timing retained. |
+| 1998 no-handle / style fallback | Fixed position/targetx-0.28,y0.43; z5.31 through2850ms. | Viaz4.8 at3600ms, rejoin authored passage[0,0,1.4]/target0 at4000ms and finalz0.5 at4400ms. Regression protects passage, after review caught an earlier overcorrection there. |
+| 1998 Grid Enter/Leave | Fixed position/targetx-0.27,y0.39; z5.28 through2900ms. | Ease to existingz1.5/target0 at4800ms. Keep fixed closed view and micro pause. |
+| 1996 Blue / double fallback | Existingz path retained; levely0.80. | Preserve accepted6.90s late approach/black tail and all audio/leaf tracks. |
+| 1996 Automatic Enter/Leave / slide fallback / legacy center-split config | Levely0.83, initialz10 retained; sample approach toz5.29 at1900ms instead of1500ms/z6.65. Hold through3600ms. | Existingz4 at4700ms, slide3350–4350ms, picture/audio tail and5650ms completion retained. |
+| 1999 Parking Enter / style fallback | Initialposition[-0.23,0.675,6.24], level target. Existing500ms hold; approach to[0.25,0.70,3.93] at2300ms, target[0.25,0.325,0]. Oblique view matches tapered visible sides rather than uniformly scaling a centered rectangle. | Hold through3100ms; smoothly rejoin existing[0,0,2.3]/target0 at4800ms. Angle/audio/fade timings unchanged. |
+
+Actual1280×800 browser closed widths after fitting: Iron Enter/Leave410px; Yellow Enter410/Leave406; no-handle405; Grid Enter/Leave407; Blue808; Automatic Enter/Leave814; Parking574. Relative to the reviewed stable source silhouettes, all11 affected views differ by less than2% in width, with upper-edge differences at most4px (Parking top is cropped). These bounds do not imply matching textures, hardware proportions or every later silhouette. Dark source lower portions are not used to infer full door height.
+
+Visual QA: all11 affected presets inspected at initial, closed wait, true micro-hold, late opening, passage and fade; Blue also checked during its retained black tail. [Runtime closed before/after](images/framing-closed-2026-10-24.jpg) and [runtime phase sheet](images/framing-stages-2026-10-24.jpg) contain renderer images only. Source overlays remain local-only. No missing reverse traversal is synthesized. Reusable set/fallback users inherit the same tracks; released motion/audio contracts and counts remain unchanged.
+
+Status: local calibration on `fix/framing-alignment`, not merged or published. Package versions/assets are unchanged. Final validation and independent review are recorded below after completion.
+
+
+Final verification on main3d000c4 plus framing changes:112 core＋2 local-assets,16 package,47 browser tests passed. Browser coverage includes all11 affected closed pixel bounds/reset, real-leaf fade visibility, Blue pause/late-growth/black tail, newer S9/window controls, traversal switching, sound and full-screen/navigation. Lint/build passed with existing3 Fast Refresh warnings, outdated Browserslist data and sample chunk-size warning. Independent final review approved; its no-handle passage finding was fixed and regressed before the final runs. Evidence links and `git diff --check` verified; no material files tracked. Gallery validation remains blocked by the pre-existing96 extra ignored frames (manifest12332/destination12428), preserved unchanged. #30/#31/#37/#41/#58/#63 Source Doors/overview and Project statuses synchronized as local/unpublished, without resetting previously delivered implementations or inflating8/35 source counts. Worktree retained for local review; no release or merge performed.
+
+
+## 2026-10-24 Blue stationary right handle follow-up (local, unpublished)
+
+User observed that only the left leaf opens but both handles turned. The renderer previously applied the shared handle angle to every leaf. The reusable Blue double profile now supplies an optional `rightHandleAngle` track fixed at zero; the renderer applies it to both right-handle faces. Omitted tracks retain shared-handle behavior. Sampling, validation, timing edits and no-handle masking all preserve the independent track. Door angles, camera fit,6.90s duration, sound and fade are unchanged.
+
+Regression evidence: the pre-fix browser comparison at2700ms/3350ms changed211 right-half pixels; after the fix the left handle visibly changes and the stationary right half has zero changed pixels, including after Reset. Core coverage samples the whole timeline and a retimed handle event. All113 core＋2local-assets,16package and48browser tests pass; lint/build pass with existing warnings. Independent review approved. All8 sample catalog cards also expose matching original GIF links; reference mapping remains outside the library. No source media added, no merge/publication, source counts unchanged.
+
+
+PR #79 pre-merge verification found one intermittent Blue pause checksum mismatch (47/48 browser tests passed). Both sampled animation states were exactly identical; onReady only waits one animation frame and asynchronous asset callbacks can occur between separate browser evaluations. Pause and black-tail pairs are now captured synchronously in one evaluation while retaining exact equality assertions, preventing asset callbacks from interleaving. This changes test synchronization only; animation tracks are unchanged.

@@ -104,6 +104,16 @@ test("preset catalog opens the shared animation detail page", async ({
 test("every preset card makes details primary and full-screen preview secondary", async ({ page }) => {
   await page.goto("/");
 
+  const references: Record<string, string> = {
+    "biohazard-1996-a01-iron-door": "1-1/a01-001.gif",
+    "biohazard-1998-a01-no-handle-door": "1-2/a01-001.gif",
+    "biohazard-1999-a01-parking-door": "1-3/a01-002.gif",
+    "biohazard-1998-a03-grid-knob-door": "1-2/a03-002.gif",
+    "biohazard-1996-b02-blue-panel-double-door": "1-1/b02-003.gif",
+    "biohazard-1996-b07-automatic-sliding-door": "1-1/b07-001.gif",
+    "biohazard-1996-a02-red-cross-running-door": "1-1/a02-009.gif",
+    "biohazard-1999-a02-iron-window-door": "1-3/a02-001.gif",
+  };
   const cards = page.locator("article");
   expect(await cards.count()).toBeGreaterThan(0);
   for (const card of await cards.all()) {
@@ -113,6 +123,14 @@ test("every preset card makes details primary and full-screen preview secondary"
     await expect(detail).toHaveAttribute("href", /\/dev\/animations\/[^?]+\?preset=/);
     await expect(detail).toHaveText("View details");
     await expect(detail).toHaveCSS("background-color", "rgb(201, 141, 72)");
+    const source = card.getByRole("link", { name: `View source GIF for ${label}` });
+    const presetId = await card.locator("p").innerText();
+    expect(references[presetId], `${presetId} has a verified reference`).toBeTruthy();
+    await expect(source).toBeVisible();
+    await expect(source).toHaveAttribute("href",
+      `https://github.com/moojing/re-door-gallery/blob/main/selection-gifs/${references[presetId]}`);
+    await expect(source).toHaveAttribute("target", "_blank");
+    await expect(source).toHaveAttribute("rel", "noopener noreferrer");
     await expect(preview).toBeVisible();
     await expect(preview).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   }

@@ -114,3 +114,16 @@ test("blue opening sound starts with leaf motion and lasts until fade begins", (
   assert.equal(config.soundStartProgress, marker("opening-start") / config.duration);
   assert.equal(config.soundEndProgress, marker("fade-start") / config.duration);
 });
+
+test("only the active left leaf turns its handle, including timing edits and reset sampling", () => {
+  const edited = getDoorEntranceAnimationConfig(preset, { "handle-start": 2600 });
+  for (const animation of [config, edited]) {
+    assert.ok(animation.getState(3350 / animation.duration).handleAngle! > 0);
+    for (let ms = 0; ms <= animation.duration; ms += 25) {
+      assert.equal(animation.getState(ms / animation.duration).rightHandleAngle, 0,
+        `stationary right handle turns at ${ms}ms`);
+    }
+    assert.equal(animation.getState(0).handleAngle, 0);
+    assert.equal(animation.getState(0).rightHandleAngle, 0);
+  }
+});

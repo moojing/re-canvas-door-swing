@@ -22,7 +22,7 @@ test("automatic leaves wait, translate symmetrically and never rotate", () => {
   const state = (ms: number) => config.getState(ms / config.duration);
   assert.equal(config.duration, 5650);
   assert.deepEqual(state(3300).leftDoorOffset, [0, 0, 0]);
-  assert.deepEqual(state(1600).cameraPosition, state(3300).cameraPosition);
+  assert.deepEqual(state(1900).cameraPosition, state(3300).cameraPosition);
   for (let ms = 0; ms <= config.duration; ms += 50) {
     const s = state(ms);
     assert.equal(s.doorAngle, 0);
@@ -85,9 +85,11 @@ test("preview edits retime sound fade and picture black independently", () => {
   assert.equal(getDoorEntranceAnimationConfig(getDoorEntrancePreset(id)).soundFadeOutStartProgress, 5250 / config.duration);
 });
 
-test("closed sliding approach leaves approximately twenty percent vertical margin", () => {
+test("closed sliding approach reaches a larger lower-cropped hold", () => {
   const config = getDoorEntranceAnimationConfig(getDoorEntrancePreset(id));
   const state = config.getState(3300 / config.duration);
-  const heightFraction = 6 / (2 * (state.cameraPosition[2] - 0.221) * Math.tan(Math.PI / 6));
-  assert.ok(heightFraction >= 0.78 && heightFraction <= 0.82, `height fraction ${heightFraction}`);
+  const fullHeightFraction = 6 / (2 * (state.cameraPosition[2] - 0.162) * Math.tan(Math.PI / 6));
+  assert.ok(fullHeightFraction > 1 && fullHeightFraction < 1.04);
+  assert.equal(state.cameraPosition[1], state.cameraTarget[1]);
+  assert.ok(state.cameraPosition[1] > 0.8, "level elevated view preserves the upper margin");
 });

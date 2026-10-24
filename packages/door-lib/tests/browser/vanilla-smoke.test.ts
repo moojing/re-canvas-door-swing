@@ -33,31 +33,35 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
     select.dispatchEvent(new Event("change"));
   });
   await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
-  const capture = (direction?: "toward-viewer" | "away-from-viewer", atMs = 5500) => page.evaluate(({ direction, atMs }) => {
+  const captureFrames = (direction: "toward-viewer" | "away-from-viewer" | undefined, times: number[]) => page.evaluate(({ direction, times }) => {
     if (direction) window.__doorEntranceTestApi__?.preview({ swingDirection: direction });
-    window.__doorEntranceTestApi__?.seek(atMs / 6900);
-    const canvas = document.querySelector("canvas")!;
-    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
-    if (!gl) throw new Error("WebGL context unavailable");
-    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
-    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    let visible = 0;
-    let checksum = 0;
-    for (let index = 0; index < pixels.length; index += 4) {
-      if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) visible++;
-      checksum += pixels[index] * ((index % 97) + 1);
-    }
-    let rightWidth = 0;
-    const row = Math.floor(canvas.height / 2);
-    for (let x = Math.ceil(canvas.width / 2); x < canvas.width; x++) {
-      const index = (row * canvas.width + x) * 4;
-      if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) rightWidth++;
-    }
-    const fadeOpacity = (canvas.nextElementSibling as HTMLElement).style.opacity;
-    return { fraction: visible / (canvas.width * canvas.height), checksum, rightWidth, fadeOpacity };
-  }, { direction, atMs });
-  const held = await capture(undefined, 4500);
-  const pauseEnd = await capture(undefined, 4700);
+    return times.map((atMs) => {
+      window.__doorEntranceTestApi__?.seek(atMs / 6900);
+      const canvas = document.querySelector("canvas")!;
+      const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+      if (!gl) throw new Error("WebGL context unavailable");
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      let visible = 0;
+      let checksum = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) visible++;
+        checksum += pixels[index] * ((index % 97) + 1);
+      }
+      let rightWidth = 0;
+      const row = Math.floor(canvas.height / 2);
+      for (let x = Math.ceil(canvas.width / 2); x < canvas.width; x++) {
+        const index = (row * canvas.width + x) * 4;
+        if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 24) rightWidth++;
+      }
+      const fadeOpacity = (canvas.nextElementSibling as HTMLElement).style.opacity;
+      return { fraction: visible / (canvas.width * canvas.height), checksum, rightWidth, fadeOpacity };
+    });
+  }, { direction, times });
+  const capture = async (direction?: "toward-viewer" | "away-from-viewer", atMs = 5500) =>
+    (await captureFrames(direction, [atMs]))[0];
+  // Keep asset-completion callbacks from interleaving between pause samples.
+  const [held, pauseEnd] = await captureFrames(undefined, [4500, 4700]);
   expect(pauseEnd.rightWidth).toBe(held.rightWidth);
   expect(pauseEnd.checksum).toBe(held.checksum);
   const authored = await capture();
@@ -65,8 +69,7 @@ test("blue double keeps real leaves visible at fade start and honors swing direc
   expect(authored.rightWidth / held.rightWidth).toBeLessThan(1.2);
   expect(authored.fraction).toBeGreaterThan(0.25);
   await page.locator("canvas").screenshot({ path: testInfo.outputPath("blue-double-fade-start.png") });
-  const black = await capture(undefined, 5700);
-  const blackTail = await capture(undefined, 6800);
+  const [black, blackTail] = await captureFrames(undefined, [5700, 6800]);
   expect(black.fadeOpacity).toBe("1");
   expect(blackTail).toEqual(black);
   expect(await page.evaluate(() => window.__doorEntranceTestApi__?.progress())).toBeLessThan(1);
@@ -339,7 +342,7 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     }
     const area = canvas.width * canvas.height;
     // At the held closed framing the authored window is above the push plate.
-    const scale = canvas.height / (2 * (6.65 - 0.221) * Math.tan(Math.PI / 6));
+    const scale = canvas.height / (2 * (5.29 - 0.221) * Math.tan(Math.PI / 6));
     const x = Math.round(canvas.width / 2 - 1.5 * scale);
     const patchLuma = (y: number) => {
       let sum = 0;
@@ -349,8 +352,8 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
       }
       return sum / 49;
     };
-    const upper = patchLuma(canvas.height / 2 + 1.68 * scale);
-    const lower = patchLuma(canvas.height / 2 - 1.68 * scale);
+    const upper = patchLuma(canvas.height / 2 + (1.68 - 0.83) * scale);
+    const lower = patchLuma(canvas.height / 2 + (0.25 - 0.83) * scale);
     return { left: left / area, right: right / area, middle: middle / area, heightFraction: (maxY - minY + 1) / canvas.height, windowRatio: upper / Math.max(lower, 1) };
   }, progress);
   for (const suffix of ["", "-leave"]) {
@@ -365,8 +368,8 @@ test("automatic sliding opens a symmetric visible gap and reset closes it in bot
     await expect.poll(async () => (await capture(3250 / 5650)).windowRatio).toBeLessThan(0.6);
     const closed = await capture(3250 / 5650);
     expect(closed.middle).toBeGreaterThan(0.1);
-    expect(closed.heightFraction).toBeGreaterThan(0.78);
-    expect(closed.heightFraction).toBeLessThan(0.83);
+    expect(closed.heightFraction).toBeGreaterThan(0.84);
+    expect(closed.heightFraction).toBeLessThan(0.89);
     const open = await capture(4600 / 5650);
     expect(open.middle).toBeLessThan(0.01);
     expect(open.left).toBeGreaterThan(0.04);
@@ -425,13 +428,49 @@ test("parking approach starts smaller, then reaches the cropped closed wait", as
     }
     return (high - low + 1) / canvas.height;
   }, ms);
-  await expect.poll(() => heightAt(0)).toBeGreaterThan(0.75);
-  expect(await heightAt(0)).toBeLessThan(0.80);
+  await expect.poll(() => heightAt(0)).toBeGreaterThan(0.81);
+  expect(await heightAt(0)).toBeLessThan(0.87);
   expect(await heightAt(500)).toBeCloseTo(await heightAt(0), 2);
-  expect(await heightAt(1000)).toBeGreaterThan(0.84);
-  expect(await heightAt(1000)).toBeLessThan(0.93);
+  expect(await heightAt(1000)).toBeGreaterThan((await heightAt(0)) + 0.03);
+  expect(await heightAt(1000)).toBeLessThan(1.01);
   expect(await heightAt(2300)).toBeGreaterThan(0.98);
   expect(await heightAt(3100)).toBeGreaterThan(0.98);
   await page.evaluate(() => window.__doorEntranceTestApi__?.reset());
-  expect(await heightAt(0)).toBeLessThan(0.80);
+  expect(await heightAt(0)).toBeLessThan(0.87);
+});
+
+test("blue turns only the left handle while the closed right face stays pixel-identical", async ({ page }) => {
+  await page.goto("/samples/vanilla.html?testMode");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  await page.evaluate(() => {
+    const select = document.querySelector<HTMLSelectElement>("#door-preset")!;
+    select.add(new Option("blue", "biohazard-1996-b02-blue-panel-double-door"));
+  });
+  await page.selectOption("#door-preset", "biohazard-1996-b02-blue-panel-double-door");
+  await page.waitForFunction(() => window.__doorEntranceTestApi__?.ready());
+  const changed = () => page.evaluate(() => {
+    const capture = (ms: number) => {
+      window.__doorEntranceTestApi__!.seek(ms / 6900);
+      const canvas = document.querySelector("canvas")!;
+      const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+      if (!gl) throw new Error("WebGL unavailable");
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      return { pixels, width: canvas.width, height: canvas.height };
+    };
+    const before = capture(2700), after = capture(3350);
+    let left = 0, right = 0;
+    for (let y = 0; y < before.height; y++) for (let x = 0; x < before.width; x++) {
+      const i = (y * before.width + x) * 4;
+      const delta = Math.abs(before.pixels[i] - after.pixels[i]) +
+        Math.abs(before.pixels[i + 1] - after.pixels[i + 1]) +
+        Math.abs(before.pixels[i + 2] - after.pixels[i + 2]);
+      if (delta > 6) { if (x < before.width / 2) left++; else right++; }
+    }
+    return { left, right };
+  });
+  await expect.poll(async () => (await changed()).left).toBeGreaterThan(5);
+  expect((await changed()).right).toBe(0);
+  await page.evaluate(() => window.__doorEntranceTestApi__!.reset());
+  expect((await changed()).right).toBe(0);
 });

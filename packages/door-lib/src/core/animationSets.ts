@@ -85,6 +85,8 @@ export const getAnimationSetProfile = (preset: DoorEntrancePreset): EraAnimation
       ...profile,
       events: profile.events.filter(({ id }) => id !== "handle-start"),
       handleAngle: [{ atMs: 0, value: 0 }, { atMs: profile.durationMs, value: 0 }],
+      rightHandleAngle: profile.rightHandleAngle
+        ? [{ atMs: 0, value: 0 }, { atMs: profile.durationMs, value: 0 }] : undefined,
     };
   }
   return profile;

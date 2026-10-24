@@ -122,3 +122,13 @@ style-only1996 slide callers default to its reusable set. Hinge defaults stay in
 B07's slide set has a user-requested sound tail: picture black at5.00s,
 full-volume hold to5.25s, audio fade to5.65s. Optional sound fade markers retime
 with the other events. Other sets retain full volume through their sound windows.
+
+
+## 2026-10-24 local closed-framing fit
+
+Latest local camera fits are in the final2026-10-24 section of `era-animation-calibration-2026-10-05.md`. They supersede the earlier camera-size values above for the8 affected existing sets. Set membership, era/motion compatibility and public API remain unchanged. Closed scale and vertical/horizontal placement are fitted separately, using full width rather than cropped visible height. Sliding initial approach now ends1900ms; opening and sound remain3350ms. Blue retains the mainline6.90s authored path and black tail, with its level camera height now0.80. These camera changes are local/unpublished; newer running/iron-window sets are retained unchanged.
+
+
+### Stationary right handle — 2026-10-24 (local/unpublished)
+
+The Blue double set holds its optional `rightHandleAngle` track at zero while its left handle uses the existing handle track. This mirrors its left-only leaf opening without changing the6.90s timing. Profiles omitting the optional track retain shared left/right handle motion. Both front and back right handles follow the independent track; timing overrides and Reset preserve it.
