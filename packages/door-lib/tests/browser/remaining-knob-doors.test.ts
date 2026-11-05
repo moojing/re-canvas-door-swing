@@ -19,9 +19,9 @@ for (const id of ["biohazard-1996-a02-red-cross-running-door", "biohazard-1999-a
       await expect(page.locator("main")).not.toContainText("第一段：");
       await expect(page.locator("main")).not.toContainText("第二段：");
       await page.getByRole("button", { name: "Seek to Slight opening", exact: true }).click();
-      await expect(progress).toHaveValue(id.endsWith("-leave") ? "51.5" : "66.7");
+      await expect(progress).toHaveValue(id.endsWith("-leave") ? "43.9" : "50.8");
       await page.getByRole("button", { name: "Seek to Pause ends", exact: true }).click();
-      await expect(progress).toHaveValue(id.endsWith("-leave") ? "57.6" : "73.3");
+      await expect(progress).toHaveValue(id.endsWith("-leave") ? "55.3" : "60.8");
     }
     await page.getByRole("button", { name: "Reset", exact: true }).click();
     await expect(progress).toHaveValue("0");

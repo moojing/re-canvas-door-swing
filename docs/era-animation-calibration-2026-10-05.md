@@ -683,3 +683,33 @@ Regression evidence: the pre-fix browser comparison at2700ms/3350ms changed211 r
 
 
 PR #79 pre-merge verification found one intermittent Blue pause checksum mismatch (47/48 browser tests passed). Both sampled animation states were exactly identical; onReady only waits one animation frame and asynchronous asset callbacks can occur between separate browser evaluations. Pause and black-tail pairs are now captured synchronously in one evaluation while retaining exact equality assertions, preventing asset callbacks from interleaving. This changes test synchronization only; animation tracks are unchanged.
+
+## 2026-11-05 — S9 / iron-window MP4 calibration
+
+Reference: [gallery PR #10](https://github.com/moojing/re-door-gallery/pull/10), source-description head `ce181c4`. Its GIF-derived passage order and knob directions are the starting point; this change refines framing and timing against the original local1280×800/30fps MP4s. Both MP4 SHA-256 values match the tracked selection manifest. New observations remain in the gallery reference worktree; source videos, frames, fitting scripts and original/runtime overlays are ignored under gallery `materials/pr10-video-verification-2026-11-05/`.
+
+Delivery branch: `fix/pr10-mp4-calibration`, based on main `46c7c57`. This revises three existing sets/presets and adds no source completion:8/35 sources remain merged/published,27pending. The calibration itself is not merged or published. Package versions and assets are unchanged.
+
+### Scope and fitted tracks
+
+| Preset / set | Final fit |
+| --- | --- |
+| `biohazard-1996-a02-red-cross-running-door` / `1996-single-open-running-pass` | Retain4640ms, stationary already-open leaf and one cubic accelerating camera segment. Fitted leaf87.2°; camera[3.366,1.046,13.67]→[3.366,1.046,0.45], target[3.366,1.046,-4]. Existing picture fade and no-sound behavior remain. |
+| `biohazard-1999-a02-iron-window-door` / `1999-single-knob-approach-wait-pass` | Retain4800ms, right hinge/away swing, counterclockwise authored180° knob turn. Initialz6.4, position hold0–240ms, approach ends1560ms at[0.19,1.103,4.217]. Targetx−0.234 holds0–500ms then eases to−0.667 withy0.622. Handle1840–2160ms; opening2160ms; fitted4° micro2440ms, hold to2920ms;69° at4080ms,90° at4400ms. |
+| `biohazard-1999-a02-iron-window-door-leave` / `1999-single-knob-approach-outward-pass` | Retain5280ms, left hinge/toward swing, clockwise authored180° knob turn. Initialz6.585, hold0–80ms, approach to[0.045,1.116,4.132] at1600ms. Targetx−0.2585 holds0–400ms then eases to0.251 withy0.614. Handle1680–2000ms; opening2000ms;4° micro2320ms, hold to2920ms;90° at4240ms. Later camera stays in front of the outward leaf atz4; target shifts right to let the leaf pass left. |
+
+Both initial position/target approaches use ease-in-out and join their holds at zero velocity. Enter's later camera departs quadratically from2920ms/z4.217 to3200ms/z4.046666666666667, then continues linearly to4800ms/z2.1. The segment velocities match at1.216667units/s, avoiding mid-passage slowdown/surge. Leave's later targetx0.251/0.75/1 at3640/4240/4540ms avoids the former near-plane close-up; the source's dark/pillarboxed tail remains approximate.
+
+Handle directions, source sound crops, existing sound ends, picture fades, preset/set IDs, hardware and unrelated animation sets remain. Approximate creak sound starts follow the revised opening phases:2160ms Enter,2000ms Leave. None of these sets is an era fallback. No original-source audio reconstruction or new traversal is claimed.
+
+### Source alignment and validation
+
+File offsets3.52/3.04/10.56s identify the S9/Enter/Leave passages; they retain roughly0.1–0.2s alignment uncertainty. Angles, coordinates and interpolation are renderer fits, not recovered source-engine values. Exact knob angles, materials, original audio and complete frame-by-frame fidelity are not certified.
+
+The full closed approach is constrained by23 center-row source silhouette samples at160ms intervals (Enter3.20–4.80s; Leave10.72–12.48s), rather than only the final held pose. The five original projection regressions fail on main; two further approach tests reproduced roughly50px initial edge error in the first candidate. Final core approach bounds are within20px at1280×800, and actual-render browser samples within25px. Near-plane clipping prevents inverted projection bounds for outward geometry. These checks do not certify every texture feature or the full3D path.
+
+Independent review found an Enter camera velocity discontinuity, reproduced it with a failing regression, and approved the continuous two-segment correction. Follow-up review approved the measured initial-approach correction. Fresh PR verification:121core＋2local-assets,16package and9affected browser tests pass, including all23 actual-render approach samples, playback/seek/reset and traversal switching. Library/sample builds and lint pass (0errors/3existing Fast Refresh warnings; existing build warnings retained).
+
+[Runtime-only phase sheet](reviews/pr10-mp4-calibration/runtime-stages.webp) contains generated renderer captures; original MP4 frames and comparison overlays are not committed. Local original-site preview is on port5186; the separate comparison aid is on port5185.
+
+Published-gallery records/stills/GIFs can be checked from the reference worktree with absent ignored material directories explicitly skipped. Full validation of the original local material tree remains blocked by the pre-existing frame inventory mismatch12332/12428. No frames/manifests were rewritten to conceal that discrepancy.
