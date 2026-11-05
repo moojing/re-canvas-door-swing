@@ -17,3 +17,5 @@
 - [x] Run core and relevant browser regressions, package checks, lint and builds. Compare actual renders at matched source times and verify reset/seek/traversal controls.
 - [x] Record new source observations in the gallery and fitted values/local-only status in swing calibration/progress docs. Check gallery consistency and report any pre-existing ignored-frame inventory mismatch without rewriting manifests.
 - [x] Obtain independent code review, resolve substantive findings, update affected online progress tracking as required by AGENTS.md, and leave the candidate local preview running. No merge/publication requested.
+
+- [x] Commit the independently reviewed calibration, push the branch, and open [runtime PR #80](https://github.com/moojing/re-canvas-door-swing/pull/80) referencing gallery PR #10; keep merge/publication separate.

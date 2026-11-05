@@ -688,7 +688,7 @@ PR #79 pre-merge verification found one intermittent Blue pause checksum mismatc
 
 Reference: [gallery PR #10](https://github.com/moojing/re-door-gallery/pull/10), source-description head `ce181c4`. Its GIF-derived passage order and knob directions are the starting point; this change refines framing and timing against the original local1280×800/30fps MP4s. Both MP4 SHA-256 values match the tracked selection manifest. New observations remain in the gallery reference worktree; source videos, frames, fitting scripts and original/runtime overlays are ignored under gallery `materials/pr10-video-verification-2026-11-05/`.
 
-Delivery branch: `fix/pr10-mp4-calibration`, based on main `46c7c57`. This revises three existing sets/presets and adds no source completion:8/35 sources remain merged/published,27pending. The calibration itself is not merged or published. Package versions and assets are unchanged.
+Delivery: [PR #80](https://github.com/moojing/re-canvas-door-swing/pull/80), branch `fix/pr10-mp4-calibration`, based on main `46c7c57`. This revises three existing sets/presets and adds no source completion:8/35 sources remain merged/published,27pending. The calibration itself is not merged or published. Package versions and assets are unchanged.
 
 ### Scope and fitted tracks
 
