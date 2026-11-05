@@ -193,3 +193,11 @@ Validation:113 core＋2local-assets,16package,48browser tests,lint and library/s
 ## 2026-10-24 delivery request
 
 User requested commit/review/merge. The local-only sections above are historical snapshots; this batch is delivered through [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79) into `main`. Verify its platform merge state for delivery status. Package publication and live deployment remain separate and are not performed by this PR. No original source count changes;8/35 existing sources and27pending remain. Online #30/#31/#37/#41/#58/#63 will record the verified merge outcome while retaining their wider category/QA scope.
+
+## 2026-11-05 S9 / iron-window MP4 calibration
+
+`fix/pr10-mp4-calibration`, based on main46c7c57, refines the three existing S9/iron-window sets using [gallery PR #10](https://github.com/moojing/re-door-gallery/pull/10) and the original local MP4s. It adjusts S9 middle framing; iron-window per-direction approach/closed framing, micro-opening and passage; and smooths Enter camera velocity. The23 source-time approach samples cover the excessive startup motion. Preset IDs, hardware/knob directions, source sound crops and unrelated sets remain; approximate sound starts follow the revised opening phases.
+
+See the latest `era-animation-calibration-2026-10-05.md` section for fitted values, evidence, regression coverage and remaining source uncertainty. Code delivery is tracked by [PR #80](https://github.com/moojing/re-canvas-door-swing/pull/80); its platform state is authoritative for merge status. Package publication is separate and is not performed by this change. Source completion remains8/35 merged/published,27pending; no new Leave source count. #31/#26/#29/#58/#63 retain their wider QA/release scope and Project entries stay In Progress.
+
+Independent review approved the velocity-continuous path and measured initial approach. Full validation of the real gallery material tree still has the existing12332/12428 frame inventory mismatch; reference-worktree published records/assets are checked with missing ignored sources explicitly skipped.

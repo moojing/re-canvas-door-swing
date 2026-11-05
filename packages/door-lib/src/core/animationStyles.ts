@@ -54,15 +54,16 @@ export const openRunningPass1996Profile: EraAnimationProfile = {
   events: [event("start", "Open door", 0), event("run-start", "Running approach", 2400),
     event("passage", "Passage", 4000), event("fade-start", "Fade starts", 4400),
     event("end", "End", 4640)],
-  doorAngle: [at(0, 78 / 90), at(4640, 78 / 90)],
+  doorAngle: [at(0, 87.2 / 90), at(4640, 87.2 / 90)],
   handleAngle: [at(0, 0), at(4640, 0)],
+  // Local MP4 silhouette fit: narrow already-open leaf, lower mid-shot.
   // One cubic path: slow start, 50% faster terminal speed than quadratic,
   // with no intermediate ease restart or velocity drop.
   cameraPosition: [
-    { atMs: 0, value: [3, 0, 15.5], easing: "ease-in-cubic" },
-    { atMs: 4640, value: [3, 0, 0.45] },
+    { atMs: 0, value: [3.366, 1.046, 13.67], easing: "ease-in-cubic" },
+    { atMs: 4640, value: [3.366, 1.046, 0.45] },
   ],
-  cameraTarget: [{ atMs: 0, value: [3, 0, -4] }, { atMs: 4640, value: [3, 0, -4] }],
+  cameraTarget: [{ atMs: 0, value: [3.366, 1.046, -4] }, { atMs: 4640, value: [3.366, 1.046, -4] }],
   fadeOut: [at(0, 0), at(4400, 0), at(4640, 1)],
   // The silent GIF cannot establish a running sound. Disable the default door
   // creak rather than attaching it to a stationary, already-open leaf.
@@ -72,42 +73,69 @@ export const openRunningPass1996Profile: EraAnimationProfile = {
   soundSourceEndProgress: 0,
 };
 
+// MP4 file times are offset by3.04s for this passage. The slight opening
+// happens before the old GIF-derived opening marker, then holds briefly.
 export const knobApproachWaitPass1999Profile: EraAnimationProfile = {
   durationMs: 4800,
-  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1920),
-    event("handle-start", "Handle starts", 2720), event("opening-start", "Opening starts", 3040),
-    event("slight-open", "Slight opening", 3200), event("hold-end", "Pause ends", 3520),
+  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1560),
+    event("handle-start", "Handle starts", 1840), event("opening-start", "Opening starts", 2160),
+    event("slight-open", "Slight opening", 2440), event("hold-end", "Pause ends", 2920),
     event("open-end", "Door opens", 4400), event("passage", "Passage", 4480),
     event("fade-start", "Fade starts", 4560), event("end", "End", 4800)],
-  doorAngle: [at(0, 0), at(3040, 0), at(3200, 6 / 90),
-    { ...at(3520, 6 / 90), easing: "ease-in" }, at(4400, 1), at(4800, 1)],
-  handleAngle: [at(0, 0), at(2720, 0), at(3040, radians(180)), at(3520, radians(180)), at(4000, 0), at(4800, 0)],
-  cameraPosition: [camera(0, 8), { ...camera(320, 8), easing: "ease-in-out" }, camera(1920, 4.8),
-    { ...camera(3520, 4.8), easing: "ease-in" }, camera(4800, 1.6)],
-  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 4800, value: [0, 0, 0] }],
+  doorAngle: [at(0, 0), at(2160, 0), at(2440, 4 / 90),
+    { ...at(2920, 4 / 90), easing: "ease-in" }, at(4080, 69 / 90),
+    at(4400, 1), at(4800, 1)],
+  handleAngle: [at(0, 0), at(1840, 0), at(2160, radians(180)),
+    at(2920, radians(180)), at(4000, 0), at(4800, 0)],
+  cameraPosition: [framedCamera(0, 6.4, 1.103, 0.19),
+    { ...framedCamera(240, 6.4, 1.103, 0.19), easing: "ease-in-out" },
+    framedCamera(1560, 4.217, 1.103, 0.19),
+    { ...framedCamera(2920, 4.217, 1.103, 0.19), easing: "ease-in" },
+    // Quadratic departure reaches the following linear segment's velocity:
+    // 2 * (4.217 - 4.046666...) / 0.28 = (4.046666... - 2.1) / 1.6.
+    framedCamera(3200, 4.046666666666667, 1.103, 0.19),
+    framedCamera(4800, 2.1, 1.103, 0.19)],
+  // The source keeps almost the same left edge during enlargement. Delay
+  // the look-at correction instead of panning through the initial hold.
+  cameraTarget: [{ atMs: 0, value: [-0.234, 0.622, 0] },
+    { atMs: 500, value: [-0.234, 0.622, 0], easing: "ease-in-out" },
+    { atMs: 1560, value: [-0.667, 0.622, 0] },
+    { atMs: 4800, value: [-0.667, 0.622, 0] }],
   fadeOut: [at(0, 0), at(4560, 0), at(4800, 1)],
-  soundStartMs: 3040,
+  soundStartMs: 2160,
   soundEndMs: 4560,
   soundSourceStartProgress: 0.06,
   soundSourceEndProgress: 0.36,
 };
 
-// The reverse passage turns earlier and has a longer visible traversal.
+// The opposite face has its own off-center hold and a leftward passage.
+// Keep the camera in front of the outward leaf, avoiding the old close-up
+// caused by crossing its near plane while most of the source is already dark.
 export const knobApproachOutwardPass1999Profile: EraAnimationProfile = {
   durationMs: 5280,
-  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1920),
-    event("handle-start", "Handle starts", 2240), event("opening-start", "Opening starts", 2560),
-    event("slight-open", "Slight opening", 2720), event("hold-end", "Pause ends", 3040),
-    event("open-end", "Door opens", 4160), event("passage", "Passage", 4480),
+  events: [event("start", "Start", 0), event("approach-end", "Approach ends", 1600),
+    event("handle-start", "Handle starts", 1680), event("opening-start", "Opening starts", 2000),
+    event("slight-open", "Slight opening", 2320), event("hold-end", "Pause ends", 2920),
+    event("open-end", "Door opens", 4240), event("passage", "Passage", 4540),
     event("fade-start", "Fade starts", 4800), event("end", "End", 5280)],
-  doorAngle: [at(0, 0), at(2560, 0), at(2720, 6 / 90),
-    { ...at(3040, 6 / 90), easing: "ease-in" }, at(4160, 1), at(5280, 1)],
-  handleAngle: [at(0, 0), at(2240, 0), at(2560, radians(180)), at(3040, radians(180)), at(3840, 0), at(5280, 0)],
-  cameraPosition: [camera(0, 8), { ...camera(320, 8), easing: "ease-in-out" }, camera(1920, 4.8),
-    { ...camera(3040, 4.8), easing: "ease-in" }, camera(5280, 1.6)],
-  cameraTarget: [{ atMs: 0, value: [0, 0, 0] }, { atMs: 5280, value: [0, 0, 0] }],
+  doorAngle: [at(0, 0), at(2000, 0), at(2320, 4 / 90),
+    { ...at(2920, 4 / 90), easing: "ease-in-out" }, at(4240, 1), at(5280, 1)],
+  handleAngle: [at(0, 0), at(1680, 0), at(2000, radians(180)),
+    at(2920, radians(180)), at(3840, 0), at(5280, 0)],
+  cameraPosition: [framedCamera(0, 6.585, 1.116, 0.045),
+    { ...framedCamera(80, 6.585, 1.116, 0.045), easing: "ease-in-out" },
+    framedCamera(1600, 4.132, 1.116, 0.045), framedCamera(2920, 4.132, 1.116, 0.045),
+    framedCamera(3640, 4.12, 1.116, 0.045), framedCamera(4240, 4, 1.116, 0.045),
+    framedCamera(5280, 4, 1.116, 0.045)],
+  cameraTarget: [{ atMs: 0, value: [-0.2585, 0.614, 0] },
+    { atMs: 400, value: [-0.2585, 0.614, 0], easing: "ease-in-out" },
+    { atMs: 1600, value: [0.251, 0.614, 0] },
+    { atMs: 3640, value: [0.251, 0.614, 0] },
+    { atMs: 4240, value: [0.75, 0.614, 0] },
+    { atMs: 4540, value: [1, 0.614, 0] },
+    { atMs: 5280, value: [1, 0.614, 0] }],
   fadeOut: [at(0, 0), at(4800, 0), at(5280, 1)],
-  soundStartMs: 2560,
+  soundStartMs: 2000,
   soundEndMs: 4800,
   soundSourceStartProgress: 0.06,
   soundSourceEndProgress: 0.36,

@@ -41,9 +41,9 @@ test("S9 starts open and accelerates through the leaf without an invented knob t
   assert.equal(preset.swingDirection, "toward-viewer");
   assert.equal(preset.handleProfileId, "lever-l");
   assert.equal(preset.handleModelUrl, undefined);
-  assert.equal(at(0).doorAngle, 78 / 90);
-  assert.equal(at(0).cameraPosition[0], 3);
-  assert.equal(at(0).cameraTarget[0], 3);
+  assert.equal(at(0).doorAngle, 87.2 / 90);
+  assert.equal(at(0).cameraPosition[0], 3.366);
+  assert.equal(at(0).cameraTarget[0], 3.366);
   for (let ms = 0; ms <= config.duration; ms += 160) {
     assert.equal(at(ms).doorAngle, at(0).doorAngle);
     assert.equal(at(ms).handleAngle, 0);
@@ -81,23 +81,23 @@ test("iron window traversals approach, wait, turn silver round knobs and swing f
     assert.match(preset.frontTextureUrl!, /iron-window-door.jpg$/);
     const config = getDoorEntranceAnimationConfig(preset);
     const at = (ms: number) => config.getState(ms / config.duration);
-    assert.ok(at(0).cameraPosition[2] > at(1440).cameraPosition[2]);
-    assert.ok(at(1440).cameraPosition[2] > at(1920).cameraPosition[2]);
+    assert.ok(at(320).cameraPosition[2] > at(1000).cameraPosition[2]);
+    assert.ok(at(1000).cameraPosition[2] > at(1920).cameraPosition[2]);
     const reverse = preset.traversal === "leave";
-    const opening = reverse ? 2560 : 3040;
-    const micro = reverse ? 2720 : 3200;
-    const resume = reverse ? 3040 : 3520;
+    const opening = reverse ? 2000 : 2160;
+    const micro = reverse ? 2320 : 2440;
+    const resume = 2920;
     assert.equal(config.duration, reverse ? 5280 : 4800);
     assert.deepEqual(at(1920).cameraPosition, at(opening).cameraPosition);
     assert.equal(at(opening).doorAngle, 0);
     assert.ok(Math.abs(at(opening).handleAngle! - Math.PI) < 1e-10);
     assert.ok(Math.abs(at(opening - 160).handleAngle! - Math.PI / 2) < 1e-10);
-    assert.equal(at(micro).doorAngle, 6 / 90);
+    assert.equal(at(micro).doorAngle, 4 / 90);
     assert.equal(at(micro).doorAngle, at(resume).doorAngle);
     assert.deepEqual(at(micro).cameraPosition, at(resume).cameraPosition);
     assert.ok(Math.abs(at(micro).handleAngle! - at(resume).handleAngle!) < 1e-10);
-    assert.ok(at(resume + 80).doorAngle > 6 / 90);
-    assert.equal(at(reverse ? 4160 : 4400).doorAngle, 1);
+    assert.ok(at(resume + 80).doorAngle > 4 / 90);
+    assert.equal(at(reverse ? 4240 : 4400).doorAngle, 1);
     assert.equal(at(reverse ? 4800 : 4560).fadeOut, 0);
     assert.equal(at(config.duration).fadeOut, 1);
   }
