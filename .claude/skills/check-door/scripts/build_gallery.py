@@ -3,6 +3,7 @@
 # 用法: build_gallery.py [輸出 html 路徑](預設 docs/door-gallery/door-gallery.html)
 import base64, glob, html, json, os, re, subprocess, sys, tempfile
 from collections import Counter
+from urllib.parse import quote
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 GALLERY_ROOT = os.path.abspath(os.environ.get(
@@ -427,10 +428,17 @@ border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:600;white-space:no
 .prose b{color:#eef0f4}
 </style>"""
 
+def gif_url_for_output(gif_path):
+    """Resolve assets relative to the actual HTML output, including custom paths."""
+    relative = os.path.relpath(os.path.join(ASSETS, gif_path),
+                               os.path.dirname(os.path.abspath(OUT)))
+    return quote(relative.replace(os.sep, "/"), safe="/")
+
+
 hero_js = "const HERO=[" + ",".join(
     (f'"data:image/jpeg;base64,{d["b64"]}"' if d.get("b64") else "null") for d in doors) + "];"
 anim_js = "const ANIM=[" + ",".join(
-    (json.dumps(d["gif_path"]) if d.get("gif_path") else "null") for d in doors) + "];"
+    (json.dumps(gif_url_for_output(d["gif_path"])) if d.get("gif_path") else "null") for d in doors) + "];"
 # "<" 逸出為 <:Markdown 來的 name 不得含 "</script>" 之類序列終止腳本區塊
 meta_js = ("const META=[" + ",".join(
     (json.dumps({"c": d["game"]+" "+d["code"], "n": d["name"]}, ensure_ascii=False)) for d in doors) + "];"

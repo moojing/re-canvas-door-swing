@@ -78,13 +78,37 @@ class BuildGalleryTests(unittest.TestCase):
         assignment = next(node for node in module.body if isinstance(node, ast.Assign)
                           and any(isinstance(target, ast.Name) and target.id == "anim_js"
                                   for target in node.targets))
-        namespace = {"json": json, "doors": [
+        from urllib.parse import quote
+        helper = next(node for node in module.body if isinstance(node, ast.FunctionDef)
+                      and node.name == "gif_url_for_output")
+        namespace = {"json": json, "os": os, "quote": quote, "ASSETS": "/gallery",
+                     "OUT": "/gallery/index.html", "doors": [
             {"gif_path": "gifs/1-2_c06.gif", "gif": "legacy-embedded-data"},
             {"gif_path": None},
         ]}
-        exec(compile(ast.Module(body=[assignment], type_ignores=[]), str(SCRIPT), "exec"), namespace)
+        exec(compile(ast.Module(body=[helper, assignment], type_ignores=[]), str(SCRIPT), "exec"), namespace)
         self.assertEqual(namespace["anim_js"], 'const ANIM=["gifs/1-2_c06.gif",null];')
         self.assertNotIn("base64", namespace["anim_js"])
+
+    def test_custom_output_resolves_gifs_from_the_html_location(self):
+        module = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+        assignment = next(node for node in module.body if isinstance(node, ast.Assign)
+                          and any(isinstance(target, ast.Name) and target.id == "anim_js"
+                                  for target in node.targets))
+        helpers = [node for node in module.body
+                   if isinstance(node, ast.FunctionDef) and node.name == "gif_url_for_output"]
+        from urllib.parse import quote, unquote
+        with tempfile.TemporaryDirectory() as tmp:
+            assets = Path(tmp) / "gallery # assets"
+            output = Path(tmp) / "preview" / "custom.html"
+            namespace = dict(json=json, os=os, quote=quote, ASSETS=str(assets), OUT=str(output),
+                             doors=[{"gif_path": "gifs/1-2_c06.gif"}, {"gif_path": None}])
+            exec(compile(ast.Module(body=helpers + [assignment], type_ignores=[]), str(SCRIPT), "exec"), namespace)
+            urls = json.loads(namespace["anim_js"][len("const ANIM="):-1])
+            resolved = (output.parent / unquote(urls[0])).resolve()
+            self.assertEqual(resolved, (assets / "gifs/1-2_c06.gif").resolve())
+            self.assertIn("%23", urls[0])
+            self.assertIsNone(urls[1])
 
     def test_filter_buttons_include_live_counts(self):
         with tempfile.TemporaryDirectory() as tmp:
