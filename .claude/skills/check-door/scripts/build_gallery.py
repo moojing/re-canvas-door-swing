@@ -3,6 +3,7 @@
 # 用法: build_gallery.py [輸出 html 路徑](預設 docs/door-gallery/door-gallery.html)
 import base64, glob, html, json, os, re, subprocess, sys, tempfile
 from collections import Counter
+from urllib.parse import quote
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 GALLERY_ROOT = os.path.abspath(os.environ.get(
@@ -34,14 +35,6 @@ OVERRIDE = {
     ("1-4","c01"): 5.0, ("1-5","a04"): 3.5, ("1-2","a04"): 5.0, ("1-5","c05"): 2.9,
     ("1-5","c08"): 3.7, ("1-2","a14"): 7.5, ("1-2","b05"): 5.6, ("1-2","c06"): 1.0,
     ("1-3","a12"): 4.3, ("1-3","c03"): 1.8, ("1-4","c03"): 6.0,
-}
-# GIF 時間窗手動指定 (start, dur):門動作離截圖點太遠、自動推導拍不到的片段
-GIF_OVERRIDE = {
-    ("1-2","c06"): (0.2, 1.7),    # 電梯門只保留前段柵欄拉門,避開後續搭乘段
-    ("1-4","c03"): (21.8, 3.6),   # 電梯門到 21.5s 後才開
-    ("1-4","c04"): (8.0, 3.6),    # 纜車門 8.5-10.4s 滑開
-    ("1-4","c07"): (8.2, 3.2),    # 電車門 9.7-11.5s 滑開(提早起點減少黑尾)
-    ("1-4","c08"): (12.0, 4.0),   # 繩索:改沿牆下降段(牆面移動可見,繩本體太細)
 }
 cur_game = cur_code = None
 
@@ -119,49 +112,27 @@ def pick_timestamp(v):
 BRI = "eq=brightness=0.06:contrast=1.12:gamma=1.4"  # 提亮:RE 素材偏暗
 
 def render(game, code):
-    # 產生並「存成本地獨立檔」+ 回傳 base64。回傳 (still b64, gif b64, still 相對路徑, gif 相對路徑)
+    # 靜態特寫保留 base64；GIF 僅回傳獨立資產路徑。回傳 (still b64, still 相對路徑, gif 相對路徑)
     global cur_game, cur_code
     cur_game, cur_code = game, code
     v = find_video(game, code)
-    if not v: return None, None, None, None
+    if not v: return None, None, None
     t = pick_timestamp(v)
-    if t is None: return None, None, None, None
-    D = duration(v)
+    if t is None: return None, None, None
     key = f"{game}_{code}"
     # 靜態主體特寫(840px 高畫質),直接存進 ASSETS/stills/
     hrel = f"stills/{key}.jpg"
     hdst = os.path.join(ASSETS, hrel)
     subprocess.run(["ffmpeg","-y","-loglevel","error","-ss",str(t),"-i",v,"-frames:v","1",
                     "-vf",f"{BRI},scale=840:-1","-q:v","4",hdst], check=True)
-    hero = base64.b64encode(open(hdst,"rb").read()).decode()
-    # 開門動畫 GIF:從門特寫略提前 0.3s 起,涵蓋到「段落轉黑處」(門開完、鏡頭穿越後),
-    # 這樣能拍到擺動+穿越;找不到就退回固定 3.6s。GIF_OVERRIDE 可整窗手動指定。存進 ASSETS/gifs/
-    gov = GIF_OVERRIDE.get((game, code))
-    if gov is not None:
-        gs, gdur = gov
-    else:
-        gs = max(0.0, t - 0.3)
-        seg_end = None
-        tt = t + 0.5
-        while tt < D:
-            s = frame_stats(v, tt)
-            if s and s[1] < 12:          # 轉黑 = 門開完穿越後的黑幕
-                seg_end = tt + 0.25
-                break
-            tt += 0.25
-        if seg_end is not None:
-            gdur = min(max(seg_end - gs, 1.5), 4.8)   # 夾在 1.5~4.8s
-        else:
-            gdur = min(3.6, D) if D > 0 else 3.6
-    if gs + gdur > D: gs = max(0.0, D - gdur)
+    with open(hdst, "rb") as still:
+        hero = base64.b64encode(still.read()).decode()
+    # 共用 gallery 的完整原片 GIF 流程；保留來源中的每一段，不以靜態取樣點裁切。
     grel = f"gifs/{key}.gif"
     gdst = os.path.join(ASSETS, grel)
-    subprocess.run(["ffmpeg","-y","-loglevel","error","-ss",str(gs),"-t",str(gdur),"-i",v,
-        "-vf",(f"{BRI},fps=7,scale=200:-1,split[s0][s1];"
-               "[s0]palettegen=max_colors=32[p];[s1][p]paletteuse=dither=none"),
-        gdst], check=True)
-    gif = base64.b64encode(open(gdst,"rb").read()).decode()
-    return hero, gif, hrel, grel
+    subprocess.run(["node", os.path.join(GALLERY_ROOT, "scripts", "build-gallery-gifs.mjs"),
+                    "--one", v, "--output", gdst], check=True)
+    return hero, hrel, grel
 
 def skeleton(form, a):
     if "中分" in a: return "中分滑動(雙扇對開)"
@@ -196,7 +167,7 @@ def vlabel(v):
 doors = parse_md()
 print(f"解析 {len(doors)} 門型")
 for i, d in enumerate(doors):
-    d["b64"], d["gif"], d["still_path"], d["gif_path"] = render(d["game"], d["code"])
+    d["b64"], d["still_path"], d["gif_path"] = render(d["game"], d["code"])
     if not d["b64"]: print("  無縮圖:", d["game"], d["code"])
     if (i+1) % 20 == 0: print(f"  …{i+1}/{len(doors)}")
 cnt = Counter(vlabel(d["verdict"]) for d in doors)
@@ -457,10 +428,17 @@ border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:600;white-space:no
 .prose b{color:#eef0f4}
 </style>"""
 
+def gif_url_for_output(gif_path):
+    """Resolve assets relative to the actual HTML output, including custom paths."""
+    relative = os.path.relpath(os.path.join(ASSETS, gif_path),
+                               os.path.dirname(os.path.abspath(OUT)))
+    return quote(relative.replace(os.sep, "/"), safe="/")
+
+
 hero_js = "const HERO=[" + ",".join(
     (f'"data:image/jpeg;base64,{d["b64"]}"' if d.get("b64") else "null") for d in doors) + "];"
 anim_js = "const ANIM=[" + ",".join(
-    (f'"data:image/gif;base64,{d["gif"]}"' if d.get("gif") else "null") for d in doors) + "];"
+    (json.dumps(gif_url_for_output(d["gif_path"])) if d.get("gif_path") else "null") for d in doors) + "];"
 # "<" 逸出為 <:Markdown 來的 name 不得含 "</script>" 之類序列終止腳本區塊
 meta_js = ("const META=[" + ",".join(
     (json.dumps({"c": d["game"]+" "+d["code"], "n": d["name"]}, ensure_ascii=False)) for d in doors) + "];"
