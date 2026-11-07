@@ -1,10 +1,13 @@
 import ast
+import base64
+import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
 
 SCRIPT = Path(__file__).resolve().parents[2] / ".claude" / "skills" / "check-door" / "scripts" / "build_gallery.py"
@@ -24,12 +27,64 @@ def read_literal_assignment(name: str):
 class BuildGalleryTests(unittest.TestCase):
     """Verify generated gallery UI labels stay in sync with canonical counts."""
 
-    def test_c06_gallery_assets_use_manual_door_segment_overrides(self):
+    def test_c06_still_keeps_manual_timestamp_override(self):
         overrides = read_literal_assignment("OVERRIDE")
-        gif_overrides = read_literal_assignment("GIF_OVERRIDE")
+        self.assertEqual(overrides[("1-2", "c06")], 1.0)
+        module = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+        self.assertFalse(any(
+            isinstance(node, ast.Assign) and any(
+                isinstance(target, ast.Name) and target.id == "GIF_OVERRIDE"
+                for target in node.targets
+            ) for node in module.body
+        ), "GIFs must preserve the complete source instead of manual clip windows")
 
-        self.assertIn(("1-2", "c06"), overrides)
-        self.assertIn(("1-2", "c06"), gif_overrides)
+    def test_render_delegates_full_source_gif_without_clip_arguments(self):
+        module = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+        render_node = next(node for node in module.body
+                           if isinstance(node, ast.FunctionDef) and node.name == "render")
+        with tempfile.TemporaryDirectory() as tmp:
+            assets = Path(tmp)
+            (assets / "stills").mkdir()
+            (assets / "gifs").mkdir()
+            calls = []
+
+            def run(command, **kwargs):
+                self.assertTrue(kwargs.get("check"))
+                calls.append(command)
+                if command[0] == "ffmpeg":
+                    Path(command[-1]).write_bytes(b"still fixture")
+
+            namespace = dict(os=os, base64=base64, subprocess=Mock(run=run),
+                             ASSETS=str(assets), GALLERY_ROOT=str(assets), BRI="still-filter",
+                             find_video=lambda *_: "/source/full video.mp4",
+                             pick_timestamp=lambda _: 1.0, duration=lambda _: 12.0,
+                             frame_stats=lambda *_: (0, 0, 0),
+                             GIF_OVERRIDE={("1-2", "c06"): (0.2, 1.7)})
+            exec(compile(ast.Module(body=[render_node], type_ignores=[]), str(SCRIPT), "exec"), namespace)
+            result = namespace["render"]("1-2", "c06")
+            self.assertEqual(calls[-1], [
+                "node", str(assets / "scripts" / "build-gallery-gifs.mjs"),
+                "--one", "/source/full video.mp4", "--output", str(assets / "gifs" / "1-2_c06.gif"),
+            ])
+            self.assertNotIn("-ss", calls[-1])
+            self.assertNotIn("-t", calls[-1])
+            self.assertEqual(len(calls), 2)
+            self.assertIn("-ss", calls[0])  # Still framing retains its chosen timestamp.
+            self.assertEqual(result[-2:], ("stills/1-2_c06.jpg", "gifs/1-2_c06.gif"))
+            self.assertFalse((assets / "gifs" / "1-2_c06.gif").exists())  # No GIF read/embedding.
+
+    def test_animation_array_uses_relative_gif_assets(self):
+        module = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+        assignment = next(node for node in module.body if isinstance(node, ast.Assign)
+                          and any(isinstance(target, ast.Name) and target.id == "anim_js"
+                                  for target in node.targets))
+        namespace = {"json": json, "doors": [
+            {"gif_path": "gifs/1-2_c06.gif", "gif": "legacy-embedded-data"},
+            {"gif_path": None},
+        ]}
+        exec(compile(ast.Module(body=[assignment], type_ignores=[]), str(SCRIPT), "exec"), namespace)
+        self.assertEqual(namespace["anim_js"], 'const ANIM=["gifs/1-2_c06.gif",null];')
+        self.assertNotIn("base64", namespace["anim_js"])
 
     def test_filter_buttons_include_live_counts(self):
         with tempfile.TemporaryDirectory() as tmp:
