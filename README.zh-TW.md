@@ -17,6 +17,9 @@ npm run dev              # 啟動 sample（使用已建置的 library）
 
 開啟 `http://127.0.0.1:5173/` 可瀏覽所有已發布的 preset。每張卡會顯示 renderer 的初始畫面；按下 **View details** 會進入所選 preset 的動畫詳細頁，提供播放控制、音效、可拖曳的時間軸及預覽設定。**Full-screen preview** 可在 catalog 或詳細頁上方播放動畫。舊的技術 PoC 路由已退役；獨立的 HTML 範例位於 `/samples/vanilla.html`。
 
+詳細頁的 **Compare devices** 可同時比較桌面（1440×900）、平板（768×1024）與手機（390×844）。
+三個畫面共用播放、時間軸及 Reset，聲音只播放一份；窄螢幕會改為上下排列。
+
 鐵門與黃色面板門各自在總覽只顯示一張卡片，詳細頁提供 **Enter／Leave** 切換。
 Enter 保留 `biohazard-1996-a01-iron-door`，Leave 使用
 `biohazard-1996-a01-iron-door-leave`。兩者共用 runtime 資產，但各自保存

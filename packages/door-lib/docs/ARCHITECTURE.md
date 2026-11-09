@@ -54,6 +54,12 @@ export interface DoorAnimationConfig {
 
 ## Sample catalog
 
+- 詳細頁可切換 Single preview／Compare devices。`DeviceAnimationPreview.tsx`
+  管理桌面 1440×900、平板 768×1024、手機 390×844 的固定邏輯 viewport，再依頁面空間縮放。
+  桌面 renderer 是唯一播放及聲音時鐘，其他 renderer 透過既有 `seek` 跟隨相同進度；
+  timing overrides 先套用 follower，再套用 master，避免時間換算重複。
+  此協調僅屬 sample，沒有新增 library API；切換模式會暫停並保留進度及預覽設定。
+
 - `packages/sample` 的 `/` 是目前的 preset catalog，不再是 PoC 導覽頁。
 - 每張卡由 `PresetAnimationPreview.tsx` 以同一個 `mountDoorEntrance` renderer
   畫出 progress `0` 的真實門板初始畫面；不可用另外維護的靜態縮圖取代。

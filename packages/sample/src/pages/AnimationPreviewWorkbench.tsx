@@ -1,14 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { FullScreenDoorTransitionRequest } from "@/components/FullScreenDoorTransition";
 import {
-  mountDoorEntrance,
   getDoorEntranceAnimationConfig,
   getDoorEntranceAnimationSet,
-  type DoorEntranceHandle,
   type DoorEntrancePreset,
   type DoorEntrancePresetId,
   type DoorTimingEvents,
 } from "retro-horror-door";
+import DeviceAnimationPreview, { type DeviceAnimationPreviewHandle } from "./DeviceAnimationPreview";
 
 const formatTime = (milliseconds: number) => {
   return `${(milliseconds / 1000).toFixed(2)} s`;
@@ -22,14 +21,17 @@ const AnimationPreviewWorkbench = ({
   onFullScreenPreview,
   variants,
   onVariantChange,
+  comparison,
+  onComparisonChange,
 }: {
   preset: DoorEntrancePreset;
   variants: readonly DoorEntrancePreset[];
   onVariantChange: (id: DoorEntrancePresetId) => void;
   onFullScreenPreview: (request: FullScreenDoorTransitionRequest) => void;
+  comparison: boolean;
+  onComparisonChange: (comparison: boolean) => void;
 }) => {
-  const targetRef = useRef<HTMLDivElement>(null);
-  const doorRef = useRef<DoorEntranceHandle | null>(null);
+  const doorRef = useRef<DeviceAnimationPreviewHandle | null>(null);
   const swingDirection = preset.swingDirection ?? "toward-viewer";
   const [timingEvents, setTimingEvents] = useState<DoorTimingEvents>({});
   const [ready, setReady] = useState(false);
@@ -38,31 +40,24 @@ const AnimationPreviewWorkbench = ({
   const events = animation.timelineEvents ?? [];
   const animationSet = getDoorEntranceAnimationSet(preset);
 
-  useEffect(() => {
-    const target = targetRef.current;
-    if (!target) return;
-
-    const door = mountDoorEntrance({
-      target,
-      preset: preset.id,
-      autoPlay: false,
-      className: "h-full min-h-[360px] w-full border-0 bg-black",
-      onReady: () => setReady(true),
-      onProgress: setProgress,
-    });
-    doorRef.current = door;
-
-    return () => {
-      door.unmount();
-      doorRef.current = null;
-    };
-  }, [preset.id]);
-
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="min-w-0">
-        <div className="relative min-h-[50vh] bg-black sm:min-h-[64vh]">
-          <div ref={targetRef} className="absolute inset-0" />
+    <div className={`grid gap-6 ${comparison ? "" : "xl:grid-cols-[minmax(0,1fr)_20rem]"}`}>
+      <div className="flex min-w-0 flex-col">
+        <div role="group" aria-label="Preview layout" className="mb-4 flex flex-wrap gap-2">
+          {[{ label: "Single preview", value: false }, { label: "Compare devices", value: true }].map(({ label, value }) => (
+            <button key={label} type="button" aria-pressed={comparison === value}
+              onClick={() => {
+                if (comparison === value) return;
+                doorRef.current?.stop();
+                setReady(false);
+                onComparisonChange(value);
+              }}
+              className={`min-h-11 border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952] ${comparison === value ? "border-[#c98d48] bg-[#c98d48] text-[#100c08]" : "border-[#765939] text-[#d8c9b5] hover:border-[#d39952]"}`}
+            >{label}</button>
+          ))}
+        </div>
+        <div className={comparison ? "order-2 mt-4" : ""}>
+          <DeviceAnimationPreview ref={doorRef} presetId={preset.id} comparison={comparison} onProgress={setProgress} onReadyChange={setReady} />
         </div>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
@@ -102,6 +97,7 @@ const AnimationPreviewWorkbench = ({
                 setProgress(0);
                 doorRef.current?.reset(preset.id);
               }}
+              disabled={!ready}
               className="border border-[#8d683e] px-4 py-2 text-sm font-semibold text-[#ddc6a8]"
             >
               Reset
@@ -141,6 +137,7 @@ const AnimationPreviewWorkbench = ({
                     setProgress(next);
                     doorRef.current?.seek(next, preset.id);
                   }}
+                  disabled={!ready}
                   className="border border-[#5f4933] px-2 py-1 text-xs text-[#d8c9b5] hover:border-[#d39952]"
                 >
                   {label} · {formatTime(atMs)}
@@ -203,6 +200,7 @@ const AnimationPreviewWorkbench = ({
                     max={maximum}
                     step="10"
                     value={stage.atMs}
+                    disabled={!ready}
                     onChange={(event) => {
                       const nextTiming = { ...timingEvents, [stage.id]: Number(event.target.value) };
                       getDoorEntranceAnimationConfig(preset, nextTiming);
@@ -220,6 +218,7 @@ const AnimationPreviewWorkbench = ({
         <div className="mt-6 border-t border-[#4b3928] pt-6">
             <button
               type="button"
+              disabled={!ready}
               onClick={() => {
                 setTimingEvents({});
                 doorRef.current?.setPreviewOverrides({});
