@@ -31,6 +31,10 @@ Open `http://127.0.0.1:5173/`.
   between Single preview and Compare devices pauses and retains progress.
   Comparison stacks on narrow screens and remains selected when changing
   traversal. Full-screen preview still uses the actual browser viewport.
+  Narrow portrait containers automatically pull back initially complete doors
+  that would otherwise be clipped, then smoothly rejoin the existing approach.
+  Originally cropped openings and already complete views retain their framing;
+  the library applies the same rule to comparison and actual playback.
 - `/samples/vanilla.html`: minimal non-React mounting example.
 
 ## Development notes

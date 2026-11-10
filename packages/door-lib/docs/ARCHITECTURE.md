@@ -54,6 +54,12 @@ export interface DoorAnimationConfig {
 
 ## Sample catalog
 
+- `responsiveFraming.ts` 依播放容器 aspect 自動補償直式開場：以 1280×800 原構圖的
+  初始門板投影判斷是否原本完整。只有原本完整、直式視窗卻裁切時，才沿初始視線反方向
+  退後至四周留 4% 邊界，額外位移以 smoothstep 在 approach-end 歸零。
+  原始裁切與已完整可見的開場不變；不修改任何 preset／set 曲線、聲音或淡出。
+  面板幾何計算不依賴異步配件載入；resize 會重算並重畫暫停畫面。
+
 - 詳細頁可切換 Single preview／Compare devices。`DeviceAnimationPreview.tsx`
   管理桌面 1440×900、平板 768×1024、手機 390×844 的固定邏輯 viewport，再依頁面空間縮放。
   桌面 renderer 是唯一播放及聲音時鐘，其他 renderer 透過既有 `seek` 跟隨相同進度；

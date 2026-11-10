@@ -22,6 +22,10 @@ and preview-only settings. **Full-screen preview** plays over the catalog or det
 Choose **Compare devices** in detail to preview desktop (1440×900), tablet
 (768×1024), and phone (390×844) together with synchronized playback, shared
 timeline controls, and one audio stream.
+Portrait playback containers automatically pull the opening camera back only
+when a complete authored door would otherwise be clipped by the narrow view.
+This adjustment smoothly rejoins the existing approach; originally cropped
+openings keep their authored framing. Comparison and actual playback share this behavior.
 The retired technical PoC routes are no longer available; the standalone HTML
 example is at `/samples/vanilla.html`.
 

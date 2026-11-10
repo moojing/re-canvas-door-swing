@@ -1,5 +1,6 @@
 import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
+import { getInitialPortraitPullback, getPortraitPullbackWeight } from "./responsiveFraming.ts";
 import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook, usesRectangularKnobPlate, getHandleTurnMultiplier } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { usesCompactWindowLayout, compactWindowTextureV } from "./core/renderLook.ts";
@@ -68,6 +69,14 @@ interface MountedDoorEntrance {
 }
 
 type DoorEntranceHandle = MountedDoorEntrance;
+
+type CameraFrame = {
+  state: DoorAnimationState;
+  config: DoorAnimationConfig;
+  progress: number;
+  cameraPanX: number;
+  cameraPanY: number;
+};
 
 const DEFAULT_CLASS_NAME =
   "h-[460px] w-full rounded-xl border border-white/10 bg-black";
@@ -160,6 +169,10 @@ class VanillaDoorScene {
   private readonly fadeOverlay = document.createElement("div");
   private readonly label = document.createElement("div");
   private readonly resizeObserver?: ResizeObserver;
+  private lastCameraFrame?: CameraFrame;
+  private portraitFitKey = "";
+  private portraitPullback = 0;
+  private readonly portraitBackward = new THREE.Vector3();
   private doorRoot = new THREE.Group();
   private activeSurfaceTextureKey?: string;
   private activeHandleModelUrl?: string;
@@ -234,7 +247,14 @@ class VanillaDoorScene {
     this.scene.add(this.doorRoot);
 
     if (typeof ResizeObserver !== "undefined") {
-      this.resizeObserver = new ResizeObserver(() => this.resize());
+      this.resizeObserver = new ResizeObserver(() => {
+        if (this.disposed) return;
+        this.resize();
+        if (this.lastCameraFrame) {
+          this.applyResponsiveCamera(this.lastCameraFrame);
+          this.renderer.render(this.scene, this.camera);
+        }
+      });
       this.resizeObserver.observe(this.element);
     }
   }
@@ -255,6 +275,7 @@ class VanillaDoorScene {
     swingDirection,
     cameraPanX,
     cameraPanY,
+    progress,
   }: {
     presetId: DoorEntrancePresetId;
     handleTurnDirection?: "clockwise" | "counterclockwise";
@@ -271,6 +292,7 @@ class VanillaDoorScene {
     swingDirection: DoorSwingDirection;
     cameraPanX: number;
     cameraPanY: number;
+    progress: number;
   }) {
     const agedWood = usesAgedWoodLook(presetId);
     const knobBackplate = presetId === "biohazard-1996-b02-blue-panel-double-door";
@@ -330,10 +352,11 @@ class VanillaDoorScene {
 
     this.activeSwingDirection = swingDirection;
     this.applyDoorState(config.id, state);
-    this.applyCameraState(state, cameraPanX, cameraPanY);
     this.fadeOverlay.style.opacity = String(clampProgress(state.fadeOut));
     this.label.textContent = config.label;
     this.resize();
+    this.lastCameraFrame = { state, config, progress, cameraPanX, cameraPanY };
+    this.applyResponsiveCamera(this.lastCameraFrame);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -383,6 +406,7 @@ class VanillaDoorScene {
     mirrorTextureX: boolean,
     hingeSide: DoorHingeSide
   ) {
+    this.portraitFitKey = "";
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
     this.doorRoot = new THREE.Group();
@@ -857,6 +881,45 @@ class VanillaDoorScene {
     const [tx, ty, tz] = state.cameraTarget;
     this.camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
   }
+
+  private applyResponsiveCamera({ state, config, progress, cameraPanX, cameraPanY }: CameraFrame) {
+    this.applyCameraState(state, cameraPanX, cameraPanY);
+    if (this.camera.aspect >= 1) return;
+
+    const initial = config.getState(0, { linearProgress: 0, handleProfileId: this.activeHandleProfileId });
+    const key = JSON.stringify([initial, config.id, this.camera.aspect, cameraPanX, cameraPanY,
+      this.activeSingleHingeSide, this.activeSwingDirection]);
+    if (key !== this.portraitFitKey) {
+      this.portraitFitKey = key;
+      this.applyDoorState(config.id, initial);
+      this.doorRoot.updateMatrixWorld(true);
+      const points: THREE.Vector3[] = [];
+      this.doorRoot.traverse((node) => {
+        if (!(node instanceof THREE.Mesh)) return;
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        if (!materials.some((material) => material === this.frontDoorMaterial ||
+          material === this.backDoorMaterial || this.doorMaterials.includes(material))) return;
+        node.geometry.computeBoundingBox();
+        const box = node.geometry.boundingBox;
+        if (!box) return;
+        for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) {
+          for (const z of [box.min.z, box.max.z]) {
+            points.push(new THREE.Vector3(x, y, z).applyMatrix4(node.matrixWorld));
+          }
+        }
+      });
+      this.applyCameraState(initial, cameraPanX, cameraPanY);
+      this.camera.updateMatrixWorld(true);
+      this.portraitBackward.copy(this.camera.getWorldDirection(new THREE.Vector3())).negate();
+      this.portraitPullback = getInitialPortraitPullback(this.camera, points, this.camera.aspect);
+      this.applyDoorState(config.id, state);
+      this.applyCameraState(state, cameraPanX, cameraPanY);
+    }
+    const weight = getPortraitPullbackWeight(progress, config.duration, config.timelineEvents);
+    this.camera.position.addScaledVector(this.portraitBackward, this.portraitPullback * weight);
+    const [tx, ty, tz] = state.cameraTarget;
+    this.camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
+  }
 }
 
 export const mountDoorEntrance = (
@@ -1103,6 +1166,7 @@ export const mountDoorEntrance = (
       handleProfileId: activeDoorPreset.handleProfileId,
     });
     scene.render({
+      progress,
       presetId: activeDoorPreset.id,
       handleTurnDirection: activeDoorPreset.handleTurnDirection,
       state,
