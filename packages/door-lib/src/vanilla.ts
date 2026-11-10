@@ -1,6 +1,6 @@
 import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
-import { getInitialPortraitPullback, getPortraitPullbackWeight } from "./responsiveFraming.ts";
+import { getPortraitHorizontalPullback, getPortraitPullbackWeight, hasReferenceHorizontalCrop } from "./responsiveFraming.ts";
 import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook, usesRectangularKnobPlate, getHandleTurnMultiplier } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { usesCompactWindowLayout, compactWindowTextureV } from "./core/renderLook.ts";
@@ -171,7 +171,8 @@ class VanillaDoorScene {
   private readonly resizeObserver?: ResizeObserver;
   private lastCameraFrame?: CameraFrame;
   private portraitFitKey = "";
-  private portraitPullback = 0;
+  private portraitFitEnabled = false;
+  private portraitPanels: { mesh: THREE.Mesh; corners: THREE.Vector3[] }[] = [];
   private readonly portraitBackward = new THREE.Vector3();
   private doorRoot = new THREE.Group();
   private activeSurfaceTextureKey?: string;
@@ -885,6 +886,8 @@ class VanillaDoorScene {
   private applyResponsiveCamera({ state, config, progress, cameraPanX, cameraPanY }: CameraFrame) {
     this.applyCameraState(state, cameraPanX, cameraPanY);
     if (this.camera.aspect >= 1) return;
+    const weight = getPortraitPullbackWeight(progress, config.duration, config.timelineEvents);
+    if (weight <= 0) return;
 
     const initial = config.getState(0, { linearProgress: 0, handleProfileId: this.activeHandleProfileId });
     const key = JSON.stringify([initial, config.id, this.camera.aspect, cameraPanX, cameraPanY,
@@ -893,7 +896,7 @@ class VanillaDoorScene {
       this.portraitFitKey = key;
       this.applyDoorState(config.id, initial);
       this.doorRoot.updateMatrixWorld(true);
-      const points: THREE.Vector3[] = [];
+      this.portraitPanels = [];
       this.doorRoot.traverse((node) => {
         if (!(node instanceof THREE.Mesh)) return;
         const materials = Array.isArray(node.material) ? node.material : [node.material];
@@ -902,21 +905,29 @@ class VanillaDoorScene {
         node.geometry.computeBoundingBox();
         const box = node.geometry.boundingBox;
         if (!box) return;
+        const corners: THREE.Vector3[] = [];
         for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) {
           for (const z of [box.min.z, box.max.z]) {
-            points.push(new THREE.Vector3(x, y, z).applyMatrix4(node.matrixWorld));
+            corners.push(new THREE.Vector3(x, y, z));
           }
         }
+        this.portraitPanels.push({ mesh: node, corners });
       });
       this.applyCameraState(initial, cameraPanX, cameraPanY);
       this.camera.updateMatrixWorld(true);
-      this.portraitBackward.copy(this.camera.getWorldDirection(new THREE.Vector3())).negate();
-      this.portraitPullback = getInitialPortraitPullback(this.camera, points, this.camera.aspect);
+      const initialPoints = this.portraitPanels.flatMap(({ mesh, corners }) =>
+        corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
+      this.portraitFitEnabled = !hasReferenceHorizontalCrop(this.camera, initialPoints);
       this.applyDoorState(config.id, state);
       this.applyCameraState(state, cameraPanX, cameraPanY);
     }
-    const weight = getPortraitPullbackWeight(progress, config.duration, config.timelineEvents);
-    this.camera.position.addScaledVector(this.portraitBackward, this.portraitPullback * weight);
+    if (!this.portraitFitEnabled) return;
+    this.doorRoot.updateMatrixWorld(true);
+    const points = this.portraitPanels.flatMap(({ mesh, corners }) =>
+      corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
+    const pullback = getPortraitHorizontalPullback(this.camera, points, this.camera.aspect);
+    this.portraitBackward.copy(this.camera.getWorldDirection(new THREE.Vector3())).negate();
+    this.camera.position.addScaledVector(this.portraitBackward, pullback * weight);
     const [tx, ty, tz] = state.cameraTarget;
     this.camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
   }
