@@ -201,3 +201,11 @@ User requested commit/review/merge. The local-only sections above are historical
 See the latest `era-animation-calibration-2026-10-05.md` section for fitted values, evidence, regression coverage and remaining source uncertainty. Code delivery is tracked by [PR #80](https://github.com/moojing/re-canvas-door-swing/pull/80); its platform state is authoritative for merge status. Package publication is separate and is not performed by this change. Source completion remains8/35 merged/published,27pending; no new Leave source count. #31/#26/#29/#58/#63 retain their wider QA/release scope and Project entries stay In Progress.
 
 Independent review approved the velocity-continuous path and measured initial approach. Full validation of the real gallery material tree still has the existing12332/12428 frame inventory mismatch; reference-worktree published records/assets are checked with missing ignored sources explicitly skipped.
+
+## 2026-11-11 shared device comparison and portrait framing delivery
+
+[PR #82](https://github.com/moojing/re-canvas-door-swing/pull/82) adds same-page desktop/tablet/phone comparison with synchronized Play/Reset/seek, traversal selection and one audio stream. The shared renderer preserves portrait left/right door edges through approach, closed waits and micro-open holds, then releases protection for passage. Vertical-only authored crop does not disable horizontal protection; original horizontal crop remains exempt. Fixed preset/set tracks, source assets and source completion counts are unchanged.
+
+Implementation checks cover126core＋2local-assets,16package and63browser tests, including21 approach samples plus wait/micro-hold landmarks for all11 closed-door presets/traversals, paused resize and sound. Lint/build retain existing warnings; the optional standalone sample TypeScript check retains three baseline errors. Fresh pre-merge verification and independent review are recorded in the PR; its platform state determines merge delivery.
+
+No package publication is included. Pages remains pinned to published library beta.5, so the renderer correction requires a later npm release/pin update. #29/#58/#63 retain their wider release/source-QA scope and In Progress status; no selected source or category is newly completed by this shared presentation change.

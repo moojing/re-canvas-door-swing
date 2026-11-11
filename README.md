@@ -19,6 +19,13 @@ Open `http://127.0.0.1:5173/` to browse every published preset. Each card
 shows the renderer's initial frame; **View details** opens the selected preset
 on its animation detail page, with playback controls, sound, a seekable timeline,
 and preview-only settings. **Full-screen preview** plays over the catalog or detail page.
+Choose **Compare devices** in detail to preview desktop (1440×900), tablet
+(768×1024), and phone (390×844) together with synchronized playback, shared
+timeline controls, and one audio stream.
+Portrait playback containers keep both door edges visible during approach,
+closed waits and micro-open holds, including views with authored vertical crop.
+Fitting follows the current door pose and relaxes smoothly for passage;
+original horizontal crops remain exempt. Comparison and actual playback share this behavior.
 The retired technical PoC routes are no longer available; the standalone HTML
 example is at `/samples/vanilla.html`.
 

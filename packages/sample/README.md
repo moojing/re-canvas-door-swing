@@ -23,8 +23,18 @@ Open `http://127.0.0.1:5173/`.
   Full-screen preview plays the animation over the catalog.
 - `/dev/animations`: animation list. Its cards open `/dev/animations/:animationId`.
 - `/dev/animations/:animationId`: shared detail page with Play, Reset, timeline
-  seeking, preview-only swing direction controls for single doors, Back
-  navigation, and the published `mountDoorEntrance` usage.
+  seeking, authored Enter/Leave variants, Back navigation, and the published
+  `mountDoorEntrance` usage. Choose **Compare devices** to view Desktop
+  (1440×900), Tablet (768×1024), and Phone (390×844) together. Each viewport
+  renders at its own logical size and scales to fit. All three share playback,
+  seeking, Reset and preview timing edits; only Desktop plays sound. Switching
+  between Single preview and Compare devices pauses and retains progress.
+  Comparison stacks on narrow screens and remains selected when changing
+  traversal. Full-screen preview still uses the actual browser viewport.
+  Narrow portrait containers automatically keep both door edges visible through
+  approach, closed waits and micro-open holds, then relax fitting for passage.
+  Original vertical crop does not disable horizontal protection; original
+  horizontal crop remains exempt. Comparison and actual playback share this rule.
 - `/samples/vanilla.html`: minimal non-React mounting example.
 
 ## Development notes

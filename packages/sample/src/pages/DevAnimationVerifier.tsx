@@ -21,6 +21,7 @@ import NotFound from "./NotFound";
 const DevAnimationVerifier = () => {
   const transitionRef = useRef<FullScreenDoorTransitionHandle>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [comparison, setComparison] = useState(false);
   const { animationId = "" } = useParams();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,6 +68,8 @@ const DevAnimationVerifier = () => {
             <AnimationPreviewWorkbench
               key={preset.id}
               preset={preset}
+              comparison={comparison}
+              onComparisonChange={setComparison}
               variants={variantsForPreset(preset, presets)}
               onVariantChange={(id) => setSearchParams({ preset: id }, { state: { from: returnTo } })}
               onFullScreenPreview={(request) => transitionRef.current?.play(request)}
