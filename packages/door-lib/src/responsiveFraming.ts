@@ -18,38 +18,42 @@ export const hasReferenceHorizontalCrop = (
   });
 };
 
-export const getPortraitHorizontalPullback = (
+export const getPortraitProtectionEnd = (
+  events?: { id: string; atMs: number }[]
+): number => events?.find((event) => ["hold-end", "opening-resumes"].includes(event.id))?.atMs ??
+  events?.find((event) => ["opening-start", "closed-hold-end"].includes(event.id))?.atMs ??
+  events?.find((event) => event.id === "run-start")?.atMs ?? 0;
+
+// Solve the horizontal frustum with both a dolly and a camera-space truck.
+// Fitting against the original optical axis alone makes lateral authored
+// motion look like a retreat once the opposite edge becomes the constraint.
+export const getPortraitHorizontalFit = (
   reference: THREE.PerspectiveCamera,
   points: THREE.Vector3[],
-  aspect: number
-): number => {
-  if (!Number.isFinite(aspect) || aspect <= 0 || aspect >= 1 || !points.length) return 0;
+  aspect: number,
+  fixedPullback?: number
+): { pullback: number; offsetX: number } => {
+  if (!Number.isFinite(aspect) || aspect <= 0 || aspect >= 1 || !points.length) {
+    return { pullback: 0, offsetX: 0 };
+  }
   reference.updateMatrixWorld(true);
   const slope = Math.tan(reference.fov * Math.PI / 360) / reference.zoom * aspect * FIT_LIMIT;
-  let required = -Infinity;
+  let lower = -Infinity, upper = Infinity, near = -Infinity;
   for (const point of points) {
     const local = point.clone().applyMatrix4(reference.matrixWorldInverse);
-    // A backward dolly preserves camera-space X and increases depth by its
-    // distance: |X| / (depth + distance) <= horizontal frustum slope.
-    required = Math.max(required, Math.abs(local.x) / slope + local.z, reference.near + local.z);
+    lower = Math.max(lower, local.x + slope * local.z);
+    upper = Math.min(upper, local.x - slope * local.z);
+    near = Math.max(near, reference.near + local.z);
   }
-  // C1 conservative clamp: begin slowing before the safety edge, and never
-  // underestimate a positive required distance. This avoids a hard camera stop.
-  if (required <= -FIT_BLEND_DISTANCE) return 0;
-  if (required >= FIT_BLEND_DISTANCE) return required;
-  return (required + FIT_BLEND_DISTANCE) ** 2 / (4 * FIT_BLEND_DISTANCE);
-};
-
-export const getPortraitPullbackWeight = (
-  progress: number,
-  duration: number,
-  events?: { id: string; atMs: number }[]
-): number => {
-  const release = events?.find((event) => ["hold-end", "opening-resumes"].includes(event.id))?.atMs ??
-    events?.find((event) => ["opening-start", "closed-hold-end"].includes(event.id))?.atMs ??
-    events?.find((event) => event.id === "run-start")?.atMs ?? 0;
-  const end = events?.find((event) => event.id === "passage" && event.atMs > release)?.atMs ??
-    events?.find((event) => event.id === "fade-start" && event.atMs > release)?.atMs ?? duration;
-  const t = Math.min(1, Math.max(0, (progress * duration - release) / Math.max(end - release, 1)));
-  return 1 - t * t * (3 - 2 * t);
+  const required = Math.max((lower - upper) / (2 * slope), near);
+  const pullback = fixedPullback ?? (required <= -FIT_BLEND_DISTANCE ? 0 : required >= FIT_BLEND_DISTANCE ? required :
+    (required + FIT_BLEND_DISTANCE) ** 2 / (4 * FIT_BLEND_DISTANCE));
+  // Keep the authored horizontal placement whenever it already fits.
+  const minOffset = lower - slope * pullback;
+  const maxOffset = upper + slope * pullback;
+  // Opening leaves may intentionally leave the screen. Do not retreat to keep
+  // fitting their expanding silhouette after the protected closed/held phase.
+  const offsetX = minOffset > maxOffset ? (minOffset + maxOffset) / 2 :
+    Math.max(minOffset, Math.min(0, maxOffset));
+  return { pullback, offsetX };
 };

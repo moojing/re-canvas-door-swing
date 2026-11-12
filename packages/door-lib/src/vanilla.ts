@@ -1,6 +1,6 @@
 import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
-import { getPortraitHorizontalPullback, getPortraitPullbackWeight, hasReferenceHorizontalCrop } from "./responsiveFraming.ts";
+import { getPortraitHorizontalFit, getPortraitProtectionEnd, hasReferenceHorizontalCrop } from "./responsiveFraming.ts";
 import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook, usesRectangularKnobPlate, getHandleTurnMultiplier } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { usesCompactWindowLayout, compactWindowTextureV } from "./core/renderLook.ts";
@@ -172,6 +172,7 @@ class VanillaDoorScene {
   private lastCameraFrame?: CameraFrame;
   private portraitFitKey = "";
   private portraitFitEnabled = false;
+  private portraitPullback = 0;
   private portraitPanels: { mesh: THREE.Mesh; corners: THREE.Vector3[] }[] = [];
   private readonly portraitBackward = new THREE.Vector3();
   private doorRoot = new THREE.Group();
@@ -883,14 +884,12 @@ class VanillaDoorScene {
     this.camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
   }
 
-  private applyResponsiveCamera({ state, config, progress, cameraPanX, cameraPanY }: CameraFrame) {
+  private applyResponsiveCamera({ state, config, cameraPanX, cameraPanY }: CameraFrame) {
     this.applyCameraState(state, cameraPanX, cameraPanY);
     if (this.camera.aspect >= 1) return;
-    const weight = getPortraitPullbackWeight(progress, config.duration, config.timelineEvents);
-    if (weight <= 0) return;
 
     const initial = config.getState(0, { linearProgress: 0, handleProfileId: this.activeHandleProfileId });
-    const key = JSON.stringify([initial, config.id, this.camera.aspect, cameraPanX, cameraPanY,
+    const key = JSON.stringify([initial, config.id, config.duration, config.timelineEvents, this.camera.aspect, cameraPanX, cameraPanY,
       this.activeSingleHingeSide, this.activeSwingDirection]);
     if (key !== this.portraitFitKey) {
       this.portraitFitKey = key;
@@ -918,6 +917,26 @@ class VanillaDoorScene {
       const initialPoints = this.portraitPanels.flatMap(({ mesh, corners }) =>
         corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
       this.portraitFitEnabled = !hasReferenceHorizontalCrop(this.camera, initialPoints);
+      this.portraitPullback = 0;
+      if (this.portraitFitEnabled) {
+        const end = getPortraitProtectionEnd(config.timelineEvents);
+        // Sample the whole protected approach once, not once per rendered frame.
+        // A fixed dolly retains the authored movement and never has a late release.
+        for (let i = 0; i <= 96; i++) {
+          const sampleProgress = end / config.duration * i / 96;
+          const sample = config.getState(sampleProgress, {
+            linearProgress: sampleProgress, handleProfileId: this.activeHandleProfileId,
+          });
+          this.applyDoorState(config.id, sample);
+          this.doorRoot.updateMatrixWorld(true);
+          this.applyCameraState(sample, cameraPanX, cameraPanY);
+          const points = this.portraitPanels.flatMap(({ mesh, corners }) =>
+            corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
+          this.portraitPullback = Math.max(this.portraitPullback,
+            getPortraitHorizontalFit(this.camera, points, this.camera.aspect).pullback);
+        }
+        if (this.portraitPullback > 0) this.portraitPullback += 0.03;
+      }
       this.applyDoorState(config.id, state);
       this.applyCameraState(state, cameraPanX, cameraPanY);
     }
@@ -925,11 +944,13 @@ class VanillaDoorScene {
     this.doorRoot.updateMatrixWorld(true);
     const points = this.portraitPanels.flatMap(({ mesh, corners }) =>
       corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
-    const pullback = getPortraitHorizontalPullback(this.camera, points, this.camera.aspect);
+    const { pullback, offsetX } = getPortraitHorizontalFit(this.camera, points, this.camera.aspect, this.portraitPullback);
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
     this.portraitBackward.copy(this.camera.getWorldDirection(new THREE.Vector3())).negate();
-    this.camera.position.addScaledVector(this.portraitBackward, pullback * weight);
-    const [tx, ty, tz] = state.cameraTarget;
-    this.camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
+    this.camera.position.addScaledVector(this.portraitBackward, pullback);
+    this.camera.position.addScaledVector(right, offsetX);
+    // Preserve the authored orientation: looking back at its original target
+    // here would undo the truck and reintroduce the lateral fit constraint.
   }
 }
 
