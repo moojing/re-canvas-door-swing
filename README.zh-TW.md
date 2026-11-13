@@ -7,6 +7,10 @@
 - `packages/door-lib`（`retro-horror-door`）：可重複使用的復古恐怖開門轉場 library，提供 vanilla JS API。
 - `packages/sample`（`retro-horror-door-sample`）：用於開發與驗證 library 的 Vite app。首頁是可播放的 preset catalog，也保留 PoC gallery 與純 HTML vanilla 範例。
 
+## 舊網站整合範例
+
+[Biohazard Abyss](examples/abyss/README.md) 示範在靜態 HTML 網站跳頁前隨機播放全螢幕開門轉場，包含本機網站安裝工具、本地素材、略過按鈕與跳頁備援。
+
 ## 快速開始
 
 ```sh
