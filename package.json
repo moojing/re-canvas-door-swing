@@ -20,7 +20,8 @@
     "verify:lib:core": "npm run lint --workspace retro-horror-door && npm run build:lib && npm run test:lib:core",
     "verify:lib:boundary": "npm run test:lib:package",
     "verify:lib:browser": "npm run verify:lib:core && npm run test:lib:browser",
-    "gallery:check": "if command -v python3.12 >/dev/null 2>&1; then exec python3.12 scripts/gallery_assets.py check; elif command -v python3.11 >/dev/null 2>&1; then exec python3.11 scripts/gallery_assets.py check; else exec python3 scripts/gallery_assets.py check; fi"
+    "gallery:check": "if command -v python3.12 >/dev/null 2>&1; then exec python3.12 scripts/gallery_assets.py check; elif command -v python3.11 >/dev/null 2>&1; then exec python3.11 scripts/gallery_assets.py check; else exec python3 scripts/gallery_assets.py check; fi",
+    "test:example:abyss": "node --test examples/abyss/*.test.mjs"
   },
   "devDependencies": {
     "@types/three": "^0.160.0"
