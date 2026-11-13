@@ -1,5 +1,6 @@
 import type { EraAnimationProfile } from "./animationStyles.ts";
 import { sampleTrack } from "./animationTimeline.ts";
+import { sampleCameraPath } from "./cameraPath.ts";
 import type { DoorAnimationState } from "./types.ts";
 
 export const sampleProfileState = (profile: EraAnimationProfile, progress: number): DoorAnimationState => {
@@ -12,8 +13,7 @@ export const sampleProfileState = (profile: EraAnimationProfile, progress: numbe
     rightDoorOffset: profile.rightDoorOffset ? sampleTrack(profile.rightDoorOffset, duration, timeMs) : undefined,
     handleAngle: sampleTrack(profile.handleAngle, duration, timeMs),
     rightHandleAngle: profile.rightHandleAngle ? sampleTrack(profile.rightHandleAngle, duration, timeMs) : undefined,
-    cameraPosition: sampleTrack(profile.cameraPosition, duration, timeMs),
-    cameraTarget: sampleTrack(profile.cameraTarget, duration, timeMs),
+    ...sampleCameraPath(profile.cameraPath, duration, timeMs),
     fadeOut: sampleTrack(profile.fadeOut, duration, timeMs),
   };
 };

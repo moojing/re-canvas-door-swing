@@ -7,6 +7,14 @@
 
 ## 目前進度
 
+2026-11-13 架構工作（交付狀態以對應 PR 為準，套件尚未發布）：[#72](https://github.com/moojing/re-canvas-door-swing/issues/72)
+先抽離 Stage2 內部 `cameraPath`，將位置／視線 tracks、驗證、取樣與重新計時整理到獨立模組。
+沿用現有插值與共同 phase anchors；preset/set ID、去回路徑與公開 state 不變。
+基於已保存的舊版回歸基準驗證，未更新任何 baseline。Stage1 編輯介面與 Stage3
+模板、方向共用／覆寫及儲存／匯出仍待做；來源數量與分類狀態不變。
+驗證：14 組原始 profile 逐筆資料一致；133 core＋2 assets、4 基準檢查、16 package、
+65＋43 browser、lint／build 通過。42 張基準分鏡未更新；獨立審查無待修正事項。
+
 2026-11-12 直式鏡頭修正：交付見 [PR #83](https://github.com/moojing/re-canvas-door-swing/pull/83)，
 合併狀態以 PR 為準，套件尚未發布。直式容器以靠近及微開停頓全段的安全距離，
 決定固定鏡頭後退量，開場保留較小的門與原本前進位移。移除逐幀追逐畫面邊界及

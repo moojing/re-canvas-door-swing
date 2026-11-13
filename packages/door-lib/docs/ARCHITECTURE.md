@@ -18,6 +18,7 @@
 packages/door-lib/
   src/core/
     animationState.ts         # framework-free timeline -> state configs
+    cameraPath.ts             # internal position/target data, sampling, validation and retiming
     controller.ts             # framework-free playback lifecycle
     presets.ts                # framework-free playable preset registry
     types.ts                  # shared vanilla/core types
@@ -51,6 +52,29 @@ export interface DoorAnimationConfig {
 - 每個 runtime preset 可指定 `frontTextureUrl`、`edgeTextureUrl`、`backTextureUrl`。未指定側邊或背面時，renderer 會使用正面貼圖；`textureUrl` 僅保留給舊版相容，等同三個面皆使用同一張圖。這些欄位屬於 preset，不提供新的 per-mount 客製欄位。
 - `random: true` 只從可用 runtime presets 中挑選；`type`、`motion`、`handle`、`material` 只在 random mode 作為篩選條件。有明確 `preset` 時不能再混用這些欄位。
 - Runtime preset registry 不包含來源影片、縮圖或分類筆記。這些只存在於 Notion / gallery / dev tracking metadata，不能進 npm package。
+
+## Internal cameraPath
+
+`EraAnimationProfile.cameraPath` groups the authored `position` and `target`
+keyframe tracks. `cameraPath.ts` uses the existing `TimelineKeyframe`, easing,
+`sampleTrack` and `warpTime`; it does not introduce another scheduler or own
+duration, timeline events, leaf/handle tracks, audio or fade. Those stay in the
+complete animation profile/set.
+
+`profileState.ts` samples the internal path back into the existing public
+`cameraPosition`/`cameraTarget` state fields. `presetAnimation.ts` validates the
+path and retimes it with the same phase anchors as the other tracks. Retimed
+paths clone vector tuples, so temporary changes do not alias the original path.
+
+The initial migration preserves all authored coordinates, easing and times,
+including derived paths that override only position and retain the base target.
+Existing Iron Enter/Leave paths remain distinct; existing set-level sharing
+remains. This internal representation adds no public mount option, path registry,
+traversal-sharing inference, editor template or persistence format.
+
+The pre-migration numeric/asset oracle and all desktop/tablet/phone phase sheets
+live in `tests/regression/`; they must pass without refreshing the baseline for
+this extraction. See [regression instructions](../tests/regression/README.md).
 
 ## Sample catalog
 
