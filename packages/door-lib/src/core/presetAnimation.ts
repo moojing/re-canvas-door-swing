@@ -1,3 +1,4 @@
+import { validateCameraPath, retimeCameraPath } from "./cameraPath.ts";
 import { sampleProfileState } from "./profileState.ts";
 import { getDoorAnimationConfig } from "./animationState.ts";
 import type { EraAnimationProfile } from "./animationStyles.ts";
@@ -15,8 +16,7 @@ const validateProfile = (profile: EraAnimationProfile) => {
   if (profile.rightDoorOffset) validateTrack(profile.rightDoorOffset, duration);
   validateTrack(profile.handleAngle, duration);
   if (profile.rightHandleAngle) validateTrack(profile.rightHandleAngle, duration);
-  validateTrack(profile.cameraPosition, duration);
-  validateTrack(profile.cameraTarget, duration);
+  validateCameraPath(profile.cameraPath, duration);
   validateTrack(profile.fadeOut, duration);
   if (
     profile.events.length < 2 ||
@@ -91,8 +91,7 @@ const retimeProfile = (
     rightDoorOffset: profile.rightDoorOffset ? retimeTrack(profile.rightDoorOffset, oldAnchors, newAnchors) : undefined,
     handleAngle: retimeTrack(profile.handleAngle, oldAnchors, newAnchors),
     rightHandleAngle: profile.rightHandleAngle ? retimeTrack(profile.rightHandleAngle, oldAnchors, newAnchors) : undefined,
-    cameraPosition: retimeTrack(profile.cameraPosition, oldAnchors, newAnchors),
-    cameraTarget: retimeTrack(profile.cameraTarget, oldAnchors, newAnchors),
+    cameraPath: retimeCameraPath(profile.cameraPath, oldAnchors, newAnchors),
     fadeOut: retimeTrack(profile.fadeOut, oldAnchors, newAnchors),
     soundStartMs: warpTime(profile.soundStartMs, oldAnchors, newAnchors),
     soundEndMs: warpTime(profile.soundEndMs, oldAnchors, newAnchors),

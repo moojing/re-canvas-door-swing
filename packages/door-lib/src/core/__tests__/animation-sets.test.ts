@@ -28,7 +28,7 @@ test("all released presets explicitly select a compatible immutable set", () => 
 test("same set shares exact tracks, easing, markers and sound crop except optional handle", () => {
   const a = getAnimationSetProfile(iron);
   const b = getAnimationSetProfile(getDoorEntrancePreset("biohazard-1996-a02-yellow-panel-knob-door-leave"));
-  for (const key of ["doorAngle", "cameraPosition", "cameraTarget", "fadeOut",
+  for (const key of ["doorAngle", "cameraPath", "fadeOut",
     "soundStartMs", "soundEndMs", "soundSourceStartProgress", "soundSourceEndProgress", "durationMs"] as const) {
     assert.deepEqual(a[key], b[key], key);
   }
@@ -150,7 +150,8 @@ test("yellow Enter reaches its side-on close passage before fade without changin
   assert.equal(getDoorEntranceAnimationConfig(yellowLeave).getState(1).doorAngle * 90, 30);
   const a = getAnimationSetProfile(yellow);
   const b = getAnimationSetProfile(yellowLeave);
-  for (const key of ["cameraTarget", "fadeOut", "handleAngle", "durationMs", "soundStartMs", "soundEndMs"] as const) {
+  assert.deepEqual(a.cameraPath.target, b.cameraPath.target);
+  for (const key of ["fadeOut", "handleAngle", "durationMs", "soundStartMs", "soundEndMs"] as const) {
     assert.deepEqual(a[key], b[key], key);
   }
 });

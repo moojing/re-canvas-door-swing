@@ -2,7 +2,9 @@
   "name": "retro-horror-door-monorepo",
   "private": true,
   "version": "0.0.0",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev --workspace retro-horror-door-sample",
     "dev:calibration": "npm run dev:calibration --workspace retro-horror-door-sample",
@@ -13,14 +15,18 @@
     "build:sample": "npm run build --workspace retro-horror-door-sample",
     "lint": "npm run lint --workspace retro-horror-door && npm run lint --workspace retro-horror-door-sample",
     "test:lib": "npm run test:lib:core",
-    "test:lib:core": "npm run test:core --workspace retro-horror-door",
+    "test:lib:core": "npm run test:core --workspace retro-horror-door && npm run test:animation:core",
     "test:lib:package": "npm run test:package --workspace retro-horror-door",
-    "test:lib:browser": "npm run test:browser --workspace retro-horror-door",
+    "test:lib:browser": "npm run test:browser --workspace retro-horror-door && npm run test:animation:visual",
     "verify:lib": "npm run verify:lib:core",
     "verify:lib:core": "npm run lint --workspace retro-horror-door && npm run build:lib && npm run test:lib:core",
     "verify:lib:boundary": "npm run test:lib:package",
     "verify:lib:browser": "npm run verify:lib:core && npm run test:lib:browser",
     "gallery:check": "if command -v python3.12 >/dev/null 2>&1; then exec python3.12 scripts/gallery_assets.py check; elif command -v python3.11 >/dev/null 2>&1; then exec python3.11 scripts/gallery_assets.py check; else exec python3 scripts/gallery_assets.py check; fi",
+    "test:animation:core": "node --experimental-strip-types --import ./packages/door-lib/src/__tests__/asset-loader.mjs --test packages/door-lib/tests/regression/animation-regression.test.ts",
+    "test:animation:visual": "playwright test --config packages/door-lib/tests/regression/playwright.config.ts",
+    "test:animation": "npm run test:animation:core && npm run test:animation:visual",
+    "baseline:animation": "node scripts/capture-animation-baseline.mjs",
     "test:example:abyss": "node --test examples/abyss/*.test.mjs"
   },
   "devDependencies": {
