@@ -57,6 +57,8 @@ Enter 保留 `biohazard-1996-a01-iron-door`，Leave 使用
 
 door library 透過分層測試維持 framework-free：
 
+- `npm run test:animation`：以固定舊版 commit 比對14個 preset 的數值與42張渲染分鏡表；既有 core／browser 指令也已接入。詳見[基準來源、差異報告與更新流程](packages/door-lib/tests/regression/README.md)。
+
 - `npm run test:lib:core`：覆蓋 framework-free 的動畫狀態、preset、音效與 controller 行為。
 - `npm run test:lib:package`：檢查公開 package exports，並確認預設 `retro-horror-door` entry 和 `retro-horror-door/vanilla` output graph 不含 React。
 - `npm run test:lib:browser`：執行純 HTML mount 與 preset catalog 的 browser coverage，包括 canvas rendering、詳細頁導覽、播放、音效、時間軸 seek、全螢幕預覽及 mobile layout。

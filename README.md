@@ -66,6 +66,8 @@ Useful scripts:
 
 The door library uses layered tests to keep the package framework-free:
 
+- `npm run test:animation` compares all 14 preset timelines and 42 rendered phase sheets against a frozen old commit. Standard core/browser commands include these checks. See [baseline provenance, reports and refresh procedure](packages/door-lib/tests/regression/README.md).
+
 - `npm run test:lib:core` covers framework-free animation state, presets, sound,
   and controller behavior.
 - `npm run test:lib:package` checks public package exports and verifies the
