@@ -7,6 +7,10 @@ Two-package workspace:
 - `packages/door-lib` (`retro-horror-door`): reusable retro horror door transitions with a vanilla JS API.
 - `packages/sample` (`retro-horror-door-sample`): Vite development app. Its home page is a playable preset catalog; it also keeps the PoC gallery and a plain HTML vanilla example.
 
+## Archived website integration example
+
+[Biohazard Abyss](examples/abyss/README.md) demonstrates random full-screen door transitions before navigating between static HTML pages. It includes a repeatable installer for a local website copy, local runtime assets, skip controls, and navigation fallbacks.
+
 ## Quick start
 
 ```sh
