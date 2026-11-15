@@ -27,7 +27,8 @@
     "test:animation:visual": "playwright test --config packages/door-lib/tests/regression/playwright.config.ts",
     "test:animation": "npm run test:animation:core && npm run test:animation:visual",
     "baseline:animation": "node scripts/capture-animation-baseline.mjs",
-    "test:example:abyss": "node --test examples/abyss/*.test.mjs"
+    "test:example:abyss": "node --test examples/abyss/*.test.mjs",
+    "typecheck:sample": "npm run typecheck --workspace retro-horror-door-sample"
   },
   "devDependencies": {
     "@types/three": "^0.160.0"
