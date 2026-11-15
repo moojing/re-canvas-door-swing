@@ -1,41 +1,25 @@
-import { resolvePhoneCameraDraft, type DoorPhoneFraming, type DoorCameraDraft } from "./core/cameraAuthoring.ts";
-import { resolveAssetUrl } from "./core/assetUrls.ts";
-import * as THREE from "three";
-import { getPortraitCameraOffset, getPortraitHorizontalFit, getPortraitProtectionEnd, hasReferenceHorizontalCrop } from "./responsiveFraming.ts";
-import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook, usesRectangularKnobPlate, getHandleTurnMultiplier } from "./core/renderLook.ts";
-import { applyRetroMaterial } from "./retroMaterial.ts";
-import { usesCompactWindowLayout, compactWindowTextureV } from "./core/renderLook.ts";
-import { getDoorEntranceAnimationConfig, type DoorTimingEvents } from "./core/presetAnimation.ts";
-import { getSoundPlaybackRate, getSoundVolume } from "./core/soundWindow.ts";
-import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
 import {
-  resolveDoorSurfaceTextureUrls,
-  shouldMirrorBackTextureX,
-} from "./core/surfaceTextures.ts";
+  resolvePhoneCameraDraft,
+  type DoorPhoneFraming,
+  type DoorCameraDraft,
+} from "./core/cameraAuthoring.ts";
+import { resolveAssetUrl } from "./core/assetUrls.ts";
+import { getDoorEntranceAnimationConfig, type DoorTimingEvents } from "./core/presetAnimation.ts";
+import { resolveDoorEntrancePresetSelection } from "./core/presets.ts";
+import { resolveDoorSurfaceTextureUrls, shouldMirrorBackTextureX } from "./core/surfaceTextures.ts";
 import type {
-  DoorAnimationState,
   DoorAnimationConfig,
-  DoorAnimationId,
-  DoorEntranceMotion,
   DoorEntrancePresetId,
   DoorEntranceSoundState,
-  DoorEntranceType,
   DoorEntrancePreset,
   DoorEntrancePresetSelection,
-  DoorHingeSide,
   DoorSwingDirection,
-  DoorMaterialId,
-  HandleProfileId,
-  ResolvedDoorSurfaceTextureUrls,
 } from "./core/types.ts";
 import { doorWood } from "./assets/textures/index.ts";
 import { doorOpenClose } from "./assets/sounds/index.ts";
-import {
-  createAgedHandleMaterial,
-  loadHandleScene,
-  prepareHandleModel,
-  getImportedGripTurnMultiplier,
-} from "./handleModel.ts";
+import { VanillaDoorScene } from "./renderer/scene.ts";
+import { createDoorAudio } from "./renderer/audio.ts";
+import { clampProgress } from "./renderer/progress.ts";
 
 interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
   target: HTMLElement | null;
@@ -73,31 +57,10 @@ interface MountedDoorEntrance {
 
 type DoorEntranceHandle = MountedDoorEntrance;
 
-type CameraFrame = {
-  state: DoorAnimationState;
-  config: DoorAnimationConfig;
-  progress: number;
-  cameraPanX: number;
-  cameraPanY: number;
-  phoneConfig?: DoorAnimationConfig;
-  phoneFraming?: DoorPhoneFraming;
-};
-
 const DEFAULT_CLASS_NAME =
   "h-[460px] w-full rounded-xl border border-white/10 bg-black";
 const DEFAULT_TEXTURE_URL = doorWood;
 const DEFAULT_SOUND_URL = doorOpenClose;
-const DOOR_DEPTH = 0.16;
-const DOOR_SURFACE_OFFSET = 0.002;
-const IMPORTED_HANDLE_SURFACE_EMBED = 0.006;
-const IMPORTED_KNOB_MODEL_SCALE = 0.45;
-const KNOB_HANDLE_EDGE_INSET = 0.2;
-
-const clampProgress = (progress: number) => {
-  if (!Number.isFinite(progress)) return 0;
-  return Math.min(Math.max(progress, 0), 1);
-};
-
 const toPublicAssetUrl = (url?: string) => {
   if (!url) return undefined;
   if (/^https?:\/\//.test(url) || url.startsWith("/")) return url;
@@ -113,893 +76,6 @@ const toPublicAssetUrl = (url?: string) => {
 
   return normalized;
 };
-
-const disposeObject = (object: THREE.Object3D) => {
-  object.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    const geometry = mesh.geometry;
-    const material = mesh.material;
-
-    geometry?.dispose?.();
-
-    if (Array.isArray(material)) {
-      material.forEach((entry) => entry.dispose());
-    } else {
-      material?.dispose?.();
-    }
-  });
-};
-
-const createDoorMaterial = () =>
-  new THREE.MeshStandardMaterial({
-    color: "#8a5a37",
-    roughness: 0.7,
-    metalness: 0.12,
-  });
-
-const createDoorMaterials = () =>
-  Array.from({ length: 6 }, () => createDoorMaterial()) as [
-    THREE.MeshStandardMaterial,
-    THREE.MeshStandardMaterial,
-    THREE.MeshStandardMaterial,
-    THREE.MeshStandardMaterial,
-    THREE.MeshStandardMaterial,
-    THREE.MeshStandardMaterial,
-  ];
-
-const createDoorFaceMaterial = () =>
-  new THREE.MeshStandardMaterial({
-    color: "#ffffff",
-    roughness: 0.7,
-    metalness: 0.12,
-  });
-
-const mirrorPlaneTextureX = (geometry: THREE.BufferGeometry) => {
-  const uv = geometry.getAttribute("uv");
-  for (let index = 0; index < uv.count; index += 1) {
-    uv.setX(index, 1 - uv.getX(index));
-  }
-  uv.needsUpdate = true;
-};
-
-const createHandleMaterial = () => createAgedHandleMaterial();
-
-class VanillaDoorScene {
-  readonly element: HTMLDivElement;
-
-  private readonly renderer: THREE.WebGLRenderer;
-  private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
-  private readonly textureLoader = new THREE.TextureLoader();
-  private readonly fadeOverlay = document.createElement("div");
-  private readonly label = document.createElement("div");
-  private readonly resizeObserver?: ResizeObserver;
-  private lastCameraFrame?: CameraFrame;
-  private portraitFitKey = "";
-  private portraitPassagePoints: THREE.Vector3[] = [];
-  private portraitPassageCamera = new THREE.PerspectiveCamera();
-  private portraitProtectionEndMs = 0;
-  private portraitFitEnabled = false;
-  private portraitPullback = 0;
-  private portraitPanels: { mesh: THREE.Mesh; corners: THREE.Vector3[] }[] = [];
-  private doorRoot = new THREE.Group();
-  private activeSurfaceTextureKey?: string;
-  private activeHandleModelUrl?: string;
-  private activeHandleProfileId?: HandleProfileId;
-  private activeHasHandle?: boolean;
-  private activeMirrorBackTextureX?: boolean;
-  private activeMirrorTextureX?: boolean;
-  private activeSingleHingeSide: DoorHingeSide = "left";
-  private activeSwingDirection: DoorSwingDirection = "toward-viewer";
-  private activeAnimation?: DoorAnimationId;
-  private activeHandleGroups: Array<{
-    group: THREE.Group;
-    side: "single" | "left" | "right";
-    rotationMultiplier: number;
-    pressRotationMultiplier?: 1 | -1;
-    pressTargets?: Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>;
-  }> = [];
-  private doorMaterials = createDoorMaterials();
-  private frontDoorMaterial = createDoorFaceMaterial();
-  private backDoorMaterial = createDoorFaceMaterial();
-  private handleMaterial = createHandleMaterial();
-  private agedWood = false;
-  private knobBackplate = false;
-  private steelKnob = false;
-  private rectangularKnobPlate = false;
-  private compactWindowLayout = false;
-  private handleTurnDirection?: "clockwise" | "counterclockwise";
-  private activeTextureFlipY = false;
-  private readonly retroRasterSize = new THREE.Vector2(360, 360);
-  private readonly ambientLight = new THREE.AmbientLight("#ffffff", 0.25);
-  private readonly keyLight = new THREE.DirectionalLight("#fff7ee", 0.75);
-  private readonly rimLight = new THREE.DirectionalLight("#8fa8c7", 0.35);
-  private disposed = false;
-
-  constructor(className: string) {
-    this.element = document.createElement("div");
-    this.element.className = `relative overflow-hidden ${className}`;
-    this.element.style.position = this.element.style.position || "relative";
-    this.element.style.overflow = "hidden";
-    this.element.style.background = "#000000";
-
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setClearColor("#000000");
-    this.renderer.setPixelRatio(1);
-    this.renderer.domElement.style.display = "block";
-    this.renderer.domElement.style.width = "100%";
-    this.renderer.domElement.style.height = "100%";
-    this.element.append(this.renderer.domElement);
-
-    this.fadeOverlay.style.position = "absolute";
-    this.fadeOverlay.style.inset = "0";
-    this.fadeOverlay.style.pointerEvents = "none";
-    this.fadeOverlay.style.background = "#000000";
-    this.fadeOverlay.style.opacity = "0";
-    this.element.append(this.fadeOverlay);
-
-    this.label.style.position = "absolute";
-    this.label.style.right = "12px";
-    this.label.style.bottom = "12px";
-    this.label.style.borderRadius = "999px";
-    this.label.style.background = "rgb(255 255 255 / 0.06)";
-    this.label.style.padding = "4px 12px";
-    this.label.style.color = "rgb(255 255 255 / 0.7)";
-    this.label.style.fontSize = "12px";
-    this.label.style.textTransform = "uppercase";
-    this.label.style.pointerEvents = "none";
-    this.element.append(this.label);
-
-    this.keyLight.position.set(2, 5, 5);
-    this.rimLight.position.set(-3, 2, -4);
-    this.scene.add(this.ambientLight, this.keyLight, this.rimLight);
-    this.scene.add(this.doorRoot);
-
-    if (typeof ResizeObserver !== "undefined") {
-      this.resizeObserver = new ResizeObserver(() => {
-        if (this.disposed) return;
-        this.resize();
-        if (this.lastCameraFrame) {
-          this.applyResponsiveCamera(this.lastCameraFrame);
-          this.renderer.render(this.scene, this.camera);
-        }
-      });
-      this.resizeObserver.observe(this.element);
-    }
-  }
-
-  render({
-    presetId,
-    handleTurnDirection,
-    state,
-    config,
-    surfaceTextureUrls,
-    textureFlipY,
-    handleModelUrl,
-    handleProfileId,
-    hasHandle,
-    mirrorBackTextureX,
-    mirrorTextureX,
-    hingeSide,
-    swingDirection,
-    cameraPanX,
-    cameraPanY,
-    phoneConfig,
-    phoneFraming,
-    progress,
-  }: {
-    presetId: DoorEntrancePresetId;
-    handleTurnDirection?: "clockwise" | "counterclockwise";
-    state: DoorAnimationState;
-    config: DoorAnimationConfig;
-    surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls;
-    textureFlipY: boolean;
-    handleModelUrl?: string;
-    handleProfileId?: HandleProfileId;
-    hasHandle: boolean;
-    mirrorBackTextureX: boolean;
-    mirrorTextureX: boolean;
-    hingeSide: DoorHingeSide;
-    swingDirection: DoorSwingDirection;
-    cameraPanX: number;
-    cameraPanY: number;
-    phoneConfig?: DoorAnimationConfig;
-    phoneFraming?: DoorPhoneFraming;
-    progress: number;
-  }) {
-    const agedWood = usesAgedWoodLook(presetId);
-    const knobBackplate = presetId === "biohazard-1996-b02-blue-panel-double-door";
-    const steelKnob = usesSteelKnobLook(presetId);
-    const rectangularKnobPlate = usesRectangularKnobPlate(presetId);
-    const compactWindowLayout = usesCompactWindowLayout(presetId);
-    const lookChanged = this.agedWood !== agedWood || this.knobBackplate !== knobBackplate || this.steelKnob !== steelKnob || this.rectangularKnobPlate !== rectangularKnobPlate || this.handleTurnDirection !== handleTurnDirection || this.compactWindowLayout !== compactWindowLayout;
-    this.compactWindowLayout = compactWindowLayout;
-    this.handleTurnDirection = handleTurnDirection;
-    this.rectangularKnobPlate = rectangularKnobPlate;
-    this.steelKnob = steelKnob;
-    this.knobBackplate = knobBackplate;
-    this.agedWood = agedWood;
-    this.ambientLight.intensity = agedWood ? 0.46 : 0.25;
-    this.keyLight.intensity = agedWood ? 0.82 : 0.75;
-    this.rimLight.intensity = agedWood ? 0.04 : 0.35;
-    // Smooth the low-resolution buffer when enlarged, like a softly reconstructed video frame.
-    this.renderer.domElement.style.imageRendering = "auto";
-    const surfaceKey = [
-      surfaceTextureUrls.frontTextureUrl,
-      surfaceTextureUrls.edgeTextureUrl,
-      surfaceTextureUrls.backTextureUrl,
-    ].join("|");
-    if (
-      lookChanged ||
-      this.activeAnimation !== config.id ||
-      this.activeSurfaceTextureKey !== surfaceKey ||
-      this.activeTextureFlipY !== textureFlipY ||
-      this.activeHandleModelUrl !== handleModelUrl ||
-      this.activeHandleProfileId !== handleProfileId ||
-      this.activeHasHandle !== hasHandle ||
-      this.activeMirrorBackTextureX !== mirrorBackTextureX ||
-      this.activeMirrorTextureX !== mirrorTextureX ||
-      this.activeSingleHingeSide !== hingeSide
-    ) {
-      this.rebuildDoor(
-        config.id,
-        surfaceTextureUrls,
-        textureFlipY,
-        handleModelUrl,
-        handleProfileId,
-        hasHandle,
-        mirrorBackTextureX,
-        mirrorTextureX,
-        hingeSide
-      );
-      this.activeAnimation = config.id;
-      this.activeSurfaceTextureKey = surfaceKey;
-      this.activeTextureFlipY = textureFlipY;
-      this.activeHandleModelUrl = handleModelUrl;
-      this.activeHandleProfileId = handleProfileId;
-      this.activeHasHandle = hasHandle;
-      this.activeMirrorBackTextureX = mirrorBackTextureX;
-      this.activeMirrorTextureX = mirrorTextureX;
-      this.activeSingleHingeSide = hingeSide;
-    }
-
-    this.activeSwingDirection = swingDirection;
-    this.applyDoorState(config.id, state);
-    this.fadeOverlay.style.opacity = String(clampProgress(state.fadeOut));
-    this.label.textContent = config.label;
-    this.resize();
-    this.lastCameraFrame = { state, config, progress, cameraPanX, cameraPanY, phoneConfig, phoneFraming };
-    this.applyResponsiveCamera(this.lastCameraFrame);
-    this.renderer.render(this.scene, this.camera);
-  }
-
-  invalidateCameraFit() {
-    this.portraitFitKey = "";
-  }
-
-  dispose() {
-    this.disposed = true;
-    this.resizeObserver?.disconnect();
-    disposeObject(this.doorRoot);
-    this.scene.remove(this.doorRoot);
-    this.doorMaterials.forEach((material) => material.dispose());
-    this.frontDoorMaterial.dispose();
-    this.backDoorMaterial.dispose();
-    this.handleMaterial.dispose();
-    this.renderer.dispose();
-    this.element.remove();
-  }
-
-  private resize() {
-    const width = Math.max(this.element.clientWidth, 1);
-    const height = Math.max(this.element.clientHeight || 460, 1);
-
-    if (this.element.clientHeight <= 0) {
-      this.element.style.height = `${height}px`;
-    }
-
-    const [bufferWidth, bufferHeight] = getDrawingBufferSize(
-      width, height, window.devicePixelRatio || 1, true
-    );
-    this.retroRasterSize.set(bufferWidth, bufferHeight);
-    const canvas = this.renderer.domElement;
-    if (canvas.width !== bufferWidth || canvas.height !== bufferHeight) {
-      this.renderer.setSize(bufferWidth, bufferHeight, false);
-    }
-    if (this.camera.aspect !== width / height) {
-      this.camera.aspect = width / height;
-      this.camera.updateProjectionMatrix();
-    }
-  }
-
-  private rebuildDoor(
-    animation: DoorAnimationId,
-    surfaceTextureUrls: ResolvedDoorSurfaceTextureUrls,
-    textureFlipY: boolean,
-    handleModelUrl: string | undefined,
-    handleProfileId: HandleProfileId | undefined,
-    hasHandle: boolean,
-    mirrorBackTextureX: boolean,
-    mirrorTextureX: boolean,
-    hingeSide: DoorHingeSide
-  ) {
-    this.portraitFitKey = "";
-    disposeObject(this.doorRoot);
-    this.scene.remove(this.doorRoot);
-    this.doorRoot = new THREE.Group();
-    this.scene.add(this.doorRoot);
-    this.activeHandleGroups = [];
-
-    this.doorMaterials = createDoorMaterials();
-    this.frontDoorMaterial = createDoorFaceMaterial();
-    this.backDoorMaterial = createDoorFaceMaterial();
-    this.handleMaterial = createHandleMaterial();
-    if (this.rectangularKnobPlate && handleProfileId === "lever-l") {
-      // The running door's horizontal lock is yellow brass, not dark bronze.
-      this.handleMaterial.map = null;
-      this.handleMaterial.color.set("#e5c343");
-      this.handleMaterial.roughness = 0.78;
-      this.handleMaterial.metalness = 0.15;
-    }
-    if (this.steelKnob) {
-      this.handleMaterial.map = null;
-      this.handleMaterial.color.set("#a9ada8");
-      this.handleMaterial.roughness = 0.75;
-      this.handleMaterial.metalness = 0.2;
-    }
-    [this.frontDoorMaterial, this.backDoorMaterial, ...this.doorMaterials].forEach((material) => {
-      if (this.agedWood) {
-        material.roughness = 1;
-        material.metalness = 0;
-        material.color.set("#e0d29a");
-      }
-      if (this.knobBackplate) {
-        material.roughness = 1;
-        material.metalness = 0;
-        material.color.set("#ffffff");
-      }
-      if (this.compactWindowLayout) material.color.set("#929892");
-      if (this.rectangularKnobPlate && handleProfileId === "lever-l") {
-        material.color.set("#b4aaa0");
-      }
-      applyRetroMaterial(
-        material,
-        (this.agedWood || this.knobBackplate) && this.doorMaterials.includes(material),
-        this.knobBackplate ? this.retroRasterSize : undefined,
-        this.knobBackplate
-      );
-    });
-    applyRetroMaterial(this.handleMaterial, false, this.knobBackplate ? this.retroRasterSize : undefined);
-    const doorMaterials = this.doorMaterials;
-    this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4), textureFlipY);
-    this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial], textureFlipY);
-    this.loadTexture(surfaceTextureUrls.backTextureUrl, [this.backDoorMaterial], textureFlipY);
-
-    if (animation === "double-swing" || animation === "center-split-slide") {
-      const left = this.createDoorLeaf({
-        width: 3,
-        height: 6,
-        pivotX: -3,
-        doorCenterX: 1.5,
-        handleX: 2.26,
-        side: "left",
-        handleModelUrl,
-        handleProfileId,
-        hasHandle,
-        mirrorBackTextureX,
-        mirrorTextureX,
-      });
-      left.name = "left-door";
-      this.doorRoot.add(left);
-
-      const right = this.createDoorLeaf({
-        width: 3,
-        height: 6,
-        pivotX: 3,
-        doorCenterX: -1.5,
-        handleX: -2.26,
-        side: "right",
-        handleModelUrl,
-        handleProfileId,
-        hasHandle,
-        mirrorBackTextureX: animation === "center-split-slide" ? !mirrorBackTextureX : mirrorBackTextureX,
-        mirrorTextureX: animation === "center-split-slide" ? !mirrorTextureX : mirrorTextureX,
-      });
-      right.name = "right-door";
-      this.doorRoot.add(right);
-      return;
-    }
-
-    const single =
-      hingeSide === "right"
-        ? this.createDoorLeaf({
-            width: 3,
-            height: 6,
-            pivotX: 1.5,
-            doorCenterX: -1.5,
-            handleX: -2.26,
-            side: "left",
-            handleModelUrl,
-            handleProfileId,
-            hasHandle,
-            mirrorBackTextureX,
-            mirrorTextureX,
-          })
-        : this.createDoorLeaf({
-            width: 3,
-            height: 6,
-            pivotX: -1.5,
-            doorCenterX: 1.5,
-            handleX: 2.26,
-            side: "single",
-            handleModelUrl,
-            handleProfileId,
-            hasHandle,
-            mirrorBackTextureX,
-            mirrorTextureX,
-          });
-    single.name = "single-door";
-    this.doorRoot.add(single);
-  }
-
-  private loadTexture(
-    url: string,
-    materials: THREE.MeshStandardMaterial[],
-    flipY = false
-  ) {
-    this.textureLoader.load(url, (texture) => {
-      if (this.disposed) {
-        texture.dispose();
-        return;
-      }
-
-      texture.wrapS = THREE.ClampToEdgeWrapping;
-      texture.wrapT = THREE.ClampToEdgeWrapping;
-      texture.flipY = flipY;
-      texture.minFilter = THREE.NearestFilter;
-      texture.magFilter = THREE.NearestFilter;
-      texture.generateMipmaps = false;
-      texture.needsUpdate = true;
-      materials.forEach((material) => {
-        material.map = texture;
-        material.needsUpdate = true;
-      });
-      this.renderer.render(this.scene, this.camera);
-    });
-  }
-
-  private createDoorLeaf({
-    width,
-    height,
-    pivotX,
-    doorCenterX,
-    handleX,
-    side,
-    handleModelUrl,
-    handleProfileId,
-    hasHandle,
-    mirrorBackTextureX,
-    mirrorTextureX,
-  }: {
-    width: number;
-    height: number;
-    pivotX: number;
-    doorCenterX: number;
-    handleX: number;
-    side: "single" | "left" | "right";
-    handleModelUrl?: string;
-    handleProfileId?: HandleProfileId;
-    hasHandle: boolean;
-    mirrorBackTextureX: boolean;
-    mirrorTextureX: boolean;
-  }) {
-    const pivot = new THREE.Group();
-    pivot.position.x = pivotX;
-    // Keep a narrow visible seam between the closed B02 leaves.
-    const leafWidth = this.knobBackplate ? width - 0.025 : width;
-
-    const edgeGeometry = new THREE.BoxGeometry(leafWidth, height, DOOR_DEPTH);
-    // The separate textured planes own the front/back surfaces. Keeping the
-    // untextured box caps lets snapped triangles occlude them at oblique angles.
-    edgeGeometry.groups = edgeGeometry.groups.filter((group) => (group.materialIndex ?? 0) < 4);
-    const door = new THREE.Mesh(edgeGeometry, this.doorMaterials);
-    door.position.set(doorCenterX, 0, DOOR_DEPTH / 2);
-    pivot.add(door);
-
-    const faceGeometry = () => {
-      const geometry = new THREE.PlaneGeometry(leafWidth, height, 1, this.compactWindowLayout ? 20 : 1);
-      if (this.compactWindowLayout) {
-        const uv = geometry.getAttribute("uv");
-        for (let index = 0; index < uv.count; index++) uv.setY(index, compactWindowTextureV(uv.getY(index)));
-      }
-      return geometry;
-    };
-    const front = new THREE.Mesh(
-      faceGeometry(),
-      this.frontDoorMaterial
-    );
-    front.position.set(doorCenterX, 0, DOOR_DEPTH + DOOR_SURFACE_OFFSET);
-    if (mirrorTextureX) mirrorPlaneTextureX(front.geometry);
-    pivot.add(front);
-
-    const back = new THREE.Mesh(
-      faceGeometry(),
-      this.backDoorMaterial
-    );
-    if (mirrorBackTextureX) mirrorPlaneTextureX(back.geometry);
-    back.position.set(doorCenterX, 0, -DOOR_SURFACE_OFFSET);
-    back.rotation.y = Math.PI;
-    pivot.add(back);
-
-    if (!hasHandle) return pivot;
-
-    const frontHandleGroup = this.createHandleGroup({
-      width,
-      handleX,
-      side,
-      handleModelUrl,
-      handleProfileId,
-      face: "front",
-    });
-    pivot.add(frontHandleGroup);
-
-    const backHandleGroup = this.createHandleGroup({
-      width,
-      handleX,
-      side,
-      handleModelUrl,
-      handleProfileId,
-      face: "back",
-    });
-    pivot.add(backHandleGroup);
-
-    return pivot;
-  }
-
-  private createHandleGroup({
-    width,
-    handleX,
-    side,
-    handleModelUrl,
-    handleProfileId,
-    face,
-  }: {
-    width: number;
-    handleX: number;
-    side: "single" | "left" | "right";
-    handleModelUrl?: string;
-    handleProfileId?: HandleProfileId;
-    face: "front" | "back";
-  }) {
-    const handleGroup = new THREE.Group();
-    handleGroup.name = `${face}-handle`;
-    // Both iron-window passages mount their knobs on the narrow raised stile,
-    // centered 4% from the leaf edge rather than on the recessed-panel seam.
-    const handleEdgeInset = this.compactWindowLayout
-      ? width * 0.04
-      : KNOB_HANDLE_EDGE_INSET;
-    const resolvedHandleX =
-      handleProfileId === "knob-round" || this.rectangularKnobPlate
-        ? Math.sign(handleX) *
-          (width - handleEdgeInset)
-        : handleX;
-    handleGroup.position.set(
-      resolvedHandleX,
-      -0.02,
-      face === "front" ? DOOR_DEPTH + DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET
-    );
-    if (face === "back") handleGroup.rotation.y = Math.PI;
-    // Scale the complete accessory, including imported and fallback geometry.
-    if (this.compactWindowLayout) handleGroup.scale.setScalar(0.7);
-    if (this.rectangularKnobPlate && handleProfileId === "lever-l") handleGroup.scale.setScalar(0.85);
-    if (this.rectangularKnobPlate) {
-      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.55, 0.025), this.handleMaterial);
-      plate.name = "fixed-backplate";
-      plate.position.set(0, -0.09, 0.0125);
-      handleGroup.add(plate);
-      const keyhole = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.075, 0.006),
-        new THREE.MeshBasicMaterial({ color: "#171510" }));
-      keyhole.position.set(0, -0.17, 0.016);
-      plate.add(keyhole);
-    }
-    let pressTargets:
-      | Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
-      | undefined;
-
-    if (handleProfileId === "knob-round") {
-      const rose = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.18, 0.18, 0.04, 32),
-        this.handleMaterial
-      );
-      rose.rotation.x = Math.PI / 2;
-      rose.position.z = 0.02;
-      const stem = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.07, 0.07, 0.12, 24),
-        this.handleMaterial
-      );
-      stem.rotation.x = Math.PI / 2;
-      stem.position.z = 0.075;
-      const knob = new THREE.Mesh(
-        new THREE.SphereGeometry(0.165, 28, 16),
-        this.handleMaterial
-      );
-      knob.scale.z = 0.72;
-      knob.position.z = 0.19;
-      const turnSlot = new THREE.Mesh(
-        new THREE.BoxGeometry(0.2, 0.025, 0.025),
-        this.handleMaterial
-      );
-      turnSlot.position.z = 0.35;
-      handleGroup.add(rose, stem, knob, turnSlot);
-      pressTargets = [
-        { node: knob, baseRotation: knob.rotation.clone() },
-        { node: turnSlot, baseRotation: turnSlot.rotation.clone() },
-      ];
-    } else {
-      const stem = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.08, 0.08, 0.12, 24),
-        this.handleMaterial
-      );
-      stem.rotation.x = Math.PI / 2;
-      stem.position.z = 0.075;
-      const lever = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 0.08, 0.08),
-        this.handleMaterial
-      );
-      // Extend along the leaf from its free edge, mirrored on the rear face.
-      lever.position.x = -Math.sign(handleX) * (face === "front" ? 0.25 : -0.25);
-      lever.position.z = 0.15;
-      handleGroup.add(stem, lever);
-    }
-
-    const handleEntry = {
-      group: handleGroup,
-      side,
-      rotationMultiplier:
-        this.handleTurnDirection && handleProfileId === "knob-round"
-          ? getHandleTurnMultiplier(this.handleTurnDirection, face)
-          : face === "front"
-          ? side === "left"
-            ? 1
-            : -1
-          : side === "left"
-            ? -1
-            : 1,
-      pressRotationMultiplier: undefined as 1 | -1 | undefined,
-      pressTargets,
-    };
-    this.activeHandleGroups.push(handleEntry);
-    if (handleModelUrl) {
-      this.mountImportedHandle(handleEntry, handleModelUrl, side === "left", handleProfileId);
-    }
-
-    return handleGroup;
-  }
-
-  private applyDoorState(animation: DoorAnimationId, state: DoorAnimationState) {
-    const maxAngle = Math.PI / 2;
-    const left = this.doorRoot.getObjectByName("left-door");
-    const right = this.doorRoot.getObjectByName("right-door");
-    const single = this.doorRoot.getObjectByName("single-door");
-    const swingDirection = this.activeSwingDirection === "away-from-viewer" ? -1 : 1;
-
-    if (animation === "center-split-slide") {
-      if (left) {
-        const [x, y, z] = state.leftDoorOffset ?? [0, 0, 0];
-        left.position.set(-3 + x, y, z);
-        left.rotation.set(0, 0, 0);
-      }
-      if (right) {
-        const [x, y, z] = state.rightDoorOffset ?? [0, 0, 0];
-        right.position.set(3 + x, y, z);
-        right.rotation.set(0, 0, 0);
-      }
-    } else if (animation === "double-swing") {
-      if (left) left.rotation.y = -swingDirection * state.doorAngle * maxAngle;
-      if (right) right.rotation.y = swingDirection * (state.rightDoorAngle ?? state.doorAngle) * maxAngle;
-    } else if (single) {
-      const singleRotationDirection = this.activeSingleHingeSide === "right" ? 1 : -1;
-      single.rotation.y =
-        swingDirection * singleRotationDirection * state.doorAngle * maxAngle;
-    }
-
-    this.activeHandleGroups.forEach((handleEntry) => {
-      const { group, rotationMultiplier, pressTargets } = handleEntry;
-      const multiplier = pressTargets?.length
-        ? handleEntry.pressRotationMultiplier ?? rotationMultiplier
-        : rotationMultiplier;
-      const handleAngle = handleEntry.side === "right"
-        ? state.rightHandleAngle ?? state.handleAngle ?? 0
-        : state.handleAngle ?? 0;
-      const angle = handleAngle * multiplier;
-      if (pressTargets?.length) {
-        group.rotation.z = 0;
-        pressTargets.forEach(({ node, baseRotation }) => {
-          node.rotation.set(
-            baseRotation.x,
-            baseRotation.y,
-            baseRotation.z + angle
-          );
-        });
-        return;
-      }
-      group.rotation.z = angle;
-    });
-  }
-
-  private mountImportedHandle(
-    handleEntry: VanillaDoorScene["activeHandleGroups"][number],
-    url: string,
-    mirrorX: boolean,
-    handleProfileId?: HandleProfileId
-  ) {
-    void loadHandleScene(url)
-      .then((scene) => {
-        if (this.disposed || !handleEntry.group.parent) return;
-        const prepared = prepareHandleModel(scene, handleProfileId === "knob-round");
-        if (!prepared) return;
-        prepared.object.traverse((node) => {
-          if (!(node instanceof THREE.Mesh)) return;
-          const materials = Array.isArray(node.material) ? node.material : [node.material];
-          materials.forEach((material) => {
-            if (!(material instanceof THREE.MeshStandardMaterial)) return;
-            applyRetroMaterial(material, false, this.knobBackplate ? this.retroRasterSize : undefined);
-            if (this.steelKnob) {
-              material.map = null;
-              material.color.set("#a9ada8");
-              material.roughness = 0.75;
-              material.metalness = 0.2;
-            }
-            if (this.agedWood) {
-              material.roughness = 1;
-              material.metalness = 0;
-              material.color.set("#b9b66d");
-            }
-          });
-        });
-
-        const backplate = handleEntry.group.getObjectByName("fixed-backplate");
-        handleEntry.group.clear();
-        if (backplate) handleEntry.group.add(backplate);
-        const wrapper = new THREE.Group();
-        const scale =
-          prepared.scale *
-          (handleProfileId === "knob-round" ? IMPORTED_KNOB_MODEL_SCALE : 1);
-        wrapper.rotation.x = handleProfileId === "knob-round" ? Math.PI / 2 : 0;
-        wrapper.scale.set(mirrorX ? -scale : scale, scale, scale);
-        wrapper.add(prepared.object);
-        const importedBounds = new THREE.Box3().setFromObject(wrapper);
-        if (!importedBounds.isEmpty()) {
-          wrapper.position.z += -importedBounds.min.z - IMPORTED_HANDLE_SURFACE_EMBED;
-        }
-        handleEntry.group.add(wrapper);
-        handleEntry.pressRotationMultiplier = handleProfileId === "knob-round"
-          ? undefined
-          : prepared.pressRotationMultiplier;
-        handleEntry.pressTargets = prepared.pressTargets;
-        if (handleProfileId === "knob-round" && this.handleTurnDirection && prepared.pressTargets[0]) {
-          handleEntry.pressRotationMultiplier = getImportedGripTurnMultiplier(
-            prepared.pressTargets[0].node, handleEntry.group, handleEntry.rotationMultiplier
-          );
-        }
-        this.renderer.render(this.scene, this.camera);
-      })
-      .catch(() => undefined);
-  }
-
-  private applyCameraState(
-    state: DoorAnimationState,
-    cameraPanX: number,
-    cameraPanY: number
-  ) {
-    const [x, y, z] = state.cameraPosition;
-    this.camera.position.set(x + cameraPanX, y + cameraPanY, z);
-
-    const [tx, ty, tz] = state.cameraTarget;
-    this.camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
-  }
-
-  private phoneFitActive = false;
-
-  private applyResponsiveCamera(frame: CameraFrame) {
-    // Remove prior composition before fitting; resize may also leave phone scope.
-    this.camera.clearViewOffset();
-    const phone = Math.min(this.element.clientWidth, this.element.clientHeight) <= 600;
-    const phoneActive = phone && frame.phoneConfig !== undefined;
-    const config = phoneActive ? frame.phoneConfig! : frame.config;
-    if (this.phoneFitActive !== phoneActive) {
-      this.invalidateCameraFit();
-      this.phoneFitActive = phoneActive;
-    }
-    const state = config === frame.config ? frame.state : config.getState(
-      clampProgress(config.easing?.(frame.progress) ?? frame.progress),
-      { linearProgress: frame.progress, handleProfileId: this.activeHandleProfileId }
-    );
-    this.applyFittedCamera({ ...frame, state, config });
-    const x = phone ? frame.phoneFraming?.offsetXPercent ?? 0 : 0;
-    const y = phone ? frame.phoneFraming?.offsetYPercent ?? 0 : 0;
-    if (x || y) {
-      const width = this.element.clientWidth, height = this.element.clientHeight;
-      // Projection shifts the image right/up without changing world-space pose.
-      this.camera.setViewOffset(width, height, -x / 100 * width, y / 100 * height, width, height);
-    }
-  }
-
-  private applyFittedCamera({ state, config, progress, cameraPanX, cameraPanY }: CameraFrame) {
-    this.applyCameraState(state, cameraPanX, cameraPanY);
-    if (this.camera.aspect >= 1) return;
-
-    const initial = config.getState(0, { linearProgress: 0, handleProfileId: this.activeHandleProfileId });
-    const key = JSON.stringify([initial, config.id, config.duration, config.timelineEvents, this.camera.aspect, cameraPanX, cameraPanY,
-      this.activeSingleHingeSide, this.activeSwingDirection]);
-    if (key !== this.portraitFitKey) {
-      this.portraitFitKey = key;
-      this.applyDoorState(config.id, initial);
-      this.doorRoot.updateMatrixWorld(true);
-      this.portraitPanels = [];
-      this.doorRoot.traverse((node) => {
-        if (!(node instanceof THREE.Mesh)) return;
-        const materials = Array.isArray(node.material) ? node.material : [node.material];
-        if (!materials.some((material) => material === this.frontDoorMaterial ||
-          material === this.backDoorMaterial || this.doorMaterials.includes(material))) return;
-        node.geometry.computeBoundingBox();
-        const box = node.geometry.boundingBox;
-        if (!box) return;
-        const corners: THREE.Vector3[] = [];
-        for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) {
-          for (const z of [box.min.z, box.max.z]) {
-            corners.push(new THREE.Vector3(x, y, z));
-          }
-        }
-        this.portraitPanels.push({ mesh: node, corners });
-      });
-      this.applyCameraState(initial, cameraPanX, cameraPanY);
-      this.camera.updateMatrixWorld(true);
-      const initialPoints = this.portraitPanels.flatMap(({ mesh, corners }) =>
-        corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
-      this.portraitFitEnabled = !hasReferenceHorizontalCrop(this.camera, initialPoints);
-      this.portraitPullback = 0;
-      if (this.portraitFitEnabled) {
-        const end = getPortraitProtectionEnd(config.timelineEvents);
-        this.portraitProtectionEndMs = end;
-        // Sample the whole protected approach once, not once per rendered frame.
-        // A fixed dolly retains the authored movement and never has a late release.
-        for (let i = 0; i <= 96; i++) {
-          const sampleProgress = end / config.duration * i / 96;
-          const sample = config.getState(sampleProgress, {
-            linearProgress: sampleProgress, handleProfileId: this.activeHandleProfileId,
-          });
-          this.applyDoorState(config.id, sample);
-          this.doorRoot.updateMatrixWorld(true);
-          this.applyCameraState(sample, cameraPanX, cameraPanY);
-          const points = this.portraitPanels.flatMap(({ mesh, corners }) =>
-            corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
-          if (i === 96) {
-            this.portraitPassagePoints = points;
-            this.portraitPassageCamera = this.camera.clone();
-          }
-          this.portraitPullback = Math.max(this.portraitPullback,
-            getPortraitHorizontalFit(this.camera, points, this.camera.aspect).pullback);
-        }
-        if (this.portraitPullback > 0) this.portraitPullback += 0.03;
-      }
-      this.applyDoorState(config.id, state);
-      this.applyCameraState(state, cameraPanX, cameraPanY);
-    }
-    if (!this.portraitFitEnabled) return;
-    this.doorRoot.updateMatrixWorld(true);
-    const points = this.portraitPanels.flatMap(({ mesh, corners }) =>
-      corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
-    this.camera.position.add(getPortraitCameraOffset(this.camera, points, this.camera.aspect, this.portraitPullback, {
-      camera: this.portraitPassageCamera,
-      points: this.portraitPassagePoints,
-      timeMs: progress * config.duration,
-      protectionEndMs: this.portraitProtectionEndMs,
-    }));
-    // Preserve the authored orientation: looking back at its original target
-    // here would undo the truck and reintroduce the lateral fit constraint.
-  }
-}
 
 export const mountDoorEntrance = (
   options: MountDoorEntranceOptions
@@ -1031,12 +107,6 @@ export const mountDoorEntrance = (
   let isAnimating = false;
   let didComplete = false;
   let animationFrame: number | null = null;
-  let soundFrame: number | null = null;
-  let audioDelayTimer: number | null = null;
-  let soundStarted = false;
-  let soundPlayGeneration = 0;
-  let soundUnlocked = false;
-  let soundUnlocking: Promise<boolean> | null = null;
   let disposed = false;
 
   const scene = new VanillaDoorScene(
@@ -1044,7 +114,6 @@ export const mountDoorEntrance = (
   );
   target.append(scene.element);
 
-  const audio = document.createElement("audio");
   let resolvedSurfaceTextureUrls = options.textureUrl
     ? {
         frontTextureUrl: options.textureUrl,
@@ -1056,194 +125,19 @@ export const mountDoorEntrance = (
     options.soundUrl ?? activeDoorPreset.soundUrl ?? assetUrl(DEFAULT_SOUND_URL)
   );
 
-  if (resolvedSoundUrl) {
-    audio.src = resolvedSoundUrl;
-    audio.preload = "auto";
-    scene.element.append(audio);
-  }
-
-  const emitSoundProgress = () => {
-    if (!resolvedSoundUrl) {
-      options.onSoundProgress?.({
-        enabled: false,
-        ready: false,
-        currentTimeMs: 0,
-        durationMs: 0,
-        progress: 0,
-      });
-      return;
-    }
-
-    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
-    const durationMs = ready ? audio.duration * 1000 : 0;
-    const currentTimeMs = ready ? audio.currentTime * 1000 : 0;
-    options.onSoundProgress?.({
-      enabled: true,
-      ready,
-      currentTimeMs,
-      durationMs,
-      progress: ready ? clampProgress(audio.currentTime / audio.duration) : 0,
-    });
-  };
-
-  const stopSoundLoop = () => {
-    if (soundFrame !== null) {
-      cancelAnimationFrame(soundFrame);
-      soundFrame = null;
-    }
-  };
-
-  const startSoundLoop = () => {
-    stopSoundLoop();
-    const tick = () => {
-      if (audio.paused || audio.ended) {
-        soundFrame = null;
-        emitSoundProgress();
-        return;
-      }
-      emitSoundProgress();
-      soundFrame = requestAnimationFrame(tick);
-    };
-    soundFrame = requestAnimationFrame(tick);
-  };
-
-  const clearAudioDelayTimer = () => {
-    if (audioDelayTimer !== null) {
-      window.clearTimeout(audioDelayTimer);
-      audioDelayTimer = null;
-    }
-  };
-
-  const getSoundWindow = (config = activeConfig) => {
-    const startProgress = clampProgress(config.soundStartProgress ?? 0.18);
-    const endProgress = Math.min(
-      Math.max(config.soundEndProgress ?? 1, startProgress),
-      1
-    );
-    const sourceStartProgress = clampProgress(config.soundSourceStartProgress ?? 0);
-    const sourceEndProgress = Math.min(
-      Math.max(
-        config.soundSourceEndProgress ?? 1,
-        sourceStartProgress + Number.EPSILON
-      ),
-      1
-    );
-    return {
-      startProgress,
-      endProgress,
-      sourceStartProgress,
-      sourceEndProgress,
-    };
-  };
-
-  const updateSoundPlaybackRate = (config = activeConfig) => {
-    if (!activeDoorPreset.animationStyle) {
-      audio.playbackRate = 1;
-      return true;
-    }
-    const rate = getSoundPlaybackRate(audio.duration * 1000, config.duration, config);
-    if (rate === null) return false;
-    try {
-      audio.playbackRate = rate;
-    } catch {
-      // Native media rate limits vary by browser. Keep the exact mapping when
-      // supported, and skip this sound window when the browser rejects it.
-      audio.pause();
-      return false;
-    }
-    audio.preservesPitch = true;
-    return true;
-  };
-
-  const syncSoundToTimelineProgress = (
-    timelineProgress: number,
-    config = activeConfig
-  ) => {
-    if (!resolvedSoundUrl || !Number.isFinite(audio.duration) || audio.duration <= 0) {
-      emitSoundProgress();
-      return;
-    }
-
-    const {
-      startProgress,
-      endProgress,
-      sourceStartProgress,
-      sourceEndProgress,
-    } = getSoundWindow(config);
-
-    let sourceProgress = 0;
-    if (timelineProgress >= endProgress) {
-      sourceProgress = sourceEndProgress;
-    } else if (timelineProgress >= 0 && timelineProgress < startProgress) {
-      sourceProgress =
-        sourceStartProgress *
-        clampProgress(timelineProgress / Math.max(startProgress, Number.EPSILON));
-    } else if (timelineProgress >= startProgress) {
-      const normalized = clampProgress(
-        (timelineProgress - startProgress) /
-          Math.max(endProgress - startProgress, Number.EPSILON)
-      );
-      sourceProgress =
-        sourceStartProgress +
-        normalized * (sourceEndProgress - sourceStartProgress);
-    }
-
-    audio.currentTime = audio.duration * sourceProgress;
-    emitSoundProgress();
-  };
-
-  const pauseSound = () => {
-    soundPlayGeneration += 1;
-    stopSoundLoop();
-    audio.pause();
-    soundStarted = false;
-  };
-
-  const unlockSound = () => {
-    if (!resolvedSoundUrl || soundUnlocked) {
-      return Promise.resolve(soundUnlocked);
-    }
-
-    if (soundUnlocking) return soundUnlocking;
-
-    const generation = soundPlayGeneration;
-    const wasMuted = audio.muted;
-    audio.muted = true;
-    soundUnlocking = audio
-      .play()
-      .then(() => {
-        audio.pause();
-        if (!disposed && generation === soundPlayGeneration) {
-          audio.currentTime = 0;
-        }
-        audio.muted = wasMuted;
-        soundUnlocked = true;
-        return true;
-      })
-      .catch(() => {
-        audio.muted = wasMuted;
-        return false;
-      })
-      .finally(() => {
-        soundUnlocking = null;
-      });
-
-    return soundUnlocking;
-  };
-
-  const resetSound = () => {
-    soundPlayGeneration += 1;
-    audio.pause();
-    if (Number.isFinite(audio.duration) && audio.duration > 0) {
-      audio.currentTime = 0;
-    }
-    soundStarted = false;
-    emitSoundProgress();
-  };
+  const sound = createDoorAudio({
+    parent: scene.element,
+    sourceUrl: resolvedSoundUrl,
+    getConfig: () => activeConfig,
+    hasAnimationStyle: () => Boolean(activeDoorPreset.animationStyle),
+    getProgress: () => progress,
+    isAnimating: () => isAnimating,
+    onSoundProgress: (state) => options.onSoundProgress?.(state),
+  });
 
   const renderProgress = (nextProgress: number, config = activeConfig) => {
     progress = clampProgress(nextProgress);
-    audio.volume = getSoundVolume(progress, config);
+    sound.setVolume(progress, config);
     const easedProgress = clampProgress(config.easing?.(progress) ?? progress);
     const state = config.getState(easedProgress, {
       linearProgress: progress,
@@ -1305,7 +199,7 @@ export const mountDoorEntrance = (
       : activeDoorPreset;
     activeConfig = getDoorEntranceAnimationConfig(activeDoorPreset, previewOverrides.timingEvents, previewOverrides.cameraDraft);
     phoneConfig = resolvePhoneConfig(previewOverrides);
-    updateSoundPlaybackRate(activeConfig);
+    sound.updateSoundPlaybackRate(activeConfig);
     resolvedSurfaceTextureUrls = options.textureUrl
       ? {
           frontTextureUrl: options.textureUrl,
@@ -1316,73 +210,8 @@ export const mountDoorEntrance = (
     resolvedSoundUrl = toPublicAssetUrl(
       options.soundUrl ?? activeDoorPreset.soundUrl ?? assetUrl(DEFAULT_SOUND_URL)
     );
-    if (resolvedSoundUrl && audio.getAttribute("src") !== resolvedSoundUrl) {
-      audio.src = resolvedSoundUrl;
-      audio.preload = "auto";
-      soundUnlocked = false;
-    }
+    sound.setSource(resolvedSoundUrl);
     return activeConfig;
-  };
-
-  const playSoundForTimeline = (startProgress: number, config = activeConfig) => {
-    const generation = ++soundPlayGeneration;
-    clearAudioDelayTimer();
-    soundStarted = false;
-
-    if (!resolvedSoundUrl) {
-      emitSoundProgress();
-      return;
-    }
-
-    const { startProgress: soundStartProgress, endProgress: soundEndProgress } = getSoundWindow(config);
-    if (startProgress >= soundEndProgress) {
-      syncSoundToTimelineProgress(startProgress, config);
-      return;
-    }
-    const playNow = () => {
-      const startPlayback = () => {
-        if (generation !== soundPlayGeneration || disposed) return;
-        if (!updateSoundPlaybackRate(config)) return;
-        syncSoundToTimelineProgress(
-          Math.max(startProgress, soundStartProgress),
-          config
-        );
-        void audio
-          .play()
-          .then(() => {
-            if (generation !== soundPlayGeneration || disposed || !isAnimating) {
-              if (!isAnimating) audio.pause();
-              return;
-            }
-            syncSoundToTimelineProgress(progress, config);
-            soundStarted = true;
-            startSoundLoop();
-          })
-          .catch(() => {
-            soundStarted = false;
-          });
-      };
-
-      if (!soundUnlocked) {
-        void unlockSound().then((unlocked) => {
-          if (unlocked && !disposed && isAnimating && generation === soundPlayGeneration) startPlayback();
-        });
-        return;
-      }
-
-      startPlayback();
-    };
-
-    if (startProgress >= soundStartProgress) {
-      playNow();
-      return;
-    }
-
-    syncSoundToTimelineProgress(startProgress, config);
-    audioDelayTimer = window.setTimeout(
-      playNow,
-      (soundStartProgress - startProgress) * config.duration
-    );
   };
 
   const api: MountedDoorEntrance = {
@@ -1395,8 +224,8 @@ export const mountDoorEntrance = (
         renderProgress(startProgress, config);
       }
 
-      void unlockSound();
-      playSoundForTimeline(startProgress, config);
+      void sound.unlockSound();
+      sound.playSoundForTimeline(startProgress, config);
       const duration = Math.max(config.duration * (1 - startProgress), 1);
       const startTime = performance.now();
       isAnimating = true;
@@ -1413,12 +242,7 @@ export const mountDoorEntrance = (
           1
         );
         renderProgress(linearProgress, config);
-        if (linearProgress >= getSoundWindow(config).endProgress && !audio.paused) {
-          pauseSound();
-        }
-        if (!soundStarted) {
-          syncSoundToTimelineProgress(linearProgress, config);
-        }
+        sound.updateTimeline(linearProgress, config);
 
         if (linearProgress < 1) {
           animationFrame = requestAnimationFrame(animate);
@@ -1434,16 +258,16 @@ export const mountDoorEntrance = (
     stop: () => {
       cancelAnimationLoop();
       isAnimating = false;
-      clearAudioDelayTimer();
-      pauseSound();
-      emitSoundProgress();
+      sound.clearAudioDelayTimer();
+      sound.pauseSound();
+      sound.emitSoundProgress();
     },
     reset: (preset) => {
       if (disposed) return;
       cancelAnimationLoop();
       isAnimating = false;
-      clearAudioDelayTimer();
-      resetSound();
+      sound.clearAudioDelayTimer();
+      sound.resetSound();
       const config = resolvePreset(preset);
       didComplete = false;
       renderProgress(0, config);
@@ -1452,23 +276,13 @@ export const mountDoorEntrance = (
       if (disposed) return;
       cancelAnimationLoop();
       isAnimating = false;
-      clearAudioDelayTimer();
-      pauseSound();
+      sound.clearAudioDelayTimer();
+      sound.pauseSound();
       const config = resolvePreset(preset);
       renderProgress(nextProgress, config);
-      syncSoundToTimelineProgress(clampProgress(nextProgress), config);
+      sound.syncSoundToTimelineProgress(clampProgress(nextProgress), config);
     },
-    seekSound: (nextProgress) => {
-      clearAudioDelayTimer();
-      pauseSound();
-      if (!resolvedSoundUrl || !Number.isFinite(audio.duration) || audio.duration <= 0) {
-        emitSoundProgress();
-        return;
-      }
-      audio.currentTime = audio.duration * clampProgress(nextProgress);
-      soundStarted = false;
-      emitSoundProgress();
-    },
+    seekSound: (nextProgress) => sound.seekSound(nextProgress),
     setPreviewOverrides: (overrides) => {
       if (disposed) return;
       const timingChanged = JSON.stringify(previewOverrides.timingEvents ?? {}) !==
@@ -1481,8 +295,8 @@ export const mountDoorEntrance = (
         const elapsedMs = progress * activeConfig.duration;
         cancelAnimationLoop();
         isAnimating = false;
-        clearAudioDelayTimer();
-        pauseSound();
+        sound.clearAudioDelayTimer();
+        sound.pauseSound();
         previewOverrides = { ...overrides, cameraDraft: overrides.cameraDraft ? { ...overrides.cameraDraft } : undefined,
           phoneFraming: overrides.phoneFraming ? { ...overrides.phoneFraming } : undefined,
           timingEvents: overrides.timingEvents ? { ...overrides.timingEvents } : undefined };
@@ -1491,10 +305,10 @@ export const mountDoorEntrance = (
         // Camera-only drafts may keep the same initial state and event times.
         // Their protected path still requires a new fixed portrait fit.
         scene.invalidateCameraFit();
-        updateSoundPlaybackRate(nextConfig);
+        sound.updateSoundPlaybackRate(nextConfig);
         const nextProgress = clampProgress(elapsedMs / nextConfig.duration);
         renderProgress(nextProgress, nextConfig);
-        syncSoundToTimelineProgress(nextProgress, nextConfig);
+        sound.syncSoundToTimelineProgress(nextProgress, nextConfig);
         return;
       }
       previewOverrides = { ...overrides, cameraDraft: overrides.cameraDraft ? { ...overrides.cameraDraft } : undefined,
@@ -1505,37 +319,16 @@ export const mountDoorEntrance = (
     unmount: () => {
       if (disposed) return;
       disposed = true;
-      soundPlayGeneration += 1;
+      sound.beginDispose();
       cancelAnimationLoop();
-      clearAudioDelayTimer();
-      stopSoundLoop();
-      audio.pause();
-      audio.remove();
+      sound.clearAudioDelayTimer();
+      sound.stopSoundLoop();
+      sound.remove();
       scene.dispose();
     },
   };
 
-  audio.addEventListener("loadedmetadata", () => {
-    updateSoundPlaybackRate();
-    emitSoundProgress();
-  });
-  audio.addEventListener("canplay", emitSoundProgress);
-  audio.addEventListener("timeupdate", emitSoundProgress);
-  audio.addEventListener("ended", () => {
-    soundStarted = false;
-    stopSoundLoop();
-    emitSoundProgress();
-  });
-  audio.addEventListener("pause", () => {
-    soundStarted = false;
-    stopSoundLoop();
-    emitSoundProgress();
-  });
-  audio.addEventListener("play", () => {
-    soundStarted = true;
-    startSoundLoop();
-    emitSoundProgress();
-  });
+  sound.attachListeners();
 
   renderProgress(0);
   requestAnimationFrame(() => {

@@ -1,7 +1,7 @@
-export const isKnownAnimation = (
+export const isKnownAnimation = <T extends string>(
   animationId: string,
-  animationIds: Iterable<string>
-) => new Set(animationIds).has(animationId);
+  animationIds: Iterable<T>
+): animationId is T => new Set<string>(animationIds).has(animationId);
 
 export const presetsForAnimation = <
   T extends { animation: string },

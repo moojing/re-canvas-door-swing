@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "vite",
     "dev:calibration": "vite --mode calibration",
-    "build": "vite build && cp dist/index.html dist/404.html",
-    "build:dev": "vite build --mode development && cp dist/index.html dist/404.html",
-    "lint": "eslint .",
+    "build": "npm run typecheck && vite build && cp dist/index.html dist/404.html",
+    "build:dev": "npm run typecheck && vite build --mode development && cp dist/index.html dist/404.html",
+    "lint": "npm run typecheck && eslint .",
     "preview": "vite preview",
     "test:social-preview": "node --test social-preview.test.mjs",
     "dev:beta": "node beta-sample.mjs",
-    "build:beta": "node build-beta-sample.mjs"
+    "build:beta": "node build-beta-sample.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

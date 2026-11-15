@@ -265,14 +265,14 @@ describe("package boundary", () => {
   });
 
   it("keeps the vanilla renderer limited to the door and its handle", () => {
-    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const source = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.doesNotMatch(source, /addFrame/);
     assert.doesNotMatch(source, /new THREE\.BoxGeometry\(5\.2, 0\.08, 4\)/);
   });
 
   it("keeps vanilla hinge geometry aligned with the original door behavior", () => {
-    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const source = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.match(source, /width: 3,\s+height: 6,\s+pivotX: -1\.5/);
     assert.match(source, /hingeSide === "right"/);
@@ -292,6 +292,7 @@ describe("package boundary", () => {
 
   it("preserves authored back texture orientation", () => {
     const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const sceneSource = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.match(
       source,
@@ -301,20 +302,21 @@ describe("package boundary", () => {
       source,
       /resolvedSurfaceTextureUrls\.backTextureUrl !==\s*resolvedSurfaceTextureUrls\.frontTextureUrl/
     );
-    assert.match(source, /if \(mirrorTextureX\) mirrorPlaneTextureX\(front\.geometry\);/);
-    assert.match(source, /if \(mirrorBackTextureX\) mirrorPlaneTextureX\(back\.geometry\);/);
-    assert.doesNotMatch(source, /;\s*mirrorPlaneTextureX\(back\.geometry\);\s*back\.position/s);
+    assert.match(sceneSource, /if \(mirrorTextureX\) mirrorPlaneTextureX\(front\.geometry\);/);
+    assert.match(sceneSource, /if \(mirrorBackTextureX\) mirrorPlaneTextureX\(back\.geometry\);/);
+    assert.doesNotMatch(sceneSource, /;\s*mirrorPlaneTextureX\(back\.geometry\);\s*back\.position/s);
   });
 
   it("does not create fallback handle geometry for handle-free presets", () => {
     const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const sceneSource = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.match(source, /hasHandle:\s*Boolean\(activeDoorPreset\.handleProfileId\)/);
-    assert.match(source, /if \(!hasHandle\) return pivot;/);
+    assert.match(sceneSource, /if \(!hasHandle\) return pivot;/);
   });
 
   it("keeps procedural round-knob fallback geometry for missing imported models", () => {
-    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const source = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.match(source, /handleProfileId === "knob-round"/);
     assert.match(source, /new THREE\.SphereGeometry\(/);
@@ -322,14 +324,14 @@ describe("package boundary", () => {
   });
 
   it("keeps procedural handle fallback materials aged and non-glowing", () => {
-    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const source = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.match(source, /createAgedHandleMaterial/);
     assert.doesNotMatch(source, /new THREE\.PointLight\("#ff8844"/);
   });
 
   it("mounts handles on both door faces at the same physical x position", () => {
-    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const source = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.match(source, /const KNOB_HANDLE_EDGE_INSET = 0\.2/);
     assert.match(source, /const frontHandleGroup = this\.createHandleGroup/);
@@ -349,7 +351,7 @@ describe("package boundary", () => {
   });
 
   it("applies knob-specific transforms to imported round-knob models", () => {
-    const source = readFileSync(join(packageRoot, "src", "vanilla.ts"), "utf8");
+    const source = readFileSync(join(packageRoot, "src", "renderer", "scene.ts"), "utf8");
 
     assert.match(
       source,

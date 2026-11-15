@@ -22,8 +22,9 @@ Run commands from the repository root:
 
 - `npm install`
 - `npm run dev` - start the sample app
-- `npm run build` - build library then sample
-- `npm run lint` - library typecheck and sample lint
+- `npm run build` - build library, typecheck sample, then build sample
+- `npm run typecheck:sample` - typecheck sample source and Vite config
+- `npm run lint` - library and sample typechecks, plus sample lint
 - `npm run test:lib:core` - core behavior tests
 - `npm run test:lib:package` - published entry and React-free boundary tests
 - `npm run test:lib:browser` - Playwright coverage for the vanilla sample and

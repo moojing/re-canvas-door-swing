@@ -62,8 +62,9 @@ Useful scripts:
 - `npm run dev:lib` (watch build for the library)
 - `npm run dev:sample` (Vite dev server for the sample app)
 - `npm run dev:calibration` (local stage timing editor)
-- `npm run build` (build lib then sample)
-- `npm run lint` (library typecheck and sample app lint)
+- `npm run build` (build lib, typecheck sample, then build sample)
+- `npm run typecheck:sample` (typecheck sample source and Vite config)
+- `npm run lint` (library and sample typechecks, plus sample app lint)
 - `npm run gallery:check` (verify the published evaluation gallery is internally consistent and the main repo has not reintroduced duplicate evaluation docs)
 
 ## Library testing
