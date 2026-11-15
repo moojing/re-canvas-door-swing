@@ -57,3 +57,19 @@ export const getPortraitHorizontalFit = (
     Math.max(minOffset, Math.min(0, maxOffset));
   return { pullback, offsetX };
 };
+
+/** Freeze the world-space adaptation after the hold: walk forward, never orbit the opening leaf. */
+export const getPortraitCameraOffset = (
+  reference: THREE.PerspectiveCamera,
+  points: THREE.Vector3[],
+  aspect: number,
+  fixedPullback: number,
+  passage?: { camera: THREE.PerspectiveCamera; points: THREE.Vector3[]; timeMs: number; protectionEndMs: number }
+): THREE.Vector3 => {
+  const useProtected = passage && passage.timeMs > passage.protectionEndMs;
+  const view = useProtected ? passage.camera : reference;
+  const bounds = useProtected ? passage.points : points;
+  const { pullback, offsetX } = getPortraitHorizontalFit(view, bounds, aspect, fixedPullback);
+  return view.getWorldDirection(new THREE.Vector3()).multiplyScalar(-pullback)
+    .addScaledVector(new THREE.Vector3(1, 0, 0).applyQuaternion(view.quaternion), offsetX);
+};

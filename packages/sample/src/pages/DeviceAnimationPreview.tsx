@@ -53,13 +53,15 @@ const DeviceViewport = ({ label, width, height, setTarget }: typeof devices[numb
 const DeviceAnimationPreview = forwardRef<DeviceAnimationPreviewHandle, {
   presetId: DoorEntrancePresetId;
   comparison: boolean;
+  authoring?: boolean;
+  initialOverrides?: DoorPreviewOverrides;
   onProgress: (progress: number) => void;
   onReadyChange: (ready: boolean) => void;
-}>(({ presetId, comparison, onProgress, onReadyChange }, ref) => {
+}>(({ presetId, comparison, authoring = false, initialOverrides = {}, onProgress, onReadyChange }, ref) => {
   const targets = useRef<(HTMLDivElement | null)[]>([]);
   const handles = useRef<DoorEntranceHandle[]>([]);
   const progress = useRef(0);
-  const overrides = useRef<DoorPreviewOverrides>({});
+  const overrides = useRef<DoorPreviewOverrides>(initialOverrides);
 
   useImperativeHandle(ref, () => ({
     play: () => handles.current[0]?.play(),
@@ -93,7 +95,7 @@ const DeviceAnimationPreview = forwardRef<DeviceAnimationPreviewHandle, {
         target,
         preset: presetId,
         autoPlay: false,
-        className: comparison
+        className: comparison || authoring
           ? "h-full w-full border-0 bg-black"
           : "h-full min-h-[360px] w-full border-0 bg-black",
         ...(index > 0 ? { soundUrl: "" } : {}),
@@ -124,7 +126,7 @@ const DeviceAnimationPreview = forwardRef<DeviceAnimationPreviewHandle, {
       mounted.forEach((handle) => handle.unmount());
       handles.current = [];
     };
-  }, [presetId, comparison, onProgress, onReadyChange]);
+  }, [presetId, comparison, authoring, onProgress, onReadyChange]);
 
   return comparison ? (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,0.75fr)_minmax(0,0.462fr)]" aria-label="Device comparison">
@@ -132,6 +134,8 @@ const DeviceAnimationPreview = forwardRef<DeviceAnimationPreviewHandle, {
         <DeviceViewport key={device.label} {...device} setTarget={(target) => { targets.current[index] = target; }} />
       ))}
     </div>
+  ) : authoring ? (
+    <DeviceViewport label="Reference" width={1280} height={800} setTarget={(target) => { targets.current[0] = target; }} />
   ) : (
     <div className="relative min-h-[50vh] bg-black sm:min-h-[64vh]">
       <div ref={(target) => { targets.current[0] = target; }} className="absolute inset-0" />

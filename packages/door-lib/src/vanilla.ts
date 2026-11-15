@@ -1,6 +1,7 @@
+import { resolvePhoneCameraDraft, type DoorPhoneFraming, type DoorCameraDraft } from "./core/cameraAuthoring.ts";
 import { resolveAssetUrl } from "./core/assetUrls.ts";
 import * as THREE from "three";
-import { getPortraitHorizontalFit, getPortraitProtectionEnd, hasReferenceHorizontalCrop } from "./responsiveFraming.ts";
+import { getPortraitCameraOffset, getPortraitHorizontalFit, getPortraitProtectionEnd, hasReferenceHorizontalCrop } from "./responsiveFraming.ts";
 import { getDrawingBufferSize, usesAgedWoodLook, usesSteelKnobLook, usesRectangularKnobPlate, getHandleTurnMultiplier } from "./core/renderLook.ts";
 import { applyRetroMaterial } from "./retroMaterial.ts";
 import { usesCompactWindowLayout, compactWindowTextureV } from "./core/renderLook.ts";
@@ -56,6 +57,8 @@ interface MountDoorEntranceOptions extends DoorEntrancePresetSelection {
 interface DoorPreviewOverrides {
   swingDirection?: DoorSwingDirection;
   timingEvents?: DoorTimingEvents;
+  cameraDraft?: DoorCameraDraft;
+  phoneFraming?: DoorPhoneFraming;
 }
 
 interface MountedDoorEntrance {
@@ -76,6 +79,8 @@ type CameraFrame = {
   progress: number;
   cameraPanX: number;
   cameraPanY: number;
+  phoneConfig?: DoorAnimationConfig;
+  phoneFraming?: DoorPhoneFraming;
 };
 
 const DEFAULT_CLASS_NAME =
@@ -171,10 +176,12 @@ class VanillaDoorScene {
   private readonly resizeObserver?: ResizeObserver;
   private lastCameraFrame?: CameraFrame;
   private portraitFitKey = "";
+  private portraitPassagePoints: THREE.Vector3[] = [];
+  private portraitPassageCamera = new THREE.PerspectiveCamera();
+  private portraitProtectionEndMs = 0;
   private portraitFitEnabled = false;
   private portraitPullback = 0;
   private portraitPanels: { mesh: THREE.Mesh; corners: THREE.Vector3[] }[] = [];
-  private readonly portraitBackward = new THREE.Vector3();
   private doorRoot = new THREE.Group();
   private activeSurfaceTextureKey?: string;
   private activeHandleModelUrl?: string;
@@ -277,6 +284,8 @@ class VanillaDoorScene {
     swingDirection,
     cameraPanX,
     cameraPanY,
+    phoneConfig,
+    phoneFraming,
     progress,
   }: {
     presetId: DoorEntrancePresetId;
@@ -294,6 +303,8 @@ class VanillaDoorScene {
     swingDirection: DoorSwingDirection;
     cameraPanX: number;
     cameraPanY: number;
+    phoneConfig?: DoorAnimationConfig;
+    phoneFraming?: DoorPhoneFraming;
     progress: number;
   }) {
     const agedWood = usesAgedWoodLook(presetId);
@@ -357,9 +368,13 @@ class VanillaDoorScene {
     this.fadeOverlay.style.opacity = String(clampProgress(state.fadeOut));
     this.label.textContent = config.label;
     this.resize();
-    this.lastCameraFrame = { state, config, progress, cameraPanX, cameraPanY };
+    this.lastCameraFrame = { state, config, progress, cameraPanX, cameraPanY, phoneConfig, phoneFraming };
     this.applyResponsiveCamera(this.lastCameraFrame);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  invalidateCameraFit() {
+    this.portraitFitKey = "";
   }
 
   dispose() {
@@ -884,7 +899,33 @@ class VanillaDoorScene {
     this.camera.lookAt(tx + cameraPanX * 0.55, ty + cameraPanY * 0.55, tz);
   }
 
-  private applyResponsiveCamera({ state, config, cameraPanX, cameraPanY }: CameraFrame) {
+  private phoneFitActive = false;
+
+  private applyResponsiveCamera(frame: CameraFrame) {
+    // Remove prior composition before fitting; resize may also leave phone scope.
+    this.camera.clearViewOffset();
+    const phone = Math.min(this.element.clientWidth, this.element.clientHeight) <= 600;
+    const phoneActive = phone && frame.phoneConfig !== undefined;
+    const config = phoneActive ? frame.phoneConfig! : frame.config;
+    if (this.phoneFitActive !== phoneActive) {
+      this.invalidateCameraFit();
+      this.phoneFitActive = phoneActive;
+    }
+    const state = config === frame.config ? frame.state : config.getState(
+      clampProgress(config.easing?.(frame.progress) ?? frame.progress),
+      { linearProgress: frame.progress, handleProfileId: this.activeHandleProfileId }
+    );
+    this.applyFittedCamera({ ...frame, state, config });
+    const x = phone ? frame.phoneFraming?.offsetXPercent ?? 0 : 0;
+    const y = phone ? frame.phoneFraming?.offsetYPercent ?? 0 : 0;
+    if (x || y) {
+      const width = this.element.clientWidth, height = this.element.clientHeight;
+      // Projection shifts the image right/up without changing world-space pose.
+      this.camera.setViewOffset(width, height, -x / 100 * width, y / 100 * height, width, height);
+    }
+  }
+
+  private applyFittedCamera({ state, config, progress, cameraPanX, cameraPanY }: CameraFrame) {
     this.applyCameraState(state, cameraPanX, cameraPanY);
     if (this.camera.aspect >= 1) return;
 
@@ -920,6 +961,7 @@ class VanillaDoorScene {
       this.portraitPullback = 0;
       if (this.portraitFitEnabled) {
         const end = getPortraitProtectionEnd(config.timelineEvents);
+        this.portraitProtectionEndMs = end;
         // Sample the whole protected approach once, not once per rendered frame.
         // A fixed dolly retains the authored movement and never has a late release.
         for (let i = 0; i <= 96; i++) {
@@ -932,6 +974,10 @@ class VanillaDoorScene {
           this.applyCameraState(sample, cameraPanX, cameraPanY);
           const points = this.portraitPanels.flatMap(({ mesh, corners }) =>
             corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
+          if (i === 96) {
+            this.portraitPassagePoints = points;
+            this.portraitPassageCamera = this.camera.clone();
+          }
           this.portraitPullback = Math.max(this.portraitPullback,
             getPortraitHorizontalFit(this.camera, points, this.camera.aspect).pullback);
         }
@@ -944,11 +990,12 @@ class VanillaDoorScene {
     this.doorRoot.updateMatrixWorld(true);
     const points = this.portraitPanels.flatMap(({ mesh, corners }) =>
       corners.map((point) => point.clone().applyMatrix4(mesh.matrixWorld)));
-    const { pullback, offsetX } = getPortraitHorizontalFit(this.camera, points, this.camera.aspect, this.portraitPullback);
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
-    this.portraitBackward.copy(this.camera.getWorldDirection(new THREE.Vector3())).negate();
-    this.camera.position.addScaledVector(this.portraitBackward, pullback);
-    this.camera.position.addScaledVector(right, offsetX);
+    this.camera.position.add(getPortraitCameraOffset(this.camera, points, this.camera.aspect, this.portraitPullback, {
+      camera: this.portraitPassageCamera,
+      points: this.portraitPassagePoints,
+      timeMs: progress * config.duration,
+      protectionEndMs: this.portraitProtectionEndMs,
+    }));
     // Preserve the authored orientation: looking back at its original target
     // here would undo the truck and reintroduce the lateral fit constraint.
   }
@@ -975,6 +1022,11 @@ export const mountDoorEntrance = (
   let activeDoorPreset = presetAssets(resolveDoorEntrancePresetSelection(options));
   let previewOverrides: DoorPreviewOverrides = {};
   let activeConfig = getDoorEntranceAnimationConfig(activeDoorPreset);
+  let phoneConfig: DoorAnimationConfig | undefined;
+  const resolvePhoneConfig = (overrides: DoorPreviewOverrides) => overrides.phoneFraming
+    ? getDoorEntranceAnimationConfig(activeDoorPreset, overrides.timingEvents,
+      resolvePhoneCameraDraft(overrides.cameraDraft ?? {}, overrides.phoneFraming))
+    : undefined;
   let progress = 0;
   let isAnimating = false;
   let didComplete = false;
@@ -1203,6 +1255,8 @@ export const mountDoorEntrance = (
       handleTurnDirection: activeDoorPreset.handleTurnDirection,
       state,
       config,
+      phoneConfig,
+      phoneFraming: previewOverrides.phoneFraming,
       surfaceTextureUrls: resolvedSurfaceTextureUrls,
       textureFlipY: activeDoorPreset.textureFlipY ?? false,
       handleModelUrl: toPublicAssetUrl(
@@ -1249,7 +1303,8 @@ export const mountDoorEntrance = (
     activeDoorPreset = nextPreset
       ? presetAssets(resolveDoorEntrancePresetSelection({ preset: nextPreset }))
       : activeDoorPreset;
-    activeConfig = getDoorEntranceAnimationConfig(activeDoorPreset, previewOverrides.timingEvents);
+    activeConfig = getDoorEntranceAnimationConfig(activeDoorPreset, previewOverrides.timingEvents, previewOverrides.cameraDraft);
+    phoneConfig = resolvePhoneConfig(previewOverrides);
     updateSoundPlaybackRate(activeConfig);
     resolvedSurfaceTextureUrls = options.textureUrl
       ? {
@@ -1417,23 +1472,34 @@ export const mountDoorEntrance = (
     setPreviewOverrides: (overrides) => {
       if (disposed) return;
       const timingChanged = JSON.stringify(previewOverrides.timingEvents ?? {}) !==
-        JSON.stringify(overrides.timingEvents ?? {});
+        JSON.stringify(overrides.timingEvents ?? {}) ||
+        JSON.stringify(previewOverrides.cameraDraft ?? {}) !== JSON.stringify(overrides.cameraDraft ?? {}) ||
+        JSON.stringify(previewOverrides.phoneFraming ?? {}) !== JSON.stringify(overrides.phoneFraming ?? {});
       if (timingChanged) {
-        const nextConfig = getDoorEntranceAnimationConfig(activeDoorPreset, overrides.timingEvents);
+        const nextConfig = getDoorEntranceAnimationConfig(activeDoorPreset, overrides.timingEvents, overrides.cameraDraft);
+        const nextPhoneConfig = resolvePhoneConfig(overrides);
         const elapsedMs = progress * activeConfig.duration;
         cancelAnimationLoop();
         isAnimating = false;
         clearAudioDelayTimer();
         pauseSound();
-        previewOverrides = { ...overrides };
+        previewOverrides = { ...overrides, cameraDraft: overrides.cameraDraft ? { ...overrides.cameraDraft } : undefined,
+          phoneFraming: overrides.phoneFraming ? { ...overrides.phoneFraming } : undefined,
+          timingEvents: overrides.timingEvents ? { ...overrides.timingEvents } : undefined };
         activeConfig = nextConfig;
+        phoneConfig = nextPhoneConfig;
+        // Camera-only drafts may keep the same initial state and event times.
+        // Their protected path still requires a new fixed portrait fit.
+        scene.invalidateCameraFit();
         updateSoundPlaybackRate(nextConfig);
         const nextProgress = clampProgress(elapsedMs / nextConfig.duration);
         renderProgress(nextProgress, nextConfig);
         syncSoundToTimelineProgress(nextProgress, nextConfig);
         return;
       }
-      previewOverrides = { ...overrides };
+      previewOverrides = { ...overrides, cameraDraft: overrides.cameraDraft ? { ...overrides.cameraDraft } : undefined,
+          phoneFraming: overrides.phoneFraming ? { ...overrides.phoneFraming } : undefined,
+          timingEvents: overrides.timingEvents ? { ...overrides.timingEvents } : undefined };
       renderProgress(progress);
     },
     unmount: () => {

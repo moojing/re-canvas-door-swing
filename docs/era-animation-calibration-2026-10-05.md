@@ -713,3 +713,20 @@ Independent review found an Enter camera velocity discontinuity, reproduced it w
 [Runtime-only phase sheet](reviews/pr10-mp4-calibration/runtime-stages.webp) contains generated renderer captures; original MP4 frames and comparison overlays are not committed. Local original-site preview is on port5186; the separate comparison aid is on port5185.
 
 Published-gallery records/stills/GIFs can be checked from the reference worktree with absent ignored material directories explicitly skipped. Full validation of the original local material tree remains blocked by the pre-existing frame inventory mismatch12332/12428. No frames/manifests were rewritten to conceal that discrepancy.
+
+## 2026-11-15 — 第一人稱穿門，停止在開門後追蹤門板（本機，未發布）
+
+使用者以鐵窗門 Enter 的裝置比較96%畫面指出：手機會看見門的另一面，不符合朝前進入的第一人稱視角。證據為使用者runtime截圖與既有gallery來源筆記（第一段旋鈕在左、門向右退開），本次沒有新增原片角度／時間量測，不宣稱逐格重製。
+
+根因是直式安全構圖在保護階段結束後仍以活動門板的bounds重新求橫向truck，並隨後段look-at改變後退方向。獨立Three幾何回歸重現鐵窗Enter在4300ms跨到門板背側。只固定bounds仍不足，因鏡頭方向變化也會旋轉補償向量。
+
+修正保留靠近／關門等待／微開停頓的既有安全構圖，在保護末端快取camera與world-space門體points。之後固定完整世界座標補償向量（後退＋橫向），讓作者設定的position／target自行前進，不再追著旋轉門板或反向看門。邊界使用相同camera、points與固定pullback，所以位置連續；不在尾段解除後退量，也不靠隱藏背面材質掩蓋問題。
+
+影響範圍是啟用直式安全構圖的共用renderer後段，包含catalog、裝置比較、全螢幕與legacy/style-only使用者；不是某個preset ID的特例。橫向畫面、所有preset／set／事件／聲音／門板／把手／淡出tracks均未修改。只對鐵窗Enter驗證手機與平板的剩餘行程不跨入背側，不推論所有來源與Leave在任何時刻都不可見背面。
+
+96%實際材質檢查：桌面原來的門面仍在右側；平板僅餘右邊緣的旋鈕／窄門邊；手機門板已離開朝前視野。
+[平板runtime](images/iron-window-enter-tablet-first-person-2026-11-15.png)、[手機runtime](images/iron-window-enter-phone-first-person-2026-11-15.png)。既有開場／靠近／hold安全邊界、鐵窗雙方向來源輪廓、Play／Reset／seek／traversal／full-screen及作者草稿仍由相關browser測試覆蓋。
+
+歷史視覺oracle不重錄：desktop整張phase sheet仍完全比對；portrait在保護結束及之前的每個tile仍比對原始PNG，後段因本次明確行為修正而排除舊像素預期，附完整新sheet與排除時間供審核。新後段以世界座標偏移固定／邊界連續／實際門面側別及真材質render回歸驗證，不能把此結果描述成42張歷史分鏡全圖不變。
+
+本機工作位於`feat/ticket-72-camera-authoring-stage1`，與Stage1作者工具同分支，未提交／未合併／未發布。不新增來源，8/35已合併／發布與27待實作不變；分類與來源精度／原音QA仍未結案。最終驗證與同步記錄見#31／#58／#63／#72及repo進度。

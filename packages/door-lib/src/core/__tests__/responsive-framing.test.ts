@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as THREE from "three";
-import { getPortraitHorizontalFit, getPortraitProtectionEnd, hasReferenceHorizontalCrop } from "../../responsiveFraming.ts";
+import { getPortraitCameraOffset, getPortraitHorizontalFit, getPortraitProtectionEnd, hasReferenceHorizontalCrop } from "../../responsiveFraming.ts";
 
 const corners = (width = 6) => [-width / 2, width / 2].flatMap((x) =>
   [-3, 3].flatMap((y) => [0, 0.162].map((z) => new THREE.Vector3(x, y, z)))
@@ -92,4 +92,55 @@ test("fixed portrait dolly retains authored forward displacement and does not re
   // Even opening panels spreading beyond the protected closed bounds must not
   // cause a fresh retreat or a compensating forward jump at the passage marker.
   assert.equal(getPortraitHorizontalFit(camera(4.5), corners(10), 390 / 844, offset).pullback, offset);
+});
+
+test("portrait passage advances through the doorway without orbiting onto the back of the entering leaf", async () => {
+  const { getDoorEntrancePreset } = await import("../presets.ts");
+  const { getDoorEntranceAnimationConfig } = await import("../presetAnimation.ts");
+  const preset = getDoorEntrancePreset("biohazard-1999-a02-iron-window-door");
+  const config = getDoorEntranceAnimationConfig(preset);
+  const end = getPortraitProtectionEnd(config.timelineEvents);
+  const viewAt = (ms: number) => {
+    const state = config.getState(ms / config.duration);
+    const view = new THREE.PerspectiveCamera(60, 390 / 844, .1, 100);
+    view.position.set(...state.cameraPosition); view.lookAt(...state.cameraTarget); view.updateMatrixWorld(true);
+    return view;
+  };
+  const leafAt = (ms: number) => {
+    const angle = -config.getState(ms / config.duration).doorAngle * Math.PI / 2;
+    const matrix = new THREE.Matrix4().makeRotationY(angle).setPosition(1.5, 0, 0);
+    const points = [-3, 0].flatMap(x => [-3, 3].flatMap(y => [-.002, .162].map(z =>
+      new THREE.Vector3(x, y, z).applyMatrix4(matrix))));
+    const normal = new THREE.Vector3(0, 0, 1).transformDirection(matrix);
+    const face = new THREE.Vector3(-1.5, 0, .162).applyMatrix4(matrix);
+    return { points, normal, face };
+  };
+  const protectedPoints = leafAt(end).points;
+  const pullback = Math.max(...Array.from({ length: 97 }, (_, i) => {
+    const ms = end * i / 96;
+    return getPortraitHorizontalFit(viewAt(ms), leafAt(ms).points, 390 / 844).pullback;
+  })) + .03;
+  for (let ms = end; ms <= 4800; ms += 20) {
+    const view = viewAt(ms), leaf = leafAt(ms);
+    assert.ok(leaf.normal.dot(view.position.clone().sub(leaf.face)) > 0, "authored camera remains on approach face");
+    view.position.add(getPortraitCameraOffset(view, leaf.points, view.aspect, pullback,
+      { camera: viewAt(end), points: protectedPoints, timeMs: ms, protectionEndMs: end }));
+    assert.ok(leaf.normal.dot(view.position.clone().sub(leaf.face)) > 0,
+      `portrait compensation must not cross the leaf plane at ${ms}ms`);
+  }
+});
+
+test("post-hold portrait adaptation is continuous and keeps authored movement and orientation", () => {
+  const held = camera(5, .2, .7), points = corners(3), aspect = 390 / 844;
+  const pullback = getPortraitHorizontalFit(held, points, aspect).pullback + .03;
+  const boundary = getPortraitCameraOffset(held, points, aspect, pullback);
+  const passage = { camera: held, points, protectionEndMs: 1000, timeMs: 1000.000001 };
+  for (const [z, x] of [[5, .2], [4, .4], [3, .7], [2, 1]]) {
+    const view = camera(z, x, .7), original = view.position.clone(), orientation = view.quaternion.clone();
+    const offset = getPortraitCameraOffset(view, corners(10), aspect, pullback, passage);
+    assert.ok(offset.distanceTo(boundary) < 1e-10, "opening geometry and later look direction cannot move the adaptation");
+    assert.deepEqual(view.position.toArray(), original.toArray());
+    assert.deepEqual(view.quaternion.toArray(), orientation.toArray());
+    assert.notEqual(offset, boundary);
+  }
 });

@@ -2,10 +2,34 @@
 
 線上總覽：[GitHub #63](https://github.com/moojing/re-canvas-door-swing/issues/63)；本文件為 repo 內的對照版本。
 
-更新日期：2026-10-20。這是 runtime 實作追蹤，不是門分類資料的副本。
+更新日期：2026-11-15。這是 runtime 實作追蹤，不是門分類資料的副本。
 原始選單依 2026-08-25 匯出的 35 支影片、20 個分類；分類與影片仍由 sibling `re-door-gallery` 管理。
 
 ## 目前進度
+
+本頁以下本機實作段落是當時的驗證紀錄。2026-11-15 Stage1作者工作台、手機構圖覆寫與第一人稱適配補正的正式交付狀態，請以[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)為準；未包含npm發布，8／35來源數不變。
+
+2026-11-15 第一人稱穿門補正（本機未提交／未合併／未發布）：鐵窗Enter在直式尾段曾因
+安全構圖持續追蹤旋轉門板而露出背面。共用renderer現在於靠近／等待／微開保護末端
+固定完整world-space補償，之後保留原始前進與視線，不繞到門的另一側。
+143core＋2素材＋4數值基準、16package、21相關browser、lint／build及獨立審查通過。
+視覺回歸保留desktop全圖與portrait保護階段舊oracle；portrait後段改以新物理／真材質回歸
+及完整新phase sheet記錄，不宣稱歷史直式後段像素不變，也不重錄舊PNG。
+來源數8／35不變；#31／#58／#63／#72保持Open／In Progress。
+[校準紀錄](era-animation-calibration-2026-10-05.md)、[平板尾段](images/iron-window-enter-tablet-first-person-2026-11-15.png)。
+
+2026-11-15 [#72](https://github.com/moojing/re-canvas-door-swing/issues/72) Stage1 作者工作台已本機實作，
+位於 `feat/ticket-72-camera-authoring-stage1`，未提交／未合併／未發布。
+提供目前 preset 的開場／靠近後門高、鏡頭停留／前進速度與共同開門前等待；
+原片比例1280×800校準視窗及裝置比較、方向隔離的頁面草稿、Reset／Restore與錯誤保留有效預覽。
+普通預覽及production不顯示作者控制；不新增鏡頭模板、方向共用或保存／匯出。
+獨立審查已修正表面投影深度與草稿可變性，另驗證直式草稿構圖快取。
+141 core＋2素材＋4基準檢查、16package、67完整browser、43視覺／素材基準、lint／build通過；
+42張基準分鏡未更新。最後補正鏡頭草稿改變後的直式構圖快取失效；
+修正後7項作者控制／裝置比較回歸、lint及16項package重跑通過，獨立複查核准。
+額外sample獨立tsc仍有3項既有錯誤（animationId narrowing與React inert型別），未擴大修改。
+Stage2已合併，Stage3仍待做；8／35來源已合併／發布、27待實作及各分類狀態不變。
+詳見[Stage1決策與操作語意](camera-path-stage1-decisions-2026-11-15.md)。
 
 2026-11-13 架構工作（交付狀態以對應 PR 為準，套件尚未發布）：[#72](https://github.com/moojing/re-canvas-door-swing/issues/72)
 先抽離 Stage2 內部 `cameraPath`，將位置／視線 tracks、驗證、取樣與重新計時整理到獨立模組。
@@ -46,7 +70,7 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 | 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 開場77%→靠近裁切構圖校準：交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71)，合併／發布以 PR 與 npm 為準（library beta.4）；其他來源 QA 見 #58。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
 | 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1996-a02-red-cross-running-door` | GIF 複核後縮至4.64秒、提前通過；持續加速，金色水平把手。assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及音軌QA見 #58；S5 不計此來源。 |
 | 05 | `1-2/a03/a03-s2目字門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 已合併／beta 已發布 | `biohazard-1998-a03-grid-knob-door`（另有 Leave） | 素材與 library 已發布；去回精細時序及原音軌仍為近似。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
-| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒。2026-10-20 修正 Enter／Leave 旋鈕至各自凸起直框中央（距邊4%），移除門名及切換按鈕副標題，由 PR #74 合併；assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及原音QA仍追蹤於 #58。 |
+| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒。2026-10-20 修正 Enter／Leave 旋鈕至各自凸起直框中央（距邊4%），移除門名及切換按鈕副標題，由 PR #74 合併；assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及原音QA仍追蹤於 #58。  2026-11-15第一人稱直式尾段補正交付見[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)，合併狀態以PR為準，尚未發布；來源QA仍待做。 |
 | 07 | `1-1/a03/a03-s2紅十字門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 08 | `1-1/a03/a03-s4紅花紋門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 09 | `1-3/a07/a12-s1鐵門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -225,3 +249,22 @@ Independent review approved the velocity-continuous path and measured initial ap
 Implementation checks cover126core＋2local-assets,16package and63browser tests, including21 approach samples plus wait/micro-hold landmarks for all11 closed-door presets/traversals, paused resize and sound. Lint/build retain existing warnings; the optional standalone sample TypeScript check retains three baseline errors. Fresh pre-merge verification and independent review are recorded in the PR; its platform state determines merge delivery.
 
 No package publication is included. Pages remains pinned to published library beta.5, so the renderer correction requires a later npm release/pin update. #29/#58/#63 retain their wider release/source-QA scope and In Progress status; no selected source or category is newly completed by this shared presentation change.
+
+## 2026-11-15 全門第一人稱檢查（來源視覺QA仍未結案）
+
+補查12個現行＋2個舊黃門相容性preset、三裝置42視圖、5931個未全黑取樣。
+14個audit tests確認實際renderer保留作者視線、保護末端後不再新增追門／繞門；
+不能把這個測試結果當成14個來源視覺驗收通過。
+已直接查看8支已實作原MP4與舊黃門原MP4，hash匹配；先前由門邊／把手投影推定目字門／
+停車場原片確定露背的判斷已撤回。目字門雙方向、無把手Enter、舊黃門Enter仍有厚邊／
+把手／尾段構圖來源擬合差異；幾何側別候選不等於原片換面或額外orbit。
+詳見[完整檢查與限制](first-person-door-audit-2026-11-15.md)。此輪僅新增檢查／報告，
+未再改profile或renderer；本機未提交／未合併／未發布。#58／#63／#72保持In Progress，8／35不變。
+
+### 2026-11-15 作者手機構圖補充
+
+#72 工作台定位已確認為作者與AI溝通畫面的工具：草稿重整清除，不要求保存、匯出、設定檔版本管理或模板；Enter／Leave仍獨立。新增本機手機專用開場／靠近後門高及水平／垂直取景偏移，留空繼承共用設定，時序與速度共用。依預覽邏輯短邊≤600px套用（含橫向），Desktop／Tablet／Reference維持共用值。詳見 `docs/superpowers/specs/2026-11-15-phone-camera-framing-design.md`。此為未提交／未合併／未發布的工作台變更，不新增來源完成數，仍為8/35；原片吻合度未因此全部結案。
+
+### Stage1 交付前驗證
+
+145core＋2local-assets＋4數值／資產oracle、16package、85完整browser、43視覺／素材回歸及lint／build通過。另驗證Pages實際使用的beta.5建置，修正新作者API被靜態匯入而造成的missing-export錯誤：作者panel／helper僅在DEV calibration動態載入，正式網站維持原已發布beta.5及CDN素材邊界。source／beta.5 build與32項sample node tests通過；邊界修正後受影響browser重跑記錄見[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)。沒有新增來源、版本升級、npm發布或全門來源驗收宣告。
