@@ -47,6 +47,6 @@ npx playwright test --config packages/door-lib/tests/browser/playwright.config.t
 
 ## 狀態
 
-以下是檢查完成當時的本機狀態；檢查程式及同分支修正的交付／合併狀態以本次交付PR為準，未包含npm發布。
+以下是檢查完成當時的本機狀態；檢查程式及同分支修正的交付／合併狀態以[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)為準，未包含npm發布。
 
 此輪新增檢查與報告，未再修改profile／素材／renderer。現有未提交Stage1與第一人稱renderer修正仍在`feat/ticket-72-camera-authoring-stage1`，未合併／未發布。全門來源視覺QA不能結案，待校準項仍屬#58；#63來源數維持8／35、27待實作。

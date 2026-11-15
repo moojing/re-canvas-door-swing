@@ -7,7 +7,7 @@
 
 ## 目前進度
 
-本頁以下本機實作段落是當時的驗證紀錄。2026-11-15 Stage1作者工作台、手機構圖覆寫與第一人稱適配補正的正式交付狀態，請以本次交付PR為準；未包含npm發布，8／35來源數不變。
+本頁以下本機實作段落是當時的驗證紀錄。2026-11-15 Stage1作者工作台、手機構圖覆寫與第一人稱適配補正的正式交付狀態，請以[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)為準；未包含npm發布，8／35來源數不變。
 
 2026-11-15 第一人稱穿門補正（本機未提交／未合併／未發布）：鐵窗Enter在直式尾段曾因
 安全構圖持續追蹤旋轉門板而露出背面。共用renderer現在於靠近／等待／微開保護末端
@@ -70,7 +70,7 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 | 03 | `1-3/a01/a01-s2停車場門.mp4` | [#30](https://github.com/moojing/re-canvas-door-swing/issues/30) | 已實作 | `biohazard-1999-a01-parking-door` | 開場77%→靠近裁切構圖校準：交付見 [PR #71](https://github.com/moojing/re-canvas-door-swing/pull/71)，合併／發布以 PR 與 npm 為準（library beta.4）；其他來源 QA 見 #58。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
 | 04 | `1-1/a02/a02-s9紅十字門開門狂奔.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1996-a02-red-cross-running-door` | GIF 複核後縮至4.64秒、提前通過；持續加速，金色水平把手。assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及音軌QA見 #58；S5 不計此來源。 |
 | 05 | `1-2/a03/a03-s2目字門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | 已合併／beta 已發布 | `biohazard-1998-a03-grid-knob-door`（另有 Leave） | 素材與 library 已發布；去回精細時序及原音軌仍為近似。 2026-10-24構圖校準交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
-| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒。2026-10-20 修正 Enter／Leave 旋鈕至各自凸起直框中央（距邊4%），移除門名及切換按鈕副標題，由 PR #74 合併；assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及原音QA仍追蹤於 #58。  2026-11-15第一人稱直式尾段補正已本機驗證，未提交／未合併／未發布；來源QA仍待做。 |
+| 06 | `1-3/a02/a02-s1 鐵窗門.mp4` | [#31](https://github.com/moojing/re-canvas-door-swing/issues/31) | [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 已合併／beta 已發布 | `biohazard-1999-a02-iron-window-door`（另有 Leave） | 第一段左側旋鈕、逆時鐘180°、向右內推；第二段右側旋鈕、順時鐘180°、向左外拉。分別4.8／5.28秒。2026-10-20 修正 Enter／Leave 旋鈕至各自凸起直框中央（距邊4%），移除門名及切換按鈕副標題，由 PR #74 合併；assets beta.3／library beta.5 已發布，CDN圖片驗證通過；精細來源及原音QA仍追蹤於 #58。  2026-11-15第一人稱直式尾段補正交付見[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)，合併狀態以PR為準，尚未發布；來源QA仍待做。 |
 | 07 | `1-1/a03/a03-s2紅十字門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 08 | `1-1/a03/a03-s4紅花紋門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 09 | `1-3/a07/a12-s1鐵門.mp4` | [#32](https://github.com/moojing/re-canvas-door-swing/issues/32) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -267,4 +267,4 @@ No package publication is included. Pages remains pinned to published library be
 
 ### Stage1 交付前驗證
 
-145core＋2local-assets＋4數值／資產oracle、16package、85完整browser、43視覺／素材回歸及lint／build通過。另驗證Pages實際使用的beta.5建置，修正新作者API被靜態匯入而造成的missing-export錯誤：作者panel／helper僅在DEV calibration動態載入，正式網站維持原已發布beta.5及CDN素材邊界。source／beta.5 build與32項sample node tests通過；邊界修正後受影響browser重跑記錄見本次交付PR。沒有新增來源、版本升級、npm發布或全門來源驗收宣告。
+145core＋2local-assets＋4數值／資產oracle、16package、85完整browser、43視覺／素材回歸及lint／build通過。另驗證Pages實際使用的beta.5建置，修正新作者API被靜態匯入而造成的missing-export錯誤：作者panel／helper僅在DEV calibration動態載入，正式網站維持原已發布beta.5及CDN素材邊界。source／beta.5 build與32項sample node tests通過；邊界修正後受影響browser重跑記錄見[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)。沒有新增來源、版本升級、npm發布或全門來源驗收宣告。

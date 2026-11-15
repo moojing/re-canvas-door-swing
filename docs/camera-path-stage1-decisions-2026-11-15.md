@@ -1,6 +1,6 @@
 # cameraPath Stage1 決策紀錄
 
-最新範圍以文末「同日後續確認」為準；前面未定項與本機狀態是決策過程紀錄。交付／合併以本次交付PR為準，沒有npm發布。
+最新範圍以文末「同日後續確認」為準；前面未定項與本機狀態是決策過程紀錄。交付／合併以[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)為準，沒有npm發布。
 
 關聯：[#72](https://github.com/moojing/re-canvas-door-swing/issues/72)、[原始設計提案](https://github.com/moojing/re-canvas-door-swing/blob/8e2d6511ee7e0172a8b7f9ed666ed098b86e180c/docs/superpowers/specs/2026-10-14-camera-path-authoring-design.md)。
 
