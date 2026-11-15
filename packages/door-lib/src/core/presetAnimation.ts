@@ -1,3 +1,4 @@
+import { authoredCameraSampler, cameraAuthoringInfo, validateCameraDraft, type DoorCameraDraft } from "./cameraAuthoring.ts";
 import { validateCameraPath, retimeCameraPath } from "./cameraPath.ts";
 import { sampleProfileState } from "./profileState.ts";
 import { getDoorAnimationConfig } from "./animationState.ts";
@@ -64,11 +65,15 @@ const retimeTrack = <T extends TimelineValue>(
 
 const retimeProfile = (
   profile: EraAnimationProfile,
-  timingEvents: DoorTimingEvents
+  timingEvents: DoorTimingEvents,
+  openingWaitMs = 0,
+  width = 3
 ): EraAnimationProfile => {
-  if (Object.keys(timingEvents).length === 0) return profile;
+  if (Object.keys(timingEvents).length === 0 && !openingWaitMs) return profile;
   const oldAnchors = profile.events.map(({ atMs }) => atMs);
-  const newAnchors = profile.events.map(({ id, atMs }) => timingEvents[id] ?? atMs);
+  const waitStart = cameraAuthoringInfo(profile, width).waitStartMs;
+  const newAnchors = profile.events.map(({ id, atMs }) => (timingEvents[id] ?? atMs) +
+    (openingWaitMs && waitStart !== undefined && atMs > waitStart ? openingWaitMs : 0));
   const known = new Set(profile.events.map(({ id }) => id));
   for (const id of Object.keys(timingEvents)) {
     if (!known.has(id) || id === "start" || id === "end") {
@@ -77,11 +82,12 @@ const retimeProfile = (
   }
   // The warp checks ordering, while the two fixed endpoints preserve duration.
   warpTime(0, oldAnchors, newAnchors);
-  if (newAnchors.at(-1) !== profile.durationMs) {
+  if (newAnchors.at(-1) !== profile.durationMs + openingWaitMs) {
     throw new Error("Preview timing cannot change the preset duration");
   }
   return {
     ...profile,
+    durationMs: profile.durationMs + openingWaitMs,
     events: profile.events.map((event, index) => ({ ...event, atMs: newAnchors[index] })),
     doorAngle: retimeTrack(profile.doorAngle, oldAnchors, newAnchors),
     rightDoorAngle: profile.rightDoorAngle
@@ -101,19 +107,25 @@ const retimeProfile = (
 
 export const getDoorEntranceAnimationConfig = (
   preset: DoorEntrancePreset,
-  timingEvents: DoorTimingEvents = {}
+  timingEvents: DoorTimingEvents = {},
+  cameraDraft: DoorCameraDraft = {}
 ): DoorAnimationConfig => {
   const legacy = getDoorAnimationConfig(preset.animation);
   if (!preset.animationStyle && !preset.animationSet) {
-    if (Object.keys(timingEvents).length) {
+    if (Object.keys(timingEvents).length || Object.keys(cameraDraft).length) {
       throw new Error("Legacy animation does not support timing edits");
     }
     return legacy;
   }
 
-  const profile = retimeProfile(getAnimationSetProfile(preset), timingEvents);
+  const width = preset.type === "single" ? 3 : 6;
+  const source = getAnimationSetProfile(preset);
+  validateCameraDraft(cameraDraft, source, width);
+  const profile = retimeProfile(source, timingEvents, cameraDraft.openingWaitMs ?? 0, width);
   validateProfile(profile);
   const duration = profile.durationMs;
+  const sampleCamera = Object.keys(cameraDraft).some(key => key !== "openingWaitMs")
+    ? authoredCameraSampler(profile, width, cameraDraft) : undefined;
   return {
     id: preset.animation,
     label: legacy.label,
@@ -126,6 +138,12 @@ export const getDoorEntranceAnimationConfig = (
     soundFadeOutStartProgress: profile.soundFadeOutStartMs === undefined ? undefined : profile.soundFadeOutStartMs / duration,
     soundSourceStartProgress: profile.soundSourceStartProgress,
     soundSourceEndProgress: profile.soundSourceEndProgress,
-    getState: (progress) => sampleProfileState(profile, progress),
+    getState: (progress) => {
+      const state = sampleProfileState(profile, progress);
+      return sampleCamera ? { ...state, ...sampleCamera(Math.max(0, Math.min(1, progress)) * duration) } : state;
+    },
   };
 };
+
+export const getDoorEntranceCameraAuthoringInfo = (preset: DoorEntrancePreset) =>
+  cameraAuthoringInfo(getAnimationSetProfile(preset), preset.type === "single" ? 3 : 6);

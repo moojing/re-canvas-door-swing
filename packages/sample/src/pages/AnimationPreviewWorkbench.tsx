@@ -2,12 +2,20 @@ import { useRef, useState } from "react";
 import type { FullScreenDoorTransitionRequest } from "@/components/FullScreenDoorTransition";
 import {
   getDoorEntranceAnimationConfig,
+  type DoorPhoneFraming,
   getDoorEntranceAnimationSet,
   type DoorEntrancePreset,
   type DoorEntrancePresetId,
   type DoorTimingEvents,
+  type DoorCameraDraft,
 } from "retro-horror-door";
 import DeviceAnimationPreview, { type DeviceAnimationPreviewHandle } from "./DeviceAnimationPreview";
+
+export interface WorkbenchDraft {
+  timingEvents: DoorTimingEvents;
+  cameraDraft: DoorCameraDraft;
+  phoneFraming?: DoorPhoneFraming;
+}
 
 const formatTime = (milliseconds: number) => {
   return `${(milliseconds / 1000).toFixed(2)} s`;
@@ -23,7 +31,16 @@ const AnimationPreviewWorkbench = ({
   onVariantChange,
   comparison,
   onComparisonChange,
+  initialDraft,
+  onDraftChange,
+  cameraAuthoring,
 }: {
+  cameraAuthoring?: {
+    Panel: typeof import("@/components/CameraAuthoringPanel").default;
+    validateDraft: (preset: DoorEntrancePreset, draft: WorkbenchDraft) => void;
+  };
+  initialDraft?: WorkbenchDraft;
+  onDraftChange: (draft: WorkbenchDraft) => void;
   preset: DoorEntrancePreset;
   variants: readonly DoorEntrancePreset[];
   onVariantChange: (id: DoorEntrancePresetId) => void;
@@ -33,11 +50,25 @@ const AnimationPreviewWorkbench = ({
 }) => {
   const doorRef = useRef<DeviceAnimationPreviewHandle | null>(null);
   const swingDirection = preset.swingDirection ?? "toward-viewer";
-  const [timingEvents, setTimingEvents] = useState<DoorTimingEvents>({});
+  const [timingEvents, setTimingEvents] = useState<DoorTimingEvents>(initialDraft?.timingEvents ?? {});
+  const [cameraDraft, setCameraDraft] = useState<DoorCameraDraft>(initialDraft?.cameraDraft ?? {});
+  const [phoneFraming, setPhoneFraming] = useState<DoorPhoneFraming>(initialDraft?.phoneFraming ?? {});
+  const [restoreRevision, setRestoreRevision] = useState(0);
+  const CameraAuthoringPanel = cameraAuthoring?.Panel;
+  const applyDraft = (nextCamera: DoorCameraDraft, nextTiming = timingEvents, nextPhone = phoneFraming) => {
+    getDoorEntranceAnimationConfig(preset, nextTiming, nextCamera);
+    cameraAuthoring?.validateDraft(preset, { cameraDraft: nextCamera, timingEvents: nextTiming, phoneFraming: nextPhone });
+    doorRef.current?.setPreviewOverrides({ swingDirection, timingEvents: nextTiming, cameraDraft: nextCamera, phoneFraming: nextPhone });
+    setPhoneFraming(nextPhone);
+    setCameraDraft(nextCamera);
+    setTimingEvents(nextTiming);
+    onDraftChange({ cameraDraft: nextCamera, timingEvents: nextTiming, phoneFraming: nextPhone });
+  };
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
-  const animation = getDoorEntranceAnimationConfig(preset, timingEvents);
+  const animation = getDoorEntranceAnimationConfig(preset, timingEvents, cameraDraft);
   const events = animation.timelineEvents ?? [];
+  const timingStages = getDoorEntranceAnimationConfig(preset, timingEvents).timelineEvents ?? [];
   const animationSet = getDoorEntranceAnimationSet(preset);
 
   return (
@@ -57,7 +88,7 @@ const AnimationPreviewWorkbench = ({
           ))}
         </div>
         <div className={comparison ? "order-2 mt-4" : ""}>
-          <DeviceAnimationPreview ref={doorRef} presetId={preset.id} comparison={comparison} onProgress={setProgress} onReadyChange={setReady} />
+          <DeviceAnimationPreview authoring={timingEditorEnabled} initialOverrides={{ timingEvents, cameraDraft, phoneFraming }} ref={doorRef} presetId={preset.id} comparison={comparison} onProgress={setProgress} onReadyChange={setReady} />
         </div>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
@@ -65,7 +96,7 @@ const AnimationPreviewWorkbench = ({
             <p className="mt-1 break-words font-mono text-xs text-[#aa9f90]">{preset.id}</p>
             <p className="mt-3 text-sm text-[#d8c9b5]">
               <span className="text-[#c58a45]">套用動畫組</span>
-              <span className="ml-2 break-words font-mono text-xs">{animationSet?.id ?? "legacy"}</span>
+              <span className="ml-2 break-words font-mono text-xs">{timingEditorEnabled ? (animationSet?.label ?? "Legacy animation") : (animationSet?.id ?? "legacy")}</span>
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -84,7 +115,7 @@ const AnimationPreviewWorkbench = ({
                 doorRef.current?.stop();
                 onFullScreenPreview({
                   preset: preset.id,
-                  previewOverrides: { swingDirection, timingEvents },
+                  previewOverrides: { swingDirection, timingEvents, cameraDraft, phoneFraming },
                 });
               }}
               className="border border-[#8d683e] px-4 py-2 text-sm font-semibold text-[#ddc6a8] disabled:opacity-50"
@@ -108,7 +139,7 @@ const AnimationPreviewWorkbench = ({
           <div className="flex justify-between text-xs text-[#aa9f90]">
             <span>{formatTime(animation.duration * progress)}</span>
             <span>{Math.round(progress * 100)}%</span>
-            <span>{formatTime(animation.duration)}</span>
+            <span aria-label="Animation duration">{formatTime(animation.duration)}</span>
           </div>
           <input
             aria-label="Animation progress"
@@ -180,13 +211,19 @@ const AnimationPreviewWorkbench = ({
           </div>
         )}
 
+        {timingEditorEnabled && CameraAuthoringPanel && (
+          <CameraAuthoringPanel key={restoreRevision} preset={preset} draft={cameraDraft} disabled={!ready}
+            phoneFraming={phoneFraming} onPhoneChange={next => applyDraft(cameraDraft, timingEvents, next)}
+            onChange={next => applyDraft(next)} />
+        )}
+
         {timingEditorEnabled && events.length > 2 && (
           <div className="mt-6 space-y-4 border-t border-[#4b3928] pt-6">
             <p className="text-sm font-semibold text-[#e9dfcd]">Stage timing</p>
             <p className="text-xs leading-5 text-[#aa9f90]">Adjust when a stage ends. Changes apply only to this preview.</p>
-            {events.slice(1, -1).map((stage, index) => {
-              const minimum = events[index].atMs + 10;
-              const maximum = events[index + 2].atMs - 10;
+            {timingStages.slice(1, -1).map((stage, index) => {
+              const minimum = timingStages[index].atMs + 10;
+              const maximum = timingStages[index + 2].atMs - 10;
               return (
                 <label key={stage.id} className="block text-xs text-[#d8c9b5]">
                   <span className="flex justify-between gap-2">
@@ -203,9 +240,7 @@ const AnimationPreviewWorkbench = ({
                     disabled={!ready}
                     onChange={(event) => {
                       const nextTiming = { ...timingEvents, [stage.id]: Number(event.target.value) };
-                      getDoorEntranceAnimationConfig(preset, nextTiming);
-                      setTimingEvents(nextTiming);
-                      doorRef.current?.setPreviewOverrides({ swingDirection, timingEvents: nextTiming });
+                      applyDraft(cameraDraft, nextTiming);
                     }}
                     className="mt-2 w-full accent-[#c98d48]"
                   />
@@ -220,8 +255,8 @@ const AnimationPreviewWorkbench = ({
               type="button"
               disabled={!ready}
               onClick={() => {
-                setTimingEvents({});
-                doorRef.current?.setPreviewOverrides({});
+                applyDraft({}, {}, {});
+                setRestoreRevision(value => value + 1);
               }}
               className="border border-[#8d683e] px-3 py-2 text-sm font-semibold text-[#ddc6a8] hover:border-[#d39952] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d39952]"
             >

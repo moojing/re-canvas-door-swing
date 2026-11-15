@@ -500,7 +500,7 @@ test("iron door uses one catalog card and switches actual Enter/Leave preset IDs
 });
 
 
-test("changing traversal variants clears temporary calibration timing", async ({ page }) => {
+test("changing traversal variants isolates and preserves temporary calibration drafts", async ({ page }) => {
   await page.goto(`${calibrationUrl}/dev/animations/direct-entry?preset=biohazard-1996-a01-iron-door`);
   const timing = page.getByRole("slider", { name: "Slight opening timing", exact: true });
   await timing.fill("3200");
@@ -509,6 +509,9 @@ test("changing traversal variants clears temporary calibration timing", async ({
   await variants.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(timing).toHaveValue("3550");
   await variants.getByRole("button", { name: "Enter", exact: true }).click();
+  await expect(timing).toHaveValue("3200");
+  await expect(page.getByRole("button", { name: "Play", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Restore preset values", exact: true }).click();
   await expect(timing).toHaveValue("3300");
   await expect(page.getByRole("slider", { name: "Animation progress" })).toHaveValue("0");
 });

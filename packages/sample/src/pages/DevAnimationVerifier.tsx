@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import FullScreenDoorTransition, { type FullScreenDoorTransitionHandle } from "@/components/FullScreenDoorTransition";
 import { ArrowLeft } from "lucide-react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
@@ -15,10 +15,15 @@ import {
   resolveVerifierPreset,
 } from "@/dev/animationPresets";
 import SampleHeader from "@/components/SampleHeader";
-import AnimationPreviewWorkbench from "./AnimationPreviewWorkbench";
+import AnimationPreviewWorkbench, { type WorkbenchDraft } from "./AnimationPreviewWorkbench";
 import NotFound from "./NotFound";
 
+const PreviewWorkbench = import.meta.env.DEV && import.meta.env.VITE_DOOR_TIMING_EDITOR === "true"
+  ? lazy(() => import("./CalibrationAnimationPreviewWorkbench"))
+  : AnimationPreviewWorkbench;
+
 const DevAnimationVerifier = () => {
+  const drafts = useRef<Record<string, WorkbenchDraft>>({});
   const transitionRef = useRef<FullScreenDoorTransitionHandle>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [comparison, setComparison] = useState(false);
@@ -65,15 +70,19 @@ const DevAnimationVerifier = () => {
           </p>
         ) : (
           <div className="mt-8 space-y-8">
-            <AnimationPreviewWorkbench
-              key={preset.id}
-              preset={preset}
-              comparison={comparison}
-              onComparisonChange={setComparison}
-              variants={variantsForPreset(preset, presets)}
-              onVariantChange={(id) => setSearchParams({ preset: id }, { state: { from: returnTo } })}
-              onFullScreenPreview={(request) => transitionRef.current?.play(request)}
-            />
+            <Suspense fallback={null}>
+              <PreviewWorkbench
+                initialDraft={drafts.current[preset.id]}
+                onDraftChange={draft => { drafts.current[preset.id] = draft; }}
+                key={preset.id}
+                preset={preset}
+                comparison={comparison}
+                onComparisonChange={setComparison}
+                variants={variantsForPreset(preset, presets)}
+                onVariantChange={(id) => setSearchParams({ preset: id }, { state: { from: returnTo } })}
+                onFullScreenPreview={(request) => transitionRef.current?.play(request)}
+              />
+            </Suspense>
             <section className="border-t border-[#4b3928] pt-6" aria-label="Published presets">
               <h2 className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#827665]">
                 Published presets

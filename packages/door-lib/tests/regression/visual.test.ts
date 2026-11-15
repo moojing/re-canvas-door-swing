@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync, writeFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getPortraitProtectionEnd } from "../../src/responsiveFraming.ts";
 import { installAssetReadiness } from "./asset-readiness.ts";
 import { baselineDirectory, verifyBaseline, viewports, repositoryRoot } from "./timeline.ts";
 
@@ -24,7 +25,7 @@ test.beforeAll(async ({ browser }, info) => {
 
 for (const [id, entry] of Object.entries(timeline.presets) as [string, any][]) {
   for (const [device, [width, height]] of Object.entries(viewports)) {
-    test(`${id} ${device} matches the frozen phase sheet`, async ({ page }, info) => {
+    test(`${id} ${device} ${height > width ? "matches frozen approach/hold phases and records passage" : "matches the frozen phase sheet"}`, async ({ page }, info) => {
       const errors: string[] = [];
       const requests = new Set<string>();
       page.on("pageerror", error => errors.push(error.message));
@@ -95,7 +96,37 @@ for (const [id, entry] of Object.entries(timeline.presets) as [string, any][]) {
       const name = `${id}-${device}.png`;
       await info.attach("frame-times", { body: JSON.stringify({ id, device, width, height, times: entry.visualTimes }), contentType: "application/json" });
       if (captureDir) writeFileSync(path.join(directory, name), image);
-      else expect(image).toMatchSnapshot(name);
+      else if (height > width) {
+        // Intentional2026-11-15 fix: post-hold responsive framing must not orbit
+        // an opening leaf. Preserve the old oracle and compare ALL protected
+        // tiles exactly as before; record, rather than bless, changed passage.
+        const endMs = getPortraitProtectionEnd(entry.config.timelineEvents);
+        const excluded = entry.visualTimes.filter((ms: number) => ms > endMs);
+        expect(entry.visualTimes.filter((ms: number) => ms <= endMs).length).toBeGreaterThan(0);
+        await info.attach("current-full-phase-sheet", { body: image, contentType: "image/png" });
+        await info.attach("excluded-portrait-passage-times", { body: JSON.stringify({ endMs, excluded }), contentType: "application/json" });
+        const masked = await page.evaluate(async ({ actual, expected, times, endMs }) => {
+          const decode = async (encoded: string) => createImageBitmap(new Blob([
+            Uint8Array.from(atob(encoded), c => c.charCodeAt(0)),
+          ], { type: "image/png" }));
+          const current = await decode(actual), original = await decode(expected);
+          if (current.width !== original.width || current.height !== original.height) throw new Error("Phase sheet dimensions changed");
+          const sheet = document.createElement("canvas"); sheet.width = current.width; sheet.height = current.height;
+          const context = sheet.getContext("2d")!;
+          context.drawImage(current, 0, 0);
+          const tileWidth = current.width / 4, tileHeight = current.height / Math.ceil(times.length / 4);
+          times.forEach((ms: number, i: number) => {
+            if (ms <= endMs) return;
+            const x = i % 4 * tileWidth, y = Math.floor(i / 4) * tileHeight;
+            // Explicitly exclude only post-hold cells, without changing the
+            // frozen PNG or tolerances for any protected pixel.
+            context.drawImage(original, x, y, tileWidth, tileHeight, x, y, tileWidth, tileHeight);
+          });
+          current.close(); original.close();
+          return sheet.toDataURL("image/png").split(",")[1];
+        }, { actual: image.toString("base64"), expected: readFileSync(path.join(directory, name)).toString("base64"), times: entry.visualTimes, endMs });
+        expect(Buffer.from(masked, "base64")).toMatchSnapshot(name);
+      } else expect(image).toMatchSnapshot(name);
     });
   }
 }

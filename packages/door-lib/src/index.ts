@@ -12,7 +12,7 @@ export {
   easeInOutCubic,
   getDoorAnimationConfig,
 } from "./core/animationState.ts";
-export { getDoorEntranceAnimationConfig } from "./core/presetAnimation.ts";
+export { getDoorEntranceAnimationConfig, getDoorEntranceCameraAuthoringInfo } from "./core/presetAnimation.ts";
 export { getDoorEntranceAnimationSet } from "./core/animationSets.ts";
 export type { DoorAnimationSetMetadata } from "./core/animationSets.ts";
 export type { DoorTimingEvents } from "./core/presetAnimation.ts";
@@ -43,3 +43,7 @@ export type {
   HandleProfileId,
   Vector3Tuple,
 } from "./core/types.ts";
+
+export type { DoorCameraDraft, DoorPhoneFraming } from "./core/cameraAuthoring.ts";
+
+export { resolvePhoneCameraDraft } from "./core/cameraAuthoring.ts";
