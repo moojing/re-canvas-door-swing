@@ -170,4 +170,3 @@ export class ResponsiveDoorCamera {
     // here would undo the truck and reintroduce the lateral fit constraint.
   }
 }
-
