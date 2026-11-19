@@ -15,3 +15,5 @@ export declare const biohazard1996B07AutomaticDoorLeaf: string;
 export declare const automaticDoorSlide: string;
 export const biohazard1996A02RedCrossDoor: string;
 export const biohazard1999A02IronWindowDoor: string;
+export declare const biohazard1998B04RedwoodLouverLeaf: string;
+export declare const biohazard1998B04RedwoodLouverEdge: string;
