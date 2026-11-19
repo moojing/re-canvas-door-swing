@@ -132,3 +132,10 @@ Latest local camera fits are in the final2026-10-24 section of `era-animation-ca
 ### Stationary right handle — 2026-10-24 (local/unpublished)
 
 The Blue double set holds its optional `rightHandleAngle` track at zero while its left handle uses the existing handle track. This mirrors its left-only leaf opening without changing the6.90s timing. Profiles omitting the optional track retain shared left/right handle motion. Both front and back right handles follow the independent track; timing overrides and Reset preserve it.
+
+
+Local #37 redwood candidate (unmerged/unpublished): Enter selects
+`1998-double-fixed-wait-right-inward-pass`; Leave selects
+`1998-double-fixed-wait-left-outward-pass`. Each has one active leaf and knob,
+fixed closed framing and a passage through that leaf's opening. These explicit
+sets do not change era fallbacks. See the2026-11-17 calibration entry for fits.

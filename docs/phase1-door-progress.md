@@ -31,6 +31,11 @@
 Stage2已合併，Stage3仍待做；8／35來源已合併／發布、27待實作及各分類狀態不變。
 詳見[Stage1決策與操作語意](camera-path-stage1-decisions-2026-11-15.md)。
 
+2026-11-17：#37 下通風紅木門本機初版，分支 `feat/ticket-37-redwood-louver-door`，
+基於 main `6f4885e`。只新增這支來源的 Enter／Leave，兩段不重複計數。
+既有 8/35 合併／發布數維持不變；本片已經使用者確認，仍待合併及資產／library 發布。
+GitHub CLI 未登入，尚未同步 #37 Source Doors、#63 對應列及 Project；不得視為已同步或結案。
+
 2026-11-13 架構工作（交付狀態以對應 PR 為準，套件尚未發布）：[#72](https://github.com/moojing/re-canvas-door-swing/issues/72)
 先抽離 Stage2 內部 `cameraPath`，將位置／視線 tracks、驗證、取樣與重新計時整理到獨立模組。
 沿用現有插值與共同 phase anchors；preset/set ID、去回路徑與公開 state 不變。
@@ -82,7 +87,7 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24構圖及僅左把手轉動修正交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
-| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
+| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 使用者確認／待合併及發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | 兩段單扇開門、原創百葉木材質與旋鈕已接入；第一段右旋鈕順時鐘，第二段左旋鈕逆時鐘180°；兩段先微推／微拉、短停，再全開後鏡頭前進；GIF 擬合，精細動作／原音待核；線上同步受 gh 未登入阻擋。 |
 | 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |

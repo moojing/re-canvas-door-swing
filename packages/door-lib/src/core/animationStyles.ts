@@ -583,3 +583,53 @@ export const centerSplitSlide1996Profile: EraAnimationProfile = {
   soundSourceStartProgress: 1.64 / 3.940227,
   soundSourceEndProgress: 1,
 };
+
+// Fixed closed framing and one active leaf, observed in the tracked 1998 GIF.
+// Times are relative to each visible passage; geometry/camera values are fits.
+export const rightInwardDoublePass1998Profile: EraAnimationProfile = {
+  durationMs: 4640,
+  events: [event("start", "Closed wait", 0), event("handle-start", "Handle starts", 1760),
+    event("opening-start", "Right leaf opens", 2080), event("slight-open", "Slight push", 2320),
+    event("hold-end", "Push resumes", 2560), event("passage", "Fully pushed open / advance", 3520),
+    event("fade-start", "Fade starts", 4320), event("end", "End", 4640)],
+  doorAngle: [at(0, 0), at(4640, 0)],
+  rightDoorAngle: [at(0, 0), at(2080, 0), at(2320, 6 / 90),
+    { ...at(2560, 6 / 90), easing: "ease-in-out" }, at(3520, 1), at(4640, 1)],
+  handleAngle: [at(0, 0), at(4640, 0)],
+  rightHandleAngle: [at(0, 0), at(1760, 0), at(2080, radians(35)),
+    at(2560, radians(35)), at(3200, 0), at(4640, 0)],
+  cameraPath: {
+    position: [framedCamera(0, 7.2, 0.15),
+      { ...framedCamera(3520, 7.2, 0.15), easing: "ease-in" },
+      framedCamera(4640, 1.3, 0.15, 1.4)],
+    target: [{ atMs: 0, value: [0, 0.15, 0] }, { atMs: 3520, value: [0, 0.15, 0], easing: "ease-in" },
+      { atMs: 4640, value: [1.4, 0.15, -3] }],
+  },
+  fadeOut: [at(0, 0), at(4320, 0), at(4640, 1)],
+  soundStartMs: 2080, soundEndMs: 4320,
+  soundSourceStartProgress: 0.06, soundSourceEndProgress: 0.36,
+};
+
+export const leftOutwardDoublePass1998Profile: EraAnimationProfile = {
+  durationMs: 5280,
+  events: [event("start", "Closed wait", 0), event("handle-start", "Handle starts", 1760),
+    event("opening-start", "Left leaf opens", 2080), event("slight-open", "Slight pull", 2320),
+    event("hold-end", "Pull resumes", 2560), event("passage", "Fully pulled open / advance", 3840),
+    event("fade-start", "Fade starts", 4960), event("end", "End", 5280)],
+  doorAngle: [at(0, 0), at(2080, 0), at(2320, 6 / 90),
+    { ...at(2560, 6 / 90), easing: "ease-in-out" }, at(3840, 1), at(5280, 1)],
+  rightDoorAngle: [at(0, 0), at(5280, 0)],
+  handleAngle: [at(0, 0), at(1760, 0), at(2080, radians(180)),
+    at(2560, radians(180)), at(3200, 0), at(5280, 0)],
+  rightHandleAngle: [at(0, 0), at(5280, 0)],
+  cameraPath: {
+    position: [framedCamera(0, 7.2, 0.15),
+      { ...framedCamera(3840, 7.2, 0.15), easing: "ease-in" },
+      framedCamera(5280, 1.3, 0.15, -1.4)],
+    target: [{ atMs: 0, value: [0, 0.15, 0] }, { atMs: 3840, value: [0, 0.15, 0], easing: "ease-in" },
+      { atMs: 5280, value: [-1.4, 0.15, -3] }],
+  },
+  fadeOut: [at(0, 0), at(4960, 0), at(5280, 1)],
+  soundStartMs: 2080, soundEndMs: 4960,
+  soundSourceStartProgress: 0.06, soundSourceEndProgress: 0.36,
+};
