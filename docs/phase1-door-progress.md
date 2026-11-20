@@ -87,7 +87,7 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24構圖及僅左把手轉動修正交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
-| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 使用者確認／待合併及發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | 兩段單扇開門、原創百葉木材質與旋鈕已接入；第一段右旋鈕順時鐘，第二段左旋鈕逆時鐘180°；兩段先微推／微拉、短停，再全開後鏡頭前進；GIF 擬合，精細動作／原音待核；線上同步受 gh 未登入阻擋。 |
+| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 使用者確認／待合併及發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | 兩段單扇開門、原創百葉木材質與旋鈕已接入；第一段右旋鈕順時鐘，第二段左旋鈕逆時鐘180°；兩段先微推／微拉、短停，再全開後鏡頭前進；GIF 擬合，精細動作／原音待核；交付分支已 rebase 最新 main；PR 審查／合併及資產發布待完成。 |
 | 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -277,3 +277,7 @@ No package publication is included. Pages remains pinned to published library be
 ### 2026-11-20 — surface texture lifecycle delivery
 
 [PR #88](https://github.com/moojing/re-canvas-door-swing/pull/88) releases retired door surface maps on preset replacement/unmount and discards stale loads without rendering. Shared handle resources, preset tracks and public APIs are unchanged. This shared engineering fix adds no selected-source completion: counts remain 8/35 merged/published and 27 pending. No category Source Doors or Project completion status changes apply. The PR targets main; merge state is verified online at delivery. No npm publication is included; Pages remains on beta.5 until a later release.
+
+### 2026-11-20 — #37 redwood delivery review
+
+Redwood Enter/Leave is rebased onto main including #86–#88. The remote author branch remains intact; delivery uses `preview/ticket-37-redwood`. This adds one selected source only (row18); clock-tower row19 remains pending. After verified merge the counts become9/35 merged,8/35 published,26unimplemented. Assets must be published and the CDN pin updated before a library release; this delivery does not publish npm or change the beta.5 Pages pin. #37 remains In Progress. Earlier unauthenticated/local-only entries are historical.
