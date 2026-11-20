@@ -282,3 +282,7 @@ No package publication is included. Pages remains pinned to published library be
 ## 2026-11-20 時鐘塔大門視覺批准
 
 使用者對最終每片門約橫向四格的直向長菱形版本表示「可以了，推吧」，批准目前 Enter／Leave 並授權推送。此為本機視覺批准，尚待推送、合併及套件發布；不代表 #37 全部來源已完成。#63／#37／Project 因 gh 未登入仍待同步，8/35已合併／發布來源數不變。
+
+### 2026-11-20 — surface texture lifecycle delivery
+
+[PR #88](https://github.com/moojing/re-canvas-door-swing/pull/88) releases retired door surface maps on preset replacement/unmount and discards stale loads without rendering. Shared handle resources, preset tracks and public APIs are unchanged. This shared engineering fix adds no selected-source completion: counts remain 8/35 merged/published and 27 pending. No category Source Doors or Project completion status changes apply. The PR targets main; merge state is verified online at delivery. No npm publication is included; Pages remains on beta.5 until a later release.

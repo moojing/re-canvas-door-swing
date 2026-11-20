@@ -28,6 +28,7 @@ import {
 } from "../handleModel.ts";
 import { ResponsiveDoorCamera } from "./camera.ts";
 import { clampProgress } from "./progress.ts";
+import { SurfaceTextureBatch } from "./surfaceTextureBatch.ts";
 
 const DOOR_DEPTH = 0.16;
 const DOOR_SURFACE_OFFSET = 0.002;
@@ -106,6 +107,7 @@ export class VanillaDoorScene {
     applyDoorState: (animation, state) => this.applyDoorState(animation, state),
   });
   private doorRoot = new THREE.Group();
+  private surfaceTextureBatch?: SurfaceTextureBatch;
   private activeSurfaceTextureKey?: string;
   private activeHandleModelUrl?: string;
   private activeHandleProfileId?: HandleProfileId;
@@ -303,8 +305,10 @@ export class VanillaDoorScene {
   }
 
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
     this.resizeObserver?.disconnect();
+    this.surfaceTextureBatch?.close(() => this.scene.remove(this.doorRoot));
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
     this.doorMaterials.forEach((material) => material.dispose());
@@ -349,6 +353,7 @@ export class VanillaDoorScene {
     hingeSide: DoorHingeSide
   ) {
     this.cameraFraming.invalidate();
+    this.surfaceTextureBatch?.close(() => this.scene.remove(this.doorRoot));
     disposeObject(this.doorRoot);
     this.scene.remove(this.doorRoot);
     this.doorRoot = new THREE.Group();
@@ -401,10 +406,14 @@ export class VanillaDoorScene {
       );
     });
     applyRetroMaterial(this.handleMaterial, false, this.knobBackplate ? this.retroRasterSize : undefined);
+    const batch = new SurfaceTextureBatch(this.textureLoader, () => {
+      this.renderer.render(this.scene, this.camera);
+    });
+    this.surfaceTextureBatch = batch;
     const doorMaterials = this.doorMaterials;
-    this.loadTexture(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4), textureFlipY);
-    this.loadTexture(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial], textureFlipY);
-    this.loadTexture(surfaceTextureUrls.backTextureUrl, [this.backDoorMaterial], textureFlipY);
+    batch.load(surfaceTextureUrls.edgeTextureUrl, doorMaterials.slice(0, 4), textureFlipY);
+    batch.load(surfaceTextureUrls.frontTextureUrl, [this.frontDoorMaterial], textureFlipY);
+    batch.load(surfaceTextureUrls.backTextureUrl, [this.backDoorMaterial], textureFlipY);
 
     if (animation === "double-swing" || animation === "center-split-slide") {
       const left = this.createDoorLeaf({
@@ -471,32 +480,6 @@ export class VanillaDoorScene {
           });
     single.name = "single-door";
     this.doorRoot.add(single);
-  }
-
-  private loadTexture(
-    url: string,
-    materials: THREE.MeshStandardMaterial[],
-    flipY = false
-  ) {
-    this.textureLoader.load(url, (texture) => {
-      if (this.disposed) {
-        texture.dispose();
-        return;
-      }
-
-      texture.wrapS = THREE.ClampToEdgeWrapping;
-      texture.wrapT = THREE.ClampToEdgeWrapping;
-      texture.flipY = flipY;
-      texture.minFilter = THREE.NearestFilter;
-      texture.magFilter = THREE.NearestFilter;
-      texture.generateMipmaps = false;
-      texture.needsUpdate = true;
-      materials.forEach((material) => {
-        material.map = texture;
-        material.needsUpdate = true;
-      });
-      this.renderer.render(this.scene, this.camera);
-    });
   }
 
   private createDoorLeaf({
