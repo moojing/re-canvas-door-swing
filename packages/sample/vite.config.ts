@@ -16,8 +16,14 @@ export default defineConfig(({ mode }) => {
         },
       }
     : undefined;
+  const portArgument = process.argv.find((arg) => arg.startsWith("--port="))?.split("=")[1]
+    ?? process.argv[process.argv.indexOf("--port") + 1];
+  const devPort = /^\d+$/.test(portArgument ?? "") ? portArgument : "5173";
   return {
     base,
+    // Preview and calibration/test servers must not overwrite each other's
+    // optimized dependency chunks while an existing browser tab is using them.
+    cacheDir: path.resolve(__dirname, `node_modules/.vite/${mode}-${devPort}`),
     assetsInclude: ["**/*.glb"],
     server: {
       host: "127.0.0.1",

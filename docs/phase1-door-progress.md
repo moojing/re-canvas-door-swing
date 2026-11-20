@@ -31,6 +31,11 @@
 Stage2已合併，Stage3仍待做；8／35來源已合併／發布、27待實作及各分類狀態不變。
 詳見[Stage1決策與操作語意](camera-path-stage1-decisions-2026-11-15.md)。
 
+2026-11-17：#37 下通風紅木門本機初版，分支 `feat/ticket-37-redwood-louver-door`，
+基於 main `6f4885e`。只新增這支來源的 Enter／Leave，兩段不重複計數。
+既有 8/35 合併／發布數維持不變；本片已經使用者確認，仍待合併及資產／library 發布。
+GitHub CLI 未登入，尚未同步 #37 Source Doors、#63 對應列及 Project；不得視為已同步或結案。
+
 2026-11-13 架構工作（交付狀態以對應 PR 為準，套件尚未發布）：[#72](https://github.com/moojing/re-canvas-door-swing/issues/72)
 先抽離 Stage2 內部 `cameraPath`，將位置／視線 tracks、驗證、取樣與重新計時整理到獨立模組。
 沿用現有插值與共同 phase anchors；preset/set ID、去回路徑與公開 state 不變。
@@ -49,10 +54,10 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 
 | 範圍 | 數量 | 說明 |
 | --- | ---: | --- |
-| 原選單已合併 main | 8 / 35 | 既有6支，加上 [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 的 S9 狂奔門及鐵窗門；鐵窗門 Leave 不另計來源。 |
-| 已合併／待發布 | 0 / 35 | S9 狂奔門及鐵窗門已隨 assets beta.3／library beta.5 發布。 |
+| 原選單已合併 main | 9 / 35 | 含 [PR #89](https://github.com/moojing/re-canvas-door-swing/pull/89) 紅木門；Enter／Leave 只算一支。本表以該 PR 合併至 main 為生效點。 |
+| 已合併／待發布 | 1 / 35 | 紅木門素材與 library 尚待發布；其餘既有8支已發布。 |
 | 原選單已發布 beta | 8 / 35 | library0.2.0-beta.5/assets0.1.0-beta.3；套件與CDN已驗證，網站更新由 [PR #76](https://github.com/moojing/re-canvas-door-swing/pull/76) 交付。 |
-| 尚待實作 | 27 | 原選單35支扣除已合併8支；合併不等於發布或完成所有來源 QA。 |
+| 尚待實作 | 26 | 35支扣除9支已合併；時鐘塔仍待實作。 |
 | 選單外相容性 preset | 1 支門 | 黃色 A02 S5 已退出 catalog／random，舊 ID 保留；不取代 S9。 |
 
 「已合併」表示 main 已有該影片對應的完整 preset、runtime 素材與 renderer 支援，
@@ -82,7 +87,7 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24構圖及僅左把手轉動修正交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
-| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
+| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | PR #89 交付／未發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | [PR #89](https://github.com/moojing/re-canvas-door-swing/pull/89)：微推／微拉、短停、全開後前進；GIF擬合與使用者確認。新素材／library發布及原音精細QA待做；合併狀態以PR為準。 |
 | 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -272,3 +277,7 @@ No package publication is included. Pages remains pinned to published library be
 ### 2026-11-20 — surface texture lifecycle delivery
 
 [PR #88](https://github.com/moojing/re-canvas-door-swing/pull/88) releases retired door surface maps on preset replacement/unmount and discards stale loads without rendering. Shared handle resources, preset tracks and public APIs are unchanged. This shared engineering fix adds no selected-source completion: counts remain 8/35 merged/published and 27 pending. No category Source Doors or Project completion status changes apply. The PR targets main; merge state is verified online at delivery. No npm publication is included; Pages remains on beta.5 until a later release.
+
+### 2026-11-20 — #37 redwood delivery review
+
+Redwood Enter/Leave is rebased onto main including #86–#88. The remote author branch remains intact; delivery uses `preview/ticket-37-redwood`. This adds one selected source only (row18); clock-tower row19 remains pending. After verified merge the counts become9/35 merged,8/35 published,26unimplemented. Assets must be published and the CDN pin updated before a library release; this delivery does not publish npm or change the beta.5 Pages pin. #37 remains In Progress. Earlier unauthenticated/local-only entries are historical.
