@@ -26,6 +26,11 @@ test("all registered animation outputs match the frozen old-commit oracle", asyn
   const provenance = verifyBaseline(baselineDir);
   const expected = JSON.parse(readFileSync(new URL("timeline.json", baselineDir), "utf8"));
   const actual = await collectTimeline();
+  // New source is additive; retain the frozen oracle for every existing preset.
+  const additions = ["biohazard-1999-b03-clocktower-door", "biohazard-1999-b03-clocktower-door-leave"];
+  assert.deepEqual(actual.catalogIds, [...expected.catalogIds, ...additions].sort());
+  for (const id of additions) { assert.ok(actual.presets[id]); delete actual.presets[id]; }
+  actual.catalogIds = actual.catalogIds.filter((id: string) => !additions.includes(id));
   const failures = differences(expected, actual);
   const report = path.join(repositoryRoot, "packages/door-lib/test-results/animation-numeric/timeline-diff.json");
   if (failures.length) {

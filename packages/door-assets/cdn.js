@@ -16,3 +16,5 @@ export const biohazard1998A03GridKnobDoorFront = `${DEFAULT_ASSET_BASE_URL}/text
 export const biohazard1998A03GridKnobDoorBack = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1998-a03-grid-knob-door-front.webp`;
 export const biohazard1996B07AutomaticDoorLeaf = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1996-b07-automatic-door-leaf.webp`;
 export const automaticDoorSlide = `${DEFAULT_ASSET_BASE_URL}/sounds/freesound_kyodon-automatic-door-153423-hq.mp3`;
+
+export const biohazard1999B03ClocktowerDoor = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1999-b03-clocktower-door.webp`;

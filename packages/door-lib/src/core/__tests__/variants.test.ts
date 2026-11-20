@@ -124,6 +124,8 @@ describe("core door entrance presets", () => {
     assert.deepEqual(
       doorEntrancePresets.map((preset) => preset.id),
       [
+        "biohazard-1999-b03-clocktower-door",
+        "biohazard-1999-b03-clocktower-door-leave",
         "biohazard-1996-a02-red-cross-running-door",
         "biohazard-1999-a02-iron-window-door",
         "biohazard-1999-a02-iron-window-door-leave",
@@ -278,7 +280,7 @@ describe("core door entrance presets", () => {
       () => 0
     );
 
-    assert.equal(preset.id, "biohazard-1999-a02-iron-window-door");
+    assert.equal(preset.id, "biohazard-1999-b03-clocktower-door");
     assert.equal(preset.handleProfileId, "knob-round");
   });
 

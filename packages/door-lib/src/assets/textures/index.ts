@@ -2,3 +2,4 @@ export { doorWood, biohazard1996A01IronDoorFront, biohazard1996A01IronDoorBack, 
 export { biohazard1998A03GridKnobDoorFront, biohazard1998A03GridKnobDoorBack } from "#door-assets";
 export { biohazard1996B07AutomaticDoorLeaf } from "#door-assets";
 export { biohazard1996A02RedCrossDoor, biohazard1999A02IronWindowDoor } from "#door-assets";
+export { biohazard1999B03ClocktowerDoor } from "#door-assets";
