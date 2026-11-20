@@ -268,3 +268,7 @@ No package publication is included. Pages remains pinned to published library be
 ### Stage1 交付前驗證
 
 145core＋2local-assets＋4數值／資產oracle、16package、85完整browser、43視覺／素材回歸及lint／build通過。另驗證Pages實際使用的beta.5建置，修正新作者API被靜態匯入而造成的missing-export錯誤：作者panel／helper僅在DEV calibration動態載入，正式網站維持原已發布beta.5及CDN素材邊界。source／beta.5 build與32項sample node tests通過；邊界修正後受影響browser重跑記錄見[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)。沒有新增來源、版本升級、npm發布或全門來源驗收宣告。
+
+### 2026-11-20 — surface texture lifecycle delivery
+
+[PR #88](https://github.com/moojing/re-canvas-door-swing/pull/88) releases retired door surface maps on preset replacement/unmount and discards stale loads without rendering. Shared handle resources, preset tracks and public APIs are unchanged. This shared engineering fix adds no selected-source completion: counts remain 8/35 merged/published and 27 pending. No category Source Doors or Project completion status changes apply. The PR targets main; merge state is verified online at delivery. No npm publication is included; Pages remains on beta.5 until a later release.
