@@ -54,10 +54,10 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 
 | 範圍 | 數量 | 說明 |
 | --- | ---: | --- |
-| 原選單已合併 main | 8 / 35 | 既有6支，加上 [PR #74](https://github.com/moojing/re-canvas-door-swing/pull/74) 的 S9 狂奔門及鐵窗門；鐵窗門 Leave 不另計來源。 |
-| 已合併／待發布 | 0 / 35 | S9 狂奔門及鐵窗門已隨 assets beta.3／library beta.5 發布。 |
+| 原選單已合併 main | 9 / 35 | 含 [PR #89](https://github.com/moojing/re-canvas-door-swing/pull/89) 紅木門；Enter／Leave 只算一支。本表以該 PR 合併至 main 為生效點。 |
+| 已合併／待發布 | 1 / 35 | 紅木門素材與 library 尚待發布；其餘既有8支已發布。 |
 | 原選單已發布 beta | 8 / 35 | library0.2.0-beta.5/assets0.1.0-beta.3；套件與CDN已驗證，網站更新由 [PR #76](https://github.com/moojing/re-canvas-door-swing/pull/76) 交付。 |
-| 尚待實作 | 27 | 原選單35支扣除已合併8支；合併不等於發布或完成所有來源 QA。 |
+| 尚待實作 | 26 | 35支扣除9支已合併；時鐘塔仍待實作。 |
 | 選單外相容性 preset | 1 支門 | 黃色 A02 S5 已退出 catalog／random，舊 ID 保留；不取代 S9。 |
 
 「已合併」表示 main 已有該影片對應的完整 preset、runtime 素材與 renderer 支援，
@@ -87,7 +87,7 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24構圖及僅左把手轉動修正交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
-| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 使用者確認／待合併及發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | 兩段單扇開門、原創百葉木材質與旋鈕已接入；第一段右旋鈕順時鐘，第二段左旋鈕逆時鐘180°；兩段先微推／微拉、短停，再全開後鏡頭前進；GIF 擬合，精細動作／原音待核；交付分支已 rebase 最新 main；PR 審查／合併及資產發布待完成。 |
+| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | PR #89 交付／未發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | [PR #89](https://github.com/moojing/re-canvas-door-swing/pull/89)：微推／微拉、短停、全開後前進；GIF擬合與使用者確認。新素材／library發布及原音精細QA待做；合併狀態以PR為準。 |
 | 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
