@@ -32,6 +32,8 @@ document.addEventListener('click', event => {
   overlay.dataset.preset = preset;
   const stage = document.createElement('div');
   stage.id = 'abyss-door-stage';
+  // Mount at full size, but do not expose the untextured initial render.
+  stage.style.visibility = 'hidden';
   const skip = document.createElement('button');
   skip.id = 'abyss-door-skip';
   skip.textContent = '\u7565\u904e\u52d5\u756b (Esc)';
@@ -43,18 +45,21 @@ document.addEventListener('click', event => {
   skip.focus();
   let app;
   let finished = false;
+  let cleaned = false;
   let rendererReady = false;
   let assetsReady = true;
   const manager = DefaultLoadingManager;
   const previousCallbacks = { onStart: manager.onStart, onLoad: manager.onLoad, onError: manager.onError };
   const playWhenReady = () => {
     if (!finished && rendererReady && assetsReady) {
+      stage.style.visibility = 'visible';
       overlay.dataset.ready = 'true';
       app.play();
     }
   };
   const cleanup = () => {
-    if (finished) return;
+    if (cleaned) return;
+    cleaned = true;
     finished = true;
     clearTimeout(timer);
     document.removeEventListener('keydown', keyboard, true);
@@ -66,7 +71,14 @@ document.addEventListener('click', event => {
   };
   const finish = () => {
     if (finished) return;
-    cleanup();
+    finished = true;
+    clearTimeout(timer);
+    // Navigation commits asynchronously. Keep the old document covered until
+    // pagehide, including when playback was skipped or a visual asset failed.
+    stage.style.visibility = 'hidden';
+    skip.disabled = true;
+    app?.unmount();
+    app = undefined;
     location.assign(next);
   };
   cancelTransition = cleanup;
