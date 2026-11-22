@@ -22,6 +22,8 @@ its library source plus Three.js and copies assets from its installed
 retro-horror-door-assets package. No runtime CDN connection is required.
 Re-run the installer after changing entry.js or the library; installation is idempotent.
 A content hash in the script URL ensures updated bundles bypass old browser caches.
+Intercepted destination URLs carry the same build version so navigation does not
+reuse cached HTML pointing to an older runtime after a deployment.
 The door stays hidden against the black overlay until visual assets are ready,
 then appears and starts playback. The skip control remains available while loading.
 Playback and audio stop immediately when navigation starts. The black overlay
