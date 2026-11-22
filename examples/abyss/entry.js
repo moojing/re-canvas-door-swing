@@ -3,7 +3,6 @@ import { DefaultLoadingManager } from 'three';
 import { destination, choosePreset } from './navigation.mjs';
 
 const script = document.currentScript;
-const buildVersion = new URL(script.src).searchParams.get('v');
 const assetBaseUrl = new URL('./assets/', script.src).href;
 const ids = doorEntrancePresets.map(preset => preset.id);
 let busy = false;
@@ -16,7 +15,7 @@ style.textContent = `#abyss-door-overlay{position:fixed;inset:0;z-index:21474836
 document.head.append(style);
 document.addEventListener('click', event => {
   const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
-  const next = destination(anchor, event, location.href, buildVersion);
+  const next = destination(anchor, event, location.href);
   if (!next) return;
   if (busy) { event.preventDefault(); return; }
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
