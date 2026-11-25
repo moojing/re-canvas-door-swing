@@ -18,3 +18,5 @@ export const biohazard1996B07AutomaticDoorLeaf = `${DEFAULT_ASSET_BASE_URL}/text
 export const automaticDoorSlide = `${DEFAULT_ASSET_BASE_URL}/sounds/freesound_kyodon-automatic-door-153423-hq.mp3`;
 
 export const biohazard1999B03ClocktowerDoor = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1999-b03-clocktower-door.webp`;
+export const biohazard1998B04RedwoodLouverLeaf = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1998-b04-redwood-louver-leaf.webp`;
+export const biohazard1998B04RedwoodLouverEdge = `${DEFAULT_ASSET_BASE_URL}/textures/biohazard-1998-b04-redwood-louver-edge.webp`;

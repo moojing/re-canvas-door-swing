@@ -138,6 +138,8 @@ describe("core door entrance presets", () => {
         "biohazard-1996-b07-automatic-sliding-door",
         "biohazard-1996-b07-automatic-sliding-door-leave",
         "biohazard-1996-b02-blue-panel-double-door",
+        "biohazard-1998-b04-redwood-louver-door",
+        "biohazard-1998-b04-redwood-louver-door-leave",
       ]
     );
 

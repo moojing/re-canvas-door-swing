@@ -26,12 +26,18 @@ export const usesAgedWoodLook = (preset: DoorEntrancePresetId) =>
   preset === "biohazard-1996-a02-yellow-panel-knob-door-leave";
 
 export const usesSteelKnobLook = (preset: DoorEntrancePresetId) =>
+  preset === "biohazard-1998-b04-redwood-louver-door" ||
+  preset === "biohazard-1998-b04-redwood-louver-door-leave" ||
+
   preset === "biohazard-1999-a02-iron-window-door" ||
   preset === "biohazard-1999-a02-iron-window-door-leave" ||
   preset === "biohazard-1998-a03-grid-knob-door" ||
   preset === "biohazard-1998-a03-grid-knob-door-leave";
 
 export const usesRectangularKnobPlate = (preset: DoorEntrancePresetId) =>
+  preset === "biohazard-1998-b04-redwood-louver-door" ||
+  preset === "biohazard-1998-b04-redwood-louver-door-leave" ||
+
   preset === "biohazard-1996-a02-red-cross-running-door" ||
   preset === "biohazard-1996-b02-blue-panel-double-door" ||
   preset === "biohazard-1998-a03-grid-knob-door" ||

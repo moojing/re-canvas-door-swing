@@ -26,12 +26,15 @@ test("all registered animation outputs match the frozen old-commit oracle", asyn
   const provenance = verifyBaseline(baselineDir);
   const expected = JSON.parse(readFileSync(new URL("timeline.json", baselineDir), "utf8"));
   const actual = await collectTimeline();
-  // New source is additive; retain the frozen oracle for every existing preset.
-  const additions = ["biohazard-1999-b03-clocktower-door", "biohazard-1999-b03-clocktower-door-leave"];
+  // #37 intentionally adds four passages after the immutable reference commit.
+  // Preserve every old-preset sample and reject any unlisted registry addition.
+  const additions = ["biohazard-1998-b04-redwood-louver-door", "biohazard-1998-b04-redwood-louver-door-leave",
+    "biohazard-1999-b03-clocktower-door", "biohazard-1999-b03-clocktower-door-leave"];
   assert.deepEqual(actual.catalogIds, [...expected.catalogIds, ...additions].sort());
-  for (const id of additions) { assert.ok(actual.presets[id]); delete actual.presets[id]; }
-  actual.catalogIds = actual.catalogIds.filter((id: string) => !additions.includes(id));
-  const failures = differences(expected, actual);
+  const prior = structuredClone(actual);
+  prior.catalogIds = prior.catalogIds.filter(id => !additions.includes(id));
+  for (const id of additions) delete prior.presets[id];
+  const failures = differences(expected, prior);
   const report = path.join(repositoryRoot, "packages/door-lib/test-results/animation-numeric/timeline-diff.json");
   if (failures.length) {
     mkdirSync(path.dirname(report), { recursive: true });

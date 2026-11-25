@@ -3,6 +3,7 @@ import type { DoorEntrancePreset, DoorEntrancePresetId } from "retro-horror-door
 // Sample-only reference links. Source media and evaluation metadata must not
 // enter the published runtime library. Paths verified against the gallery index.
 const referencePaths: Partial<Record<DoorEntrancePresetId, string>> = {
+  "biohazard-1998-b04-redwood-louver-door": "1-2/b04-002.gif",
   "biohazard-1996-a01-iron-door": "1-1/a01-001.gif",
   "biohazard-1998-a01-no-handle-door": "1-2/a01-001.gif",
   "biohazard-1999-a01-parking-door": "1-3/a01-002.gif",

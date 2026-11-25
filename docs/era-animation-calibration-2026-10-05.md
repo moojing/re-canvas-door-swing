@@ -775,3 +775,82 @@ Leave：5440ms；靠近0–1600、旋鈕2560–2880、左扇微拉2880–3120（
 使用者表示「可以了，推吧」，批准目前 Enter／Leave 與硬體位置並授權推送。最終材質採每片門約橫向四格、單格高約寬兩倍的直向長菱形，保留深紅褐底、暗灰褐雙瓣／分枝雕花；上方各次「待視覺確認」記錄屬當時迭代歷史，已由本次批准取代。動作維持右旋鈕逆時鐘90°後內推、左旋鈕順時鐘90°後外拉，未動門扇保持靜止。
 
 批准僅代表目前本機視覺驗收及推送授權；尚待推送／合併／發布。#37／#63／Project 因 gh 未登入仍待線上同步；未增加8/35已合併／發布來源數，不宣稱完整逐格或原音QA完成。
+
+## 2026-11-17 — #37 redwood lower-louver door, local draft
+
+Source: `1-2/b04/b04-s2下通風紅木門.mp4`, tracked gallery GIF
+`selection-gifs/1-2/b04-002.gif` (288×216, 6.25 fps, 17.92 s).
+Local MP4 is absent. First passage approximately2.72–7.36 s, second11.84–17.12 s.
+First opens the right leaf inward while left stays shut; second opens the left
+leaf outward while right stays shut. Closed framing is fixed before opening.
+Short pauses, exact knob rotation, rear-face details and original sound are unverified.
+
+New explicit reusable sets: `1998-double-fixed-wait-right-inward-pass` (4640ms)
+and `1998-double-fixed-wait-left-outward-pass` (5280ms). Both wait until2080ms,
+with an approximate35° knob action1760–2080ms, only on the active leaf. Enter
+passes towardx1.4 from2880ms; Leave towardx-1.4 from3200ms. Camera z7.2→1.3,
+y0.15; fades4320–4640 and4960–5280ms respectively. These are initial renderer
+fits, not recovered source coordinates. Existing sets/defaults are unchanged.
+The existing licensed creak is used from2080ms to fade start, source crop0.06–0.36;
+this is not original-source audio or a source sync certification.
+
+Original ImageGen mahogany upper-panel / olive lower-louver texture, generated
+2026-11-14, resized to512×1024 WebP. Same authored face is used on front/back,
+without baked hardware; physical front/back knob positions use shared geometry.
+A32px-wide stile strip supplies the small dedicated edge WebP, avoiding louvers
+stretched around thickness. Existing licensed knob model and rectangular steel
+plates are reused; common retro material and smooth low-resolution rendering remain.
+Assets are exported from local/CDN/type entry points. New files are not in the
+currently published asset version: publish assets and update the pin before release.
+
+Local sample inspected at closed, opening and late passage for both traversals.
+The immutable old-commit oracle is unchanged: its numeric test explicitly allows
+only these two new registry IDs, while comparing all pre-existing outputs exactly.
+New focused tests protect inactive leaf/knob, wait, passage, fade and UI operations.
+Online progress synchronization remains blocked by unauthenticated GitHub CLI.
+This is a local draft for user comparison, not merged, published or fully source-certified.
+
+Validation completed2026-11-18:135 core＋2 local-assets tests,4 frozen numeric
+baseline checks,16 package checks,lint and library/sample build pass. Browser
+run:26 passed initially; two old card-count assertions updated8→9 and both
+passed on focused rerun. New redwood playback/seek/reset/traversal/mobile and
+full-screen test passes. Existing3 lint warnings and bundle-size warnings remain.
+Gallery check passes113 doors/stills/GIFs; unavailable ignored videos/frames are
+explicitly skipped. Local animation5188 and gallery4173 URLs both return HTTP200.
+
+
+### 2026-11-18 — User correction: second-passage left knob
+
+Redwood Leave alone now uses an explicit counterclockwise180° left-knob turn
+at1760–2080ms, held through2560ms, then the existing return to zero at3200ms.
+Left leaf opening still starts2080ms; the right leaf and right knob stay still.
+All leaf/camera/fade/audio timings and the first passage remain unchanged.
+This angle/direction is user-specified, superseding the initial approximate35°.
+Only `1998-double-fixed-wait-left-outward-pass` is affected; it has no era fallback.
+Local/unmerged/unpublished; GitHub synchronization remains pending authentication.
+
+
+### 2026-11-18 — User correction: slight push/pull before full opening
+
+Both redwood sets now micro-open from2080 to2320ms (fitted6°), hold leaf and
+camera2320–2560ms, then resume to a full90° opening. Enter pushes only the right
+leaf inward, reaching full opening3520ms; Leave pulls only the left leaf toward
+the viewer, reaching full opening3840ms. Camera position AND target stay fixed
+until that full-open point, then follow the existing forward/sideways endpoint.
+This supersedes the initial continuous swing and overlapping early camera advance.
+The exact6° and240ms hold are authored fits to the user's two-stage description.
+Existing total durations, fade/audio windows, materials, stationary opposite leaf,
+and left counterclockwise180° knob action remain unchanged. Only the two new
+redwood sets change; all old presets and era defaults retain their tracks.
+
+Verification2026-11-19:138 core＋2 assets,4 unchanged-old-profile baseline checks,
+lint/build and focused redwood browser playback/seek/reset/mobile/full-screen pass.
+Both actual-render micro-open stages inspected. Gallery check113 records passes,
+with absent ignored source videos/frames explicitly skipped. Local only; online
+#37/#63/Project synchronization remains pending GitHub authentication.
+
+Final user approval for push: Enter explicitly sets clockwise knob rotation,
+using the same imported-grip world-axis correction as Leave's counterclockwise
+rotation. Enter's existing35° amount and timing remain; Leave retains180°.
+User approved the two-stage push/pull and forward passage. Ready for branch
+push; this approval does not publish packages or merge/close the category ticket.
