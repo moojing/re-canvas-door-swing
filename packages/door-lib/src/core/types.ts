@@ -26,6 +26,8 @@ export type DoorAnimationStyleId =
   | "biohazard-1999";
 
 export type DoorAnimationSetId =
+  | "1999-double-approach-right-inward-pass"
+  | "1999-double-approach-left-outward-pass"
   | "1998-double-fixed-wait-right-inward-pass"
   | "1998-double-fixed-wait-left-outward-pass"
 
@@ -48,6 +50,8 @@ export type DoorMaterialId =
   | "rusted-iron-riveted-panel";
 
 export type DoorEntrancePresetId =
+  | "biohazard-1999-b03-clocktower-door"
+  | "biohazard-1999-b03-clocktower-door-leave"
   | "biohazard-1998-b04-redwood-louver-door"
   | "biohazard-1998-b04-redwood-louver-door-leave"
 

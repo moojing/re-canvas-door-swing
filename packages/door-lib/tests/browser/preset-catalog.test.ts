@@ -105,6 +105,7 @@ test("every preset card makes details primary and full-screen preview secondary"
   await page.goto("/");
 
   const references: Record<string, string> = {
+    "biohazard-1999-b03-clocktower-door": "1-3/b03-003.gif",
     "biohazard-1998-b04-redwood-louver-door": "1-2/b04-002.gif",
     "biohazard-1996-a01-iron-door": "1-1/a01-001.gif",
     "biohazard-1998-a01-no-handle-door": "1-2/a01-001.gif",
@@ -477,7 +478,7 @@ test("detail full-screen preview applies calibration timing and clears restored 
 test("iron door uses one catalog card and switches actual Enter/Leave preset IDs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true })).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(9);
+  await expect(page.locator("main article")).toHaveCount(10);
   await page.getByRole("link", { name: "View details for 1-1 A-1 Iron Door", exact: true }).click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -522,7 +523,7 @@ test("1998 grid door groups Enter/Leave and switches preset-backed camera and kn
   await page.goto("/");
   const detail = page.getByRole("link", { name: "View details for 1-2 A-3 Grid Knob Door", exact: true });
   await expect(detail).toHaveCount(1);
-  await expect(page.locator("main article")).toHaveCount(9);
+  await expect(page.locator("main article")).toHaveCount(10);
   await detail.click();
   const variants = page.getByRole("group", { name: "Traversal variant" });
   await expect(variants.getByRole("button", { name: "Enter", exact: true })).toHaveAttribute("aria-pressed", "true");

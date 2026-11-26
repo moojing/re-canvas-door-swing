@@ -15,5 +15,7 @@ export { default as biohazard1998A03GridKnobDoorFront } from "./textures/biohaza
 export { default as biohazard1998A03GridKnobDoorBack } from "./textures/biohazard-1998-a03-grid-knob-door-front.webp";
 export { default as biohazard1996B07AutomaticDoorLeaf } from "./textures/biohazard-1996-b07-automatic-door-leaf.webp";
 export { default as automaticDoorSlide } from "./sounds/freesound_kyodon-automatic-door-153423-hq.mp3";
+
+export { default as biohazard1999B03ClocktowerDoor } from "./textures/biohazard-1999-b03-clocktower-door.webp";
 export { default as biohazard1998B04RedwoodLouverLeaf } from "./textures/biohazard-1998-b04-redwood-louver-leaf.webp";
 export { default as biohazard1998B04RedwoodLouverEdge } from "./textures/biohazard-1998-b04-redwood-louver-edge.webp";

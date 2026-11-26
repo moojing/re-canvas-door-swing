@@ -87,8 +87,8 @@ passage 前突然解除補償造成的縮放反轉／雙門衝刺。未修改 pr
 | 15 | `1-2/a11/a11-s1重型水門.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 16 | `1-3/a04/a04-s1圓環把手.mp4` | [#36](https://github.com/moojing/re-canvas-door-swing/issues/36) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 17 | `1-1/b02/b02-s3方塊門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 基礎已發布；新版鏡頭／黑幕校準已合併／未發布 | `biohazard-1996-b02-blue-panel-double-door` | [PR #77](https://github.com/moojing/re-canvas-door-swing/pull/77)減少末尾突進：微開同步停頓後前推約1秒，另加1.2秒黑幕尾段（總長6.9秒）；PR #77已合併；新版未發布，線上beta.5仍為舊曲線。其他來源／方向QA見 #58。 2026-10-24構圖及僅左把手轉動修正交付見 [PR #79](https://github.com/moojing/re-canvas-door-swing/pull/79)；套件尚未發布，詳見最新校準紀錄。 |
-| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | PR #89 交付／未發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | [PR #89](https://github.com/moojing/re-canvas-door-swing/pull/89)：微推／微拉、短停、全開後前進；GIF擬合與使用者確認。新素材／library發布及原音精細QA待做；合併狀態以PR為準。 |
-| 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 待實作 | — | 素材、preset、來源動畫校準及驗證。 |
+| 18 | `1-2/b04/b04-s2下通風紅木門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 已合併／未發布 | `biohazard-1998-b04-redwood-louver-door` / `-leave` | [PR #89](https://github.com/moojing/re-canvas-door-swing/pull/89)：微推／微拉、短停、全開後前進；GIF擬合與使用者確認。新素材／library發布及原音精細QA待做；已核對 merge commit `34aaad5`。 |
+| 19 | `1-3/b03/b03-s3時鐘塔大門.mp4` | [#37](https://github.com/moojing/re-canvas-door-swing/issues/37) | 本機實作／使用者已視覺批准；[PR #91](https://github.com/moojing/re-canvas-door-swing/pull/91) 交付／未發布 | `biohazard-1999-b03-clocktower-door`、`…-leave` | 右旋鈕逆時鐘90°後內推；左旋鈕順時鐘90°後外拉；另一扇保持靜止。2026-11-20 使用者批准目前 Enter／Leave：深紅褐底、暗灰褐雙瓣／分枝雕花；窄長菱形高約寬兩倍、每片門約橫向四格。CLI已登入；[圖庫PR #13](https://github.com/moojing/re-door-gallery/pull/13)已合併；本來源的合併狀態以PR #91為準。 |
 | 20 | `1-1/b03/b03-s1 曲線門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 21 | `1-3/b02/b02-s1窗木門.mp4` | [#38](https://github.com/moojing/re-canvas-door-swing/issues/38) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
 | 22 | `1-1/b04/b04-s2 田字門.mp4` | [#39](https://github.com/moojing/re-canvas-door-swing/issues/39) | 待實作 | — | 可沿用鉸鏈基礎；新增本片素材與所需硬體／動畫，完成驗證。 |
@@ -274,6 +274,20 @@ No package publication is included. Pages remains pinned to published library be
 
 145core＋2local-assets＋4數值／資產oracle、16package、85完整browser、43視覺／素材回歸及lint／build通過。另驗證Pages實際使用的beta.5建置，修正新作者API被靜態匯入而造成的missing-export錯誤：作者panel／helper僅在DEV calibration動態載入，正式網站維持原已發布beta.5及CDN素材邊界。source／beta.5 build與32項sample node tests通過；邊界修正後受影響browser重跑記錄見[PR #86](https://github.com/moojing/re-canvas-door-swing/pull/86)。沒有新增來源、版本升級、npm發布或全門來源驗收宣告。
 
+
+## 2026-11-19 時鐘塔大門本機實作
+
+分類 #37、來源第19列；分支 `feat/ticket-37-clocktower-door` 基於 `origin/main` 853d8c1。新增一個來源的 Enter／Leave 完整 preset，不增加兩次來源計數。既有8/35已合併／發布數量不變。
+紅木門已另行推送 `feat/ticket-37-redwood-louver-door`（4e47d62），本分支未納入該未合併實作，不能將第18列歷史狀態當成其最新分支進度。
+
+線上待同步：#63第19列、#37 Source Doors 的時鐘塔項目、Project 分類維持 In Progress；只可記為本機／未合併／未發布。`gh auth status` 回報未登入，未更新或聲稱已同步線上票。2026-11-20 使用者已批准目前 Enter／Leave 外觀與硬體位置並授權推送；套件未發布，不能勾選 each source has a released preset。
+
+本機驗證完成：147core＋2assets＋4numeric、16package、3focused browser、lint/build及gallery113筆檢查通過。首頁及全螢幕播放可用；2026-11-20 使用者已視覺批准目前版本；正式released條件仍待套件發布。詳細runtime截圖與限制見最新校準紀錄。
+
+## 2026-11-20 時鐘塔大門視覺批准
+
+使用者對最終每片門約橫向四格的直向長菱形版本表示「可以了，推吧」，批准目前 Enter／Leave 並授權推送。此為本機視覺批准，尚待推送、合併及套件發布；不代表 #37 全部來源已完成。#63／#37／Project 因 gh 未登入仍待同步，8/35已合併／發布來源數不變。
+
 ### 2026-11-20 — surface texture lifecycle delivery
 
 [PR #88](https://github.com/moojing/re-canvas-door-swing/pull/88) releases retired door surface maps on preset replacement/unmount and discards stale loads without rendering. Shared handle resources, preset tracks and public APIs are unchanged. This shared engineering fix adds no selected-source completion: counts remain 8/35 merged/published and 27 pending. No category Source Doors or Project completion status changes apply. The PR targets main; merge state is verified online at delivery. No npm publication is included; Pages remains on beta.5 until a later release.
@@ -281,3 +295,9 @@ No package publication is included. Pages remains pinned to published library be
 ### 2026-11-20 — #37 redwood delivery review
 
 Redwood Enter/Leave is rebased onto main including #86–#88. The remote author branch remains intact; delivery uses `preview/ticket-37-redwood`. This adds one selected source only (row18); clock-tower row19 remains pending. After verified merge the counts become9/35 merged,8/35 published,26unimplemented. Assets must be published and the CDN pin updated before a library release; this delivery does not publish npm or change the beta.5 Pages pin. #37 remains In Progress. Earlier unauthenticated/local-only entries are historical.
+
+## 2026-11-25 時鐘塔整合交付準備
+
+已整合最新main `34aaad5`，保留PR #89紅木門及PR #88貼圖生命週期修正。時鐘塔分支已推送，使用者已批准四格寬長菱形外觀及兩段動作；待PR審查／合併，未發布。前述CLI登入阻擋已解除；歷史8/35計數由紅木門合併後的9/35已合併、8/35已發布、26待實作取代。時鐘塔合併後才增加一支來源，Leave不另計。
+
+時鐘塔交付PR：[#91](https://github.com/moojing/re-canvas-door-swing/pull/91)；兩扇門仍同屬分類票[#37](https://github.com/moojing/re-canvas-door-swing/issues/37)，沒有另拆實作票。圖庫筆記已由[PR #13](https://github.com/moojing/re-door-gallery/pull/13)合併為`51ea6e4`。Project API因CLI缺少`read:project`／`project` scope無法驗證或修改，不宣稱看板已同步。

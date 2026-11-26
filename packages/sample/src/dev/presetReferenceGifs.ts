@@ -8,6 +8,8 @@ const referencePaths: Partial<Record<DoorEntrancePresetId, string>> = {
   "biohazard-1998-a01-no-handle-door": "1-2/a01-001.gif",
   "biohazard-1999-a01-parking-door": "1-3/a01-002.gif",
   "biohazard-1998-a03-grid-knob-door": "1-2/a03-002.gif",
+  "biohazard-1999-b03-clocktower-door": "1-3/b03-003.gif",
+  "biohazard-1999-b03-clocktower-door-leave": "1-3/b03-003.gif",
   "biohazard-1996-b02-blue-panel-double-door": "1-1/b02-003.gif",
   "biohazard-1996-b07-automatic-sliding-door": "1-1/b07-001.gif",
   "biohazard-1996-a02-red-cross-running-door": "1-1/a02-009.gif",

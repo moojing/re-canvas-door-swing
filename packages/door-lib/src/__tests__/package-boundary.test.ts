@@ -345,7 +345,7 @@ describe("package boundary", () => {
     assert.match(source, /Math\.sign\(handleX\) \*\s*\(width - handleEdgeInset\)/);
     assert.match(
       source,
-      /handleGroup\.position\.set\(\s*resolvedHandleX,\s*-0\.02,\s*face === "front" \? DOOR_DEPTH \+ DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET\s*\)/
+      /handleGroup\.position\.set\(\s*resolvedHandleX,\s*this\.clocktower \? -0\.5 : -0\.02,\s*face === "front" \? DOOR_DEPTH \+ DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET\s*\)/
     );
     assert.match(source, /if \(face === "back"\) handleGroup\.rotation\.y = Math\.PI/);
   });

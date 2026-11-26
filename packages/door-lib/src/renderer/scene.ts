@@ -130,6 +130,7 @@ export class VanillaDoorScene {
   private handleMaterial = createHandleMaterial();
   private agedWood = false;
   private knobBackplate = false;
+  private clocktower = false;
   private steelKnob = false;
   private rectangularKnobPlate = false;
   private compactWindowLayout = false;
@@ -231,12 +232,14 @@ export class VanillaDoorScene {
     phoneFraming?: DoorPhoneFraming;
     progress: number;
   }) {
+    const clocktower = presetId === "biohazard-1999-b03-clocktower-door" || presetId === "biohazard-1999-b03-clocktower-door-leave";
     const agedWood = usesAgedWoodLook(presetId);
     const knobBackplate = presetId === "biohazard-1996-b02-blue-panel-double-door";
     const steelKnob = usesSteelKnobLook(presetId);
     const rectangularKnobPlate = usesRectangularKnobPlate(presetId);
     const compactWindowLayout = usesCompactWindowLayout(presetId);
-    const lookChanged = this.agedWood !== agedWood || this.knobBackplate !== knobBackplate || this.steelKnob !== steelKnob || this.rectangularKnobPlate !== rectangularKnobPlate || this.handleTurnDirection !== handleTurnDirection || this.compactWindowLayout !== compactWindowLayout;
+    const lookChanged = this.clocktower !== clocktower || this.agedWood !== agedWood || this.knobBackplate !== knobBackplate || this.steelKnob !== steelKnob || this.rectangularKnobPlate !== rectangularKnobPlate || this.handleTurnDirection !== handleTurnDirection || this.compactWindowLayout !== compactWindowLayout;
+    this.clocktower = clocktower;
     this.compactWindowLayout = compactWindowLayout;
     this.handleTurnDirection = handleTurnDirection;
     this.rectangularKnobPlate = rectangularKnobPlate;
@@ -368,6 +371,11 @@ export class VanillaDoorScene {
       this.handleMaterial.roughness = 0.78;
       this.handleMaterial.metalness = 0.15;
     }
+    if (this.clocktower) {
+      this.handleMaterial.map = null;
+      this.handleMaterial.color.set("#c4bf91");
+      this.handleMaterial.roughness = 0.9;
+    }
     if (this.steelKnob) {
       this.handleMaterial.map = null;
       this.handleMaterial.color.set("#a9ada8");
@@ -385,6 +393,7 @@ export class VanillaDoorScene {
         material.metalness = 0;
         material.color.set("#ffffff");
       }
+      if (this.clocktower) { material.roughness = 1; material.metalness = 0.05; material.color.set("#929292"); }
       if (this.compactWindowLayout) material.color.set("#929892");
       if (this.rectangularKnobPlate && handleProfileId === "lever-l") {
         material.color.set("#b4aaa0");
@@ -504,6 +513,11 @@ export class VanillaDoorScene {
     const leafWidth = this.knobBackplate ? width - 0.025 : width;
 
     const edgeGeometry = new THREE.BoxGeometry(leafWidth, height, DOOR_DEPTH);
+    if (this.clocktower) {
+      // Map the thin perimeter strip onto the thickness, not the face filigree.
+      const uv = edgeGeometry.getAttribute("uv");
+      for (let i = 0; i < uv.count; i++) uv.setX(i, 0.01 + uv.getX(i) * 0.01);
+    }
     // The separate textured planes own the front/back surfaces. Keeping the
     // untextured box caps lets snapped triangles occlude them at oblique angles.
     edgeGeometry.groups = edgeGeometry.groups.filter((group) => (group.materialIndex ?? 0) < 4);
@@ -525,6 +539,8 @@ export class VanillaDoorScene {
     );
     front.position.set(doorCenterX, 0, DOOR_DEPTH + DOOR_SURFACE_OFFSET);
     if (mirrorTextureX) mirrorPlaneTextureX(front.geometry);
+    // The clocktower texture authors the right leaf; its partner points inward.
+    if (this.clocktower && side === "left") mirrorPlaneTextureX(front.geometry);
     pivot.add(front);
 
     const back = new THREE.Mesh(
@@ -532,6 +548,7 @@ export class VanillaDoorScene {
       this.backDoorMaterial
     );
     if (mirrorBackTextureX) mirrorPlaneTextureX(back.geometry);
+    if (this.clocktower && side === "left") mirrorPlaneTextureX(back.geometry);
     back.position.set(doorCenterX, 0, -DOOR_SURFACE_OFFSET);
     back.rotation.y = Math.PI;
     pivot.add(back);
@@ -590,7 +607,7 @@ export class VanillaDoorScene {
         : handleX;
     handleGroup.position.set(
       resolvedHandleX,
-      -0.02,
+      this.clocktower ? -0.5 : -0.02,
       face === "front" ? DOOR_DEPTH + DOOR_SURFACE_OFFSET : -DOOR_SURFACE_OFFSET
     );
     if (face === "back") handleGroup.rotation.y = Math.PI;
@@ -606,6 +623,17 @@ export class VanillaDoorScene {
         new THREE.MeshBasicMaterial({ color: "#171510" }));
       keyhole.position.set(0, -0.17, 0.016);
       plate.add(keyhole);
+    }
+    if (this.clocktower) {
+      const marker = new THREE.Group();
+      marker.name = "turn-marker";
+      const material = new THREE.MeshStandardMaterial({ color: "#fffbe8", emissive: "#aaa89a", roughness: 1 });
+      applyRetroMaterial(material, false);
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(0.026, 12), material);
+      const startsAtTop = side === "left";
+      dot.position.set(startsAtTop ? 0 : (face === "front" ? 0.105 : -0.105), startsAtTop ? 0.105 : 0, 0.355);
+      marker.add(dot);
+      handleGroup.add(marker);
     }
     let pressTargets:
       | Array<{ node: THREE.Object3D; baseRotation: THREE.Euler }>
@@ -717,6 +745,8 @@ export class VanillaDoorScene {
         ? state.rightHandleAngle ?? state.handleAngle ?? 0
         : state.handleAngle ?? 0;
       const angle = handleAngle * multiplier;
+      const marker = group.getObjectByName("turn-marker");
+      if (marker) marker.rotation.z = pressTargets?.length ? handleAngle * rotationMultiplier : 0;
       if (pressTargets?.length) {
         group.rotation.z = 0;
         pressTargets.forEach(({ node, baseRotation }) => {
@@ -755,6 +785,10 @@ export class VanillaDoorScene {
               material.roughness = 0.75;
               material.metalness = 0.2;
             }
+            if (this.clocktower) {
+              material.map = null; material.color.set("#c4bf91");
+              material.roughness = 0.9; material.metalness = 0.1;
+            }
             if (this.agedWood) {
               material.roughness = 1;
               material.metalness = 0;
@@ -764,7 +798,9 @@ export class VanillaDoorScene {
         });
 
         const backplate = handleEntry.group.getObjectByName("fixed-backplate");
+        const marker = handleEntry.group.getObjectByName("turn-marker");
         handleEntry.group.clear();
+        if (marker) handleEntry.group.add(marker);
         if (backplate) handleEntry.group.add(backplate);
         const wrapper = new THREE.Group();
         const scale =
@@ -776,6 +812,15 @@ export class VanillaDoorScene {
         const importedBounds = new THREE.Box3().setFromObject(wrapper);
         if (!importedBounds.isEmpty()) {
           wrapper.position.z += -importedBounds.min.z - IMPORTED_HANDLE_SURFACE_EMBED;
+        }
+        if (marker && prepared.pressTargets[0]) {
+          // The imported grip has its own center/depth; place the painted dot
+          // on its outer face while keeping rotation in face-local coordinates.
+          wrapper.updateMatrixWorld(true);
+          const gripBounds = new THREE.Box3().setFromObject(prepared.pressTargets[0].node);
+          const center = gripBounds.getCenter(new THREE.Vector3());
+          marker.position.set(center.x, center.y, gripBounds.max.z + 0.004);
+          marker.children[0].position.z = 0;
         }
         handleEntry.group.add(wrapper);
         handleEntry.pressRotationMultiplier = handleProfileId === "knob-round"

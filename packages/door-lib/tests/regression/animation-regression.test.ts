@@ -26,9 +26,10 @@ test("all registered animation outputs match the frozen old-commit oracle", asyn
   const provenance = verifyBaseline(baselineDir);
   const expected = JSON.parse(readFileSync(new URL("timeline.json", baselineDir), "utf8"));
   const actual = await collectTimeline();
-  // #37 intentionally adds two passages after the immutable reference commit.
+  // #37 intentionally adds four passages after the immutable reference commit.
   // Preserve every old-preset sample and reject any unlisted registry addition.
-  const additions = ["biohazard-1998-b04-redwood-louver-door", "biohazard-1998-b04-redwood-louver-door-leave"];
+  const additions = ["biohazard-1998-b04-redwood-louver-door", "biohazard-1998-b04-redwood-louver-door-leave",
+    "biohazard-1999-b03-clocktower-door", "biohazard-1999-b03-clocktower-door-leave"];
   assert.deepEqual(actual.catalogIds, [...expected.catalogIds, ...additions].sort());
   const prior = structuredClone(actual);
   prior.catalogIds = prior.catalogIds.filter(id => !additions.includes(id));

@@ -1,4 +1,4 @@
-import { rightInwardDoublePass1998Profile, leftOutwardDoublePass1998Profile, centerSplitSlide1996Profile, fixedWaitMicroOpenPass1998Profile, microOpenClosePassSingleDoor1996Profile, motionStyleProfiles, wideSwingSingleDoor1996Profile, type EraAnimationProfile } from "./animationStyles.ts";
+import { rightInwardDoublePass1998Profile, leftOutwardDoublePass1998Profile, rightInwardDoublePass1999Profile, leftOutwardDoublePass1999Profile, centerSplitSlide1996Profile, fixedWaitMicroOpenPass1998Profile, microOpenClosePassSingleDoor1996Profile, motionStyleProfiles, wideSwingSingleDoor1996Profile, type EraAnimationProfile } from "./animationStyles.ts";
 import type { DoorAnimationSetId, DoorAnimationStyleId, DoorEntranceMotion, DoorEntrancePreset } from "./types.ts";
 import { openRunningPass1996Profile, knobApproachWaitPass1999Profile, knobApproachOutwardPass1999Profile } from "./animationStyles.ts";
 
@@ -26,6 +26,8 @@ const defineSet = (
 }];
 
 const sets = new Map<DoorAnimationSetId, AnimationSet>([
+  defineSet("1999-double-approach-right-inward-pass", "Approach, quarter turn and right inward passage", "biohazard-1999", "hinge-double", rightInwardDoublePass1999Profile),
+  defineSet("1999-double-approach-left-outward-pass", "Approach, quarter turn and left outward passage", "biohazard-1999", "hinge-double", leftOutwardDoublePass1999Profile),
   defineSet("1998-double-fixed-wait-right-inward-pass", "Fixed wait, right inward leaf and passage", "biohazard-1998", "hinge-double", rightInwardDoublePass1998Profile),
   defineSet("1998-double-fixed-wait-left-outward-pass", "Fixed wait, left outward leaf and passage", "biohazard-1998", "hinge-double", leftOutwardDoublePass1998Profile),
   defineSet("1996-single-open-running-pass", "Already-open running passage", "biohazard-1996", "hinge-single", openRunningPass1996Profile),
